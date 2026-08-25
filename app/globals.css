@@ -31,7 +31,8 @@ body {
   overflow-x: hidden;
 }
 
-button {
+button,
+input {
   font-family: inherit;
 }
 
@@ -81,11 +82,11 @@ button {
 
 
 /* =========================
-   표지 화면
+   표지
 ========================= */
 
 .cover-screen {
-  z-index: 2;
+  z-index: 3;
 
   display: flex;
 
@@ -99,10 +100,6 @@ button {
   background: #ef5b00;
 }
 
-
-/* 시작 버튼 누른 후
-   표지가 위로 살짝 올라가며 사라짐 */
-
 .cover-screen.hide-screen {
   opacity: 0;
 
@@ -113,7 +110,7 @@ button {
 
 
 /* =========================
-   표지 이미지 영역
+   표지 이미지
 ========================= */
 
 .cover-container {
@@ -132,11 +129,6 @@ button {
   background: #ef5b00;
 }
 
-
-/* =========================
-   표지 이미지
-========================= */
-
 .cover-image {
   object-fit: cover;
 
@@ -145,7 +137,7 @@ button {
 
 
 /* =========================
-   진단 시작 버튼 위치
+   표지 버튼
 ========================= */
 
 .start-button-area {
@@ -162,11 +154,6 @@ button {
   max-width: 260px;
 }
 
-
-/* =========================
-   진단 시작 버튼
-========================= */
-
 .cover-start-button {
   width: 100%;
 
@@ -176,14 +163,10 @@ button {
 
   border-radius: 13px;
 
-  background: rgba(255, 255, 255, 0.98);
+  background:
+    rgba(255, 255, 255, 0.98);
 
   color: #ed5b00;
-
-  font-family:
-    "Malgun Gothic",
-    "Apple SD Gothic Neo",
-    sans-serif;
 
   font-size: 16px;
 
@@ -202,18 +185,10 @@ button {
   text-shadow:
     0 0 0.3px currentColor;
 
-  backdrop-filter: blur(8px);
-
-  -webkit-backdrop-filter: blur(8px);
-
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    box-shadow 0.2s ease;
 }
-
-
-/* PC 마우스 올렸을 때 */
 
 .cover-start-button:hover {
   transform: translateY(-2px);
@@ -223,17 +198,403 @@ button {
     rgba(89, 35, 0, 0.24);
 }
 
-
-/* 버튼 누르는 순간 */
-
 .cover-start-button:active {
   transform: scale(0.96);
 }
 
 
 /* =========================
+   개인정보 화면
+========================= */
+
+.info-screen {
+  z-index: 2;
+
+  opacity: 0;
+
+  transform: translateY(50px);
+
+  pointer-events: none;
+
+  background: #F2EFEA;
+}
+
+.info-screen.show-screen {
+  opacity: 1;
+
+  transform: translateY(0);
+
+  pointer-events: auto;
+}
+
+.info-screen.hide-info-screen {
+  opacity: 0;
+
+  transform: translateY(-40px);
+
+  pointer-events: none;
+}
+
+
+/* =========================
+   개인정보 컨테이너
+========================= */
+
+.info-container {
+  width: 100%;
+
+  max-width: 520px;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  margin: 0 auto;
+
+  padding:
+    48px
+    26px
+    50px;
+
+  background: #F2EFEA;
+}
+
+
+/* =========================
+   개인정보 상단
+========================= */
+
+.info-top {
+  margin-bottom: 38px;
+}
+
+.info-label {
+  margin-bottom: 12px;
+
+  color: #f26a21;
+
+  font-size: 12px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.4px;
+}
+
+.info-top h1 {
+  margin-bottom: 12px;
+
+  color: #25221f;
+
+  font-size: 31px;
+
+  font-weight: 900;
+
+  letter-spacing: -1.3px;
+}
+
+.info-description {
+  color: #77716b;
+
+  font-size: 15px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================
+   입력폼
+========================= */
+
+.form-area {
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 9px;
+
+  color: #3c3732;
+
+  font-size: 14px;
+
+  font-weight: 800;
+}
+
+.form-group input {
+  width: 100%;
+
+  height: 54px;
+
+  padding: 0 16px;
+
+  border:
+    1px solid
+    #dcd5cd;
+
+  border-radius: 13px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #222;
+
+  font-size: 16px;
+
+  font-weight: 600;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.form-group input::placeholder {
+  color: #b3ada6;
+
+  font-weight: 500;
+}
+
+.form-group input:focus {
+  border-color: #f26a21;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(242, 106, 33, 0.10);
+}
+
+
+/* =========================
+   개인정보 안내 박스
+========================= */
+
+.privacy-box {
+  margin-top: 30px;
+
+  margin-bottom: 18px;
+
+  padding: 20px;
+
+  border:
+    1px solid
+    #ddd6ce;
+
+  border-radius: 14px;
+
+  background:
+    rgba(255, 255, 255, 0.55);
+
+  color: #625c56;
+
+  font-size: 12px;
+
+  line-height: 1.65;
+}
+
+.privacy-title {
+  margin-bottom: 14px;
+
+  color: #33302c;
+
+  font-size: 14px;
+
+  font-weight: 900;
+}
+
+.privacy-box p {
+  margin-bottom: 11px;
+}
+
+.privacy-box p:last-child {
+  margin-bottom: 0;
+}
+
+.privacy-box strong {
+  color: #3d3833;
+
+  font-weight: 800;
+}
+
+.privacy-notice {
+  padding-top: 10px;
+
+  border-top:
+    1px solid
+    #e2dcd6;
+
+  color: #88817a;
+}
+
+
+/* =========================
+   개인정보 동의
+========================= */
+
+.consent-row {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 14px;
+
+  color: #393530;
+
+  font-size: 14px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.consent-row input {
+  position: absolute;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+.custom-check {
+  position: relative;
+
+  flex-shrink: 0;
+
+  width: 22px;
+  height: 22px;
+
+  border:
+    2px solid
+    #cfc8c0;
+
+  border-radius: 6px;
+
+  background: white;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.consent-row
+  input:checked
+  + .custom-check {
+  border-color: #f26a21;
+
+  background: #f26a21;
+}
+
+.consent-row
+  input:checked
+  + .custom-check::after {
+  content: "";
+
+  position: absolute;
+
+  left: 6px;
+  top: 2px;
+
+  width: 6px;
+  height: 11px;
+
+  border: solid white;
+
+  border-width: 0 2px 2px 0;
+
+  transform: rotate(45deg);
+}
+
+
+/* =========================
+   오류 메시지
+========================= */
+
+.form-error {
+  margin:
+    10px
+    0
+    14px;
+
+  padding:
+    11px
+    13px;
+
+  border-radius: 10px;
+
+  background: #fff0eb;
+
+  color: #d4512c;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  line-height: 1.5;
+}
+
+
+/* =========================
+   개인정보 제출 버튼
+========================= */
+
+.info-submit-button {
+  width: 100%;
+
+  height: 54px;
+
+  margin-top: 10px;
+
+  border: 0;
+
+  border-radius: 14px;
+
+  background: #f26a21;
+
+  color: white;
+
+  font-size: 16px;
+
+  font-weight: 900;
+
+  letter-spacing: -0.5px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 7px 18px
+    rgba(242, 106, 33, 0.22);
+
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.info-submit-button:hover {
+  transform: translateY(-1px);
+}
+
+.info-submit-button:active {
+  transform: scale(0.985);
+}
+
+.info-submit-button:disabled {
+  opacity: 0.55;
+
+  cursor: default;
+
+  transform: none;
+}
+
+
+/* =========================
    설문 화면
-   웜그레이 적용
 ========================= */
 
 .survey-screen {
@@ -248,9 +609,6 @@ button {
   background: #F2EFEA;
 }
 
-
-/* 설문 화면 등장 */
-
 .survey-screen.show-screen {
   opacity: 1;
 
@@ -261,7 +619,7 @@ button {
 
 
 /* =========================
-   설문 전체 영역
+   설문 컨테이너
 ========================= */
 
 .survey-container {
@@ -290,7 +648,8 @@ button {
 .survey-header {
   display: flex;
 
-  justify-content: space-between;
+  justify-content:
+    space-between;
 
   align-items: center;
 
@@ -322,7 +681,6 @@ button {
   background: #DED9D2;
 }
 
-
 .progress-bar {
   width: 10%;
 
@@ -332,12 +690,13 @@ button {
 
   background: #f26a21;
 
-  transition: width 0.5s ease;
+  transition:
+    width 0.5s ease;
 }
 
 
 /* =========================
-   질문 번호
+   질문
 ========================= */
 
 .question-number {
@@ -351,11 +710,6 @@ button {
 
   color: #f26a21;
 }
-
-
-/* =========================
-   질문 제목
-========================= */
 
 .question-area h2 {
   margin-bottom: 42px;
@@ -384,7 +738,6 @@ button {
   gap: 12px;
 }
 
-
 .answers button {
   width: 100%;
 
@@ -392,7 +745,9 @@ button {
 
   text-align: left;
 
-  border: 1px solid #DED9D2;
+  border:
+    1px solid
+    #DED9D2;
 
   border-radius: 14px;
 
@@ -417,9 +772,6 @@ button {
     box-shadow 0.2s ease;
 }
 
-
-/* 선택지 마우스 효과 */
-
 .answers button:hover {
   border-color: #f26a21;
 
@@ -432,11 +784,23 @@ button {
     rgba(242, 106, 33, 0.10);
 }
 
-
-/* 선택지 클릭 효과 */
-
 .answers button:active {
   transform: scale(0.985);
+}
+
+
+/* =========================
+   저장 성공 표시
+========================= */
+
+.save-complete {
+  margin-top: 25px;
+
+  color: #8d877f;
+
+  font-size: 11px;
+
+  text-align: center;
 }
 
 
@@ -450,7 +814,6 @@ button {
     align-items: stretch;
   }
 
-
   .cover-container {
     width: 100%;
 
@@ -460,9 +823,6 @@ button {
     height: 100dvh;
   }
 
-
-  /* 진단 시작 버튼 */
-
   .start-button-area {
     top: 51%;
 
@@ -470,7 +830,6 @@ button {
 
     max-width: 260px;
   }
-
 
   .cover-start-button {
     padding: 11px 14px;
@@ -485,6 +844,24 @@ button {
   }
 
 
+  /* 개인정보 */
+
+  .info-container {
+    padding:
+      38px
+      22px
+      45px;
+  }
+
+  .info-top {
+    margin-bottom: 32px;
+  }
+
+  .info-top h1 {
+    font-size: 28px;
+  }
+
+
   /* 설문 */
 
   .survey-container {
@@ -494,11 +871,9 @@ button {
       40px;
   }
 
-
   .progress {
     margin-bottom: 58px;
   }
-
 
   .question-area h2 {
     font-size: 25px;
@@ -520,7 +895,6 @@ button {
     max-width: 230px;
   }
 
-
   .cover-start-button {
     padding: 10px 12px;
 
@@ -533,6 +907,12 @@ button {
     letter-spacing: -0.7px;
   }
 
+  .info-container {
+    padding:
+      32px
+      18px
+      40px;
+  }
 
   .question-area h2 {
     font-size: 23px;
