@@ -26,7 +26,6 @@ body {
     sans-serif;
 
   background: #ef5b00;
-
   color: #222;
 
   overflow-x: hidden;
@@ -73,13 +72,12 @@ input {
 
   transition:
     opacity 0.65s ease,
-    transform 0.65s
-      cubic-bezier(
-        0.22,
-        1,
-        0.36,
-        1
-      );
+    transform 0.65s cubic-bezier(
+      0.22,
+      1,
+      0.36,
+      1
+    );
 }
 
 
@@ -93,13 +91,11 @@ input {
   display: flex;
 
   justify-content: center;
-
   align-items: center;
 
   opacity: 1;
 
-  transform:
-    translateY(0);
+  transform: translateY(0);
 
   background: #ef5b00;
 }
@@ -107,8 +103,7 @@ input {
 .cover-screen.hide-screen {
   opacity: 0;
 
-  transform:
-    translateY(-35px);
+  transform: translateY(-35px);
 
   pointer-events: none;
 }
@@ -118,7 +113,6 @@ input {
   position: relative;
 
   width: 100%;
-
   max-width: 520px;
 
   height: 100vh;
@@ -135,8 +129,7 @@ input {
 .cover-image {
   object-fit: cover;
 
-  object-position:
-    center center;
+  object-position: center center;
 }
 
 
@@ -152,14 +145,9 @@ input {
   left: 50%;
   top: 51%;
 
-  transform:
-    translate(
-      -50%,
-      -50%
-    );
+  transform: translate(-50%, -50%);
 
   width: 56%;
-
   max-width: 260px;
 }
 
@@ -167,21 +155,18 @@ input {
 .cover-start-button {
   width: 100%;
 
-  padding:
-    11px
-    14px;
+  padding: 11px 14px;
 
   border: 0;
 
   border-radius: 13px;
 
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.98
-    );
+  background: rgba(
+    255,
+    255,
+    255,
+    0.98
+  );
 
   color: #ed5b00;
 
@@ -189,17 +174,14 @@ input {
 
   font-weight: 900;
 
-  letter-spacing:
-    -0.8px;
+  letter-spacing: -0.8px;
 
   line-height: 1.4;
 
   cursor: pointer;
 
   box-shadow:
-    0
-    6px
-    17px
+    0 6px 17px
     rgba(
       89,
       35,
@@ -208,10 +190,7 @@ input {
     );
 
   text-shadow:
-    0
-    0
-    0.3px
-    currentColor;
+    0 0 0.3px currentColor;
 
   transition:
     transform 0.2s ease,
@@ -220,13 +199,10 @@ input {
 
 
 .cover-start-button:hover {
-  transform:
-    translateY(-2px);
+  transform: translateY(-2px);
 
   box-shadow:
-    0
-    9px
-    21px
+    0 9px 21px
     rgba(
       89,
       35,
@@ -237,8 +213,7 @@ input {
 
 
 .cover-start-button:active {
-  transform:
-    scale(0.96);
+  transform: scale(0.96);
 }
 
 
@@ -251,8 +226,7 @@ input {
 
   opacity: 0;
 
-  transform:
-    translateY(45px);
+  transform: translateY(45px);
 
   pointer-events: none;
 
@@ -263,8 +237,7 @@ input {
 .info-screen.show-screen {
   opacity: 1;
 
-  transform:
-    translateY(0);
+  transform: translateY(0);
 
   pointer-events: auto;
 }
@@ -273,8 +246,7 @@ input {
 .info-screen.hide-info-screen {
   opacity: 0;
 
-  transform:
-    translateY(-35px);
+  transform: translateY(-35px);
 
   pointer-events: none;
 }
@@ -313,8 +285,7 @@ input {
 
   font-weight: 900;
 
-  letter-spacing:
-    1.4px;
+  letter-spacing: 1.4px;
 }
 
 
@@ -327,8 +298,7 @@ input {
 
   font-weight: 900;
 
-  letter-spacing:
-    -1.3px;
+  letter-spacing: -1.3px;
 }
 
 
@@ -373,9 +343,7 @@ input {
 
   height: 54px;
 
-  padding:
-    0
-    16px;
+  padding: 0 16px;
 
   border:
     1px solid
@@ -407,14 +375,10 @@ input {
 
 
 .form-group input:focus {
-  border-color:
-    #f26a21;
+  border-color: #f26a21;
 
   box-shadow:
-    0
-    0
-    0
-    3px
+    0 0 0 3px
     rgba(
       242,
       106,
@@ -441,13 +405,12 @@ input {
 
   border-radius: 14px;
 
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.55
-    );
+  background: rgba(
+    255,
+    255,
+    255,
+    0.55
+  );
 
   color: #625c56;
 
@@ -497,7 +460,7 @@ input {
 
 
 /* =========================================
-   동의
+   개인정보 동의
 ========================================= */
 
 .consent-row {
@@ -536,7 +499,6 @@ input {
   flex-shrink: 0;
 
   width: 22px;
-
   height: 22px;
 
   border:
@@ -553,37 +515,25 @@ input {
 }
 
 
-.consent-row
-input:checked
-+
-.custom-check {
-  border-color:
-    #f26a21;
+.consent-row input:checked + .custom-check {
+  border-color: #f26a21;
 
-  background:
-    #f26a21;
+  background: #f26a21;
 }
 
 
-.consent-row
-input:checked
-+
-.custom-check::after {
+.consent-row input:checked + .custom-check::after {
   content: "";
 
   position: absolute;
 
   left: 6px;
-
   top: 2px;
 
   width: 6px;
-
   height: 11px;
 
-  border:
-    solid
-    white;
+  border: solid white;
 
   border-width:
     0
@@ -591,13 +541,12 @@ input:checked
     2px
     0;
 
-  transform:
-    rotate(45deg);
+  transform: rotate(45deg);
 }
 
 
 /* =========================================
-   오류
+   개인정보 오류
 ========================================= */
 
 .form-error {
@@ -612,8 +561,7 @@ input:checked
 
   border-radius: 10px;
 
-  background:
-    #fff0eb;
+  background: #fff0eb;
 
   color: #d4512c;
 
@@ -640,8 +588,7 @@ input:checked
 
   border-radius: 14px;
 
-  background:
-    #f26a21;
+  background: #f26a21;
 
   color: white;
 
@@ -649,15 +596,12 @@ input:checked
 
   font-weight: 900;
 
-  letter-spacing:
-    -0.5px;
+  letter-spacing: -0.5px;
 
   cursor: pointer;
 
   box-shadow:
-    0
-    7px
-    18px
+    0 7px 18px
     rgba(
       242,
       106,
@@ -672,14 +616,12 @@ input:checked
 
 
 .info-submit-button:hover {
-  transform:
-    translateY(-1px);
+  transform: translateY(-1px);
 }
 
 
 .info-submit-button:active {
-  transform:
-    scale(0.985);
+  transform: scale(0.985);
 }
 
 
@@ -701,8 +643,7 @@ input:checked
 
   opacity: 0;
 
-  transform:
-    translateY(45px);
+  transform: translateY(45px);
 
   pointer-events: none;
 
@@ -713,8 +654,7 @@ input:checked
 .survey-screen.show-screen {
   opacity: 1;
 
-  transform:
-    translateY(0);
+  transform: translateY(0);
 
   pointer-events: auto;
 }
@@ -746,8 +686,7 @@ input:checked
 .survey-header {
   display: flex;
 
-  justify-content:
-    space-between;
+  justify-content: space-between;
 
   align-items: center;
 
@@ -785,8 +724,7 @@ input:checked
 
   border-radius: 999px;
 
-  background:
-    #f26a21;
+  background: #f26a21;
 
   transition:
     width
@@ -828,40 +766,32 @@ input:checked
 
 
 @keyframes questionIn {
-
   from {
     opacity: 0;
 
-    transform:
-      translateX(24px);
+    transform: translateX(24px);
   }
 
   to {
     opacity: 1;
 
-    transform:
-      translateX(0);
+    transform: translateX(0);
   }
-
 }
 
 
 @keyframes questionOut {
-
   from {
     opacity: 1;
 
-    transform:
-      translateX(0);
+    transform: translateX(0);
   }
 
   to {
     opacity: 0;
 
-    transform:
-      translateX(-24px);
+    transform: translateX(-24px);
   }
-
 }
 
 
@@ -878,8 +808,7 @@ input:checked
 
   font-weight: 900;
 
-  letter-spacing:
-    1.5px;
+  letter-spacing: 1.5px;
 }
 
 
@@ -894,8 +823,7 @@ input:checked
 
   font-weight: 900;
 
-  letter-spacing:
-    -1.1px;
+  letter-spacing: -1.1px;
 
   word-break: keep-all;
 }
@@ -957,9 +885,7 @@ input:checked
   cursor: pointer;
 
   box-shadow:
-    0
-    3px
-    10px
+    0 3px 10px
     rgba(
       70,
       55,
@@ -976,19 +902,14 @@ input:checked
 
 
 .answers button:hover {
-  border-color:
-    #f26a21;
+  border-color: #f26a21;
 
-  background:
-    #fffaf6;
+  background: #fffaf6;
 
-  transform:
-    translateY(-1px);
+  transform: translateY(-1px);
 
   box-shadow:
-    0
-    6px
-    16px
+    0 6px 16px
     rgba(
       242,
       106,
@@ -999,20 +920,14 @@ input:checked
 
 
 .answers button.selected {
-  border-color:
-    #f26a21;
+  border-color: #f26a21;
 
-  background:
-    #fff4ec;
+  background: #fff4ec;
 
-  transform:
-    scale(0.985);
+  transform: scale(0.985);
 
   box-shadow:
-    0
-    0
-    0
-    2px
+    0 0 0 2px
     rgba(
       242,
       106,
@@ -1037,13 +952,11 @@ input:checked
   flex-shrink: 0;
 
   width: 30px;
-
   height: 30px;
 
   border-radius: 50%;
 
-  background:
-    #F2EFEA;
+  background: #F2EFEA;
 
   color: #79726b;
 
@@ -1057,11 +970,8 @@ input:checked
 }
 
 
-.answers
-button.selected
-.option-number {
-  background:
-    #f26a21;
+.answers button.selected .option-number {
+  background: #f26a21;
 
   color: white;
 }
@@ -1099,8 +1009,7 @@ button.selected
 
   background: #F2EFEA;
 
-  transform:
-    scale(1.02);
+  transform: scale(1.02);
 }
 
 
@@ -1109,8 +1018,7 @@ button.selected
 
   pointer-events: auto;
 
-  transform:
-    scale(1);
+  transform: scale(1);
 }
 
 
@@ -1141,18 +1049,14 @@ button.selected
 
 
 @keyframes analysisFloat {
-
   0%,
   100% {
-    transform:
-      translateY(0);
+    transform: translateY(0);
   }
 
   50% {
-    transform:
-      translateY(-7px);
+    transform: translateY(-7px);
   }
-
 }
 
 
@@ -1178,8 +1082,7 @@ button.selected
 
   font-weight: 900;
 
-  letter-spacing:
-    -1px;
+  letter-spacing: -1px;
 }
 
 
@@ -1196,13 +1099,11 @@ button.selected
 
 .analysis-dots span {
   width: 8px;
-
   height: 8px;
 
   border-radius: 50%;
 
-  background:
-    #f26a21;
+  background: #f26a21;
 
   animation:
     dotPulse
@@ -1211,38 +1112,30 @@ button.selected
 }
 
 
-.analysis-dots
-span:nth-child(2) {
-  animation-delay:
-    0.18s;
+.analysis-dots span:nth-child(2) {
+  animation-delay: 0.18s;
 }
 
 
-.analysis-dots
-span:nth-child(3) {
-  animation-delay:
-    0.36s;
+.analysis-dots span:nth-child(3) {
+  animation-delay: 0.36s;
 }
 
 
 @keyframes dotPulse {
-
   0%,
   60%,
   100% {
     opacity: 0.25;
 
-    transform:
-      translateY(0);
+    transform: translateY(0);
   }
 
   30% {
     opacity: 1;
 
-    transform:
-      translateY(-5px);
+    transform: translateY(-5px);
   }
-
 }
 
 
@@ -1255,21 +1148,18 @@ span:nth-child(3) {
 
   opacity: 0;
 
-  transform:
-    translateY(30px);
+  transform: translateY(30px);
 
   pointer-events: none;
 
-  background:
-    #F2EFEA;
+  background: #F2EFEA;
 }
 
 
 .result-screen.show-result {
   opacity: 1;
 
-  transform:
-    translateY(0);
+  transform: translateY(0);
 
   pointer-events: auto;
 }
@@ -1280,11 +1170,8 @@ span:nth-child(3) {
 
   max-width: 520px;
 
-  min-height:
-    100vh;
-
-  min-height:
-    100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
 
   margin: 0 auto;
 
@@ -1293,8 +1180,7 @@ span:nth-child(3) {
     24px
     55px;
 
-  background:
-    #F2EFEA;
+  background: #F2EFEA;
 }
 
 
@@ -1352,8 +1238,7 @@ span:nth-child(3) {
 
   font-weight: 900;
 
-  letter-spacing:
-    -1.4px;
+  letter-spacing: -1.4px;
 }
 
 
@@ -1380,9 +1265,7 @@ span:nth-child(3) {
 .result-description {
   max-width: 400px;
 
-  margin:
-    0
-    auto;
+  margin: 0 auto;
 
   color: #706961;
 
@@ -1405,17 +1288,14 @@ span:nth-child(3) {
 
   border-radius: 16px;
 
-  background:
-    #fff;
+  background: #fff;
 
   border:
     1px solid
     #e3dcd5;
 
   box-shadow:
-    0
-    5px
-    16px
+    0 5px 16px
     rgba(
       67,
       51,
@@ -1462,13 +1342,12 @@ span:nth-child(3) {
 
   border-radius: 15px;
 
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.55
-    );
+  background: rgba(
+    255,
+    255,
+    255,
+    0.55
+  );
 
   border:
     1px solid
@@ -1512,7 +1391,7 @@ span:nth-child(3) {
 
 
 /* =========================================
-   점수
+   결과 점수
 ========================================= */
 
 .score-card {
@@ -1556,8 +1435,7 @@ span:nth-child(3) {
 
   align-items: center;
 
-  justify-content:
-    space-between;
+  justify-content: space-between;
 
   margin-bottom: 7px;
 
@@ -1585,8 +1463,7 @@ span:nth-child(3) {
 
   border-radius: 999px;
 
-  background:
-    #eee9e4;
+  background: #eee9e4;
 }
 
 
@@ -1595,8 +1472,7 @@ span:nth-child(3) {
 
   border-radius: 999px;
 
-  background:
-    #f26a21;
+  background: #f26a21;
 
   transition:
     width
@@ -1621,8 +1497,7 @@ span:nth-child(3) {
 
   border-radius: 10px;
 
-  background:
-    #fff0eb;
+  background: #fff0eb;
 
   color: #d4512c;
 
@@ -1649,8 +1524,7 @@ span:nth-child(3) {
 
   border-radius: 14px;
 
-  background:
-    #f26a21;
+  background: #f26a21;
 
   color: white;
 
@@ -1661,9 +1535,7 @@ span:nth-child(3) {
   cursor: pointer;
 
   box-shadow:
-    0
-    7px
-    18px
+    0 7px 18px
     rgba(
       242,
       106,
@@ -1673,17 +1545,576 @@ span:nth-child(3) {
 }
 
 
-/* =========================================
-   모바일
-========================================= */
+/* =========================================================
+   태블릿 전용
+   601px ~ 1100px
+
+   휴대폰보다 전체적으로 크게 표시
+========================================================= */
+
+@media (
+  min-width: 601px
+) and (
+  max-width: 1100px
+) {
+
+  /* =====================================
+     태블릿 표지
+  ===================================== */
+
+  .cover-screen {
+    align-items: stretch;
+  }
+
+
+  .cover-container {
+    width: 100%;
+
+    max-width: none;
+
+    height: 100vh;
+    height: 100dvh;
+  }
+
+
+  .cover-image {
+    object-fit: cover;
+
+    object-position: center center;
+  }
+
+
+  /*
+     태블릿에서는 시작 버튼도
+     휴대폰보다 크게
+  */
+
+  .start-button-area {
+    top: 51%;
+
+    width: 48%;
+
+    max-width: 360px;
+  }
+
+
+  .cover-start-button {
+    padding:
+      16px
+      22px;
+
+    border-radius: 17px;
+
+    font-size: 21px;
+
+    font-weight: 900;
+
+    letter-spacing: -1px;
+
+    box-shadow:
+      0 9px 25px
+      rgba(
+        89,
+        35,
+        0,
+        0.20
+      );
+  }
+
+
+  /* =====================================
+     태블릿 개인정보
+  ===================================== */
+
+  .info-container {
+    max-width: 720px;
+
+    padding:
+      62px
+      46px
+      70px;
+  }
+
+
+  .info-top {
+    margin-bottom: 46px;
+  }
+
+
+  .info-label {
+    margin-bottom: 15px;
+
+    font-size: 14px;
+
+    letter-spacing: 1.7px;
+  }
+
+
+  .info-top h1 {
+    margin-bottom: 15px;
+
+    font-size: 39px;
+
+    letter-spacing: -1.7px;
+  }
+
+
+  .info-description {
+    font-size: 18px;
+
+    line-height: 1.65;
+  }
+
+
+  .form-group {
+    margin-bottom: 25px;
+  }
+
+
+  .form-group label {
+    margin-bottom: 11px;
+
+    font-size: 17px;
+  }
+
+
+  .form-group input {
+    height: 64px;
+
+    padding:
+      0
+      20px;
+
+    border-radius: 16px;
+
+    font-size: 18px;
+  }
+
+
+  .privacy-box {
+    margin-top: 36px;
+
+    margin-bottom: 23px;
+
+    padding: 26px;
+
+    border-radius: 17px;
+
+    font-size: 14px;
+
+    line-height: 1.7;
+  }
+
+
+  .privacy-title {
+    margin-bottom: 17px;
+
+    font-size: 17px;
+  }
+
+
+  .privacy-box p {
+    margin-bottom: 14px;
+  }
+
+
+  .consent-row {
+    gap: 13px;
+
+    margin-bottom: 20px;
+
+    font-size: 17px;
+  }
+
+
+  .custom-check {
+    width: 28px;
+    height: 28px;
+
+    border-radius: 7px;
+  }
+
+
+  .consent-row input:checked + .custom-check::after {
+    left: 8px;
+    top: 3px;
+
+    width: 7px;
+    height: 14px;
+
+    border-width:
+      0
+      3px
+      3px
+      0;
+  }
+
+
+  .form-error {
+    padding:
+      14px
+      16px;
+
+    font-size: 15px;
+  }
+
+
+  .info-submit-button {
+    height: 64px;
+
+    margin-top: 14px;
+
+    border-radius: 16px;
+
+    font-size: 19px;
+  }
+
+
+  /* =====================================
+     태블릿 설문
+  ===================================== */
+
+  .survey-container {
+    max-width: 740px;
+
+    padding:
+      46px
+      42px
+      70px;
+  }
+
+
+  .survey-header {
+    margin-bottom: 21px;
+
+    font-size: 16px;
+  }
+
+
+  .progress {
+    height: 6px;
+
+    margin-bottom: 72px;
+  }
+
+
+  .question-number {
+    margin-bottom: 19px;
+
+    font-size: 14px;
+
+    letter-spacing: 1.8px;
+  }
+
+
+  .question-card h2 {
+    margin-bottom: 48px;
+
+    font-size: 34px;
+
+    line-height: 1.45;
+
+    letter-spacing: -1.5px;
+  }
+
+
+  .tie-description {
+    margin-top: -28px;
+
+    margin-bottom: 38px;
+
+    font-size: 17px;
+  }
+
+
+  /* =====================================
+     태블릿 선택지
+  ===================================== */
+
+  .answers {
+    gap: 16px;
+  }
+
+
+  .answers button {
+    gap: 18px;
+
+    min-height: 78px;
+
+    padding:
+      18px
+      22px;
+
+    border-radius: 17px;
+
+    border-width: 1px;
+
+    box-shadow:
+      0 4px 13px
+      rgba(
+        70,
+        55,
+        40,
+        0.05
+      );
+  }
+
+
+  .option-number {
+    width: 38px;
+    height: 38px;
+
+    font-size: 16px;
+  }
+
+
+  .option-text {
+    font-size: 19px;
+
+    line-height: 1.5;
+
+    font-weight: 700;
+  }
+
+
+  /* =====================================
+     태블릿 분석 화면
+  ===================================== */
+
+  .analyzing-content {
+    max-width: 600px;
+
+    padding:
+      50px
+      40px;
+  }
+
+
+  .analysis-icon {
+    margin-bottom: 27px;
+
+    font-size: 58px;
+  }
+
+
+  .analysis-small {
+    margin-bottom: 15px;
+
+    font-size: 13px;
+
+    letter-spacing: 2.3px;
+  }
+
+
+  .analyzing-content h2 {
+    font-size: 32px;
+
+    line-height: 1.5;
+  }
+
+
+  .analysis-dots {
+    gap: 10px;
+
+    margin-top: 35px;
+  }
+
+
+  .analysis-dots span {
+    width: 10px;
+    height: 10px;
+  }
+
+
+  /* =====================================
+     태블릿 결과
+  ===================================== */
+
+  .result-container {
+    max-width: 740px;
+
+    padding:
+      58px
+      44px
+      75px;
+  }
+
+
+  .result-small {
+    margin-bottom: 28px;
+
+    font-size: 13px;
+
+    letter-spacing: 2.3px;
+  }
+
+
+  .result-intro {
+    margin-bottom: 11px;
+
+    font-size: 17px;
+  }
+
+
+  .result-type {
+    gap: 12px;
+
+    margin-bottom: 23px;
+  }
+
+
+  .result-emoji {
+    font-size: 41px;
+  }
+
+
+  .result-type h1 {
+    font-size: 43px;
+
+    letter-spacing: -1.8px;
+  }
+
+
+  .result-title {
+    max-width: 580px;
+
+    margin-bottom: 18px;
+
+    font-size: 24px;
+
+    line-height: 1.55;
+  }
+
+
+  .result-description {
+    max-width: 580px;
+
+    font-size: 17px;
+
+    line-height: 1.75;
+  }
+
+
+  .result-recommendation {
+    margin-top: 37px;
+
+    padding: 27px;
+
+    border-radius: 19px;
+  }
+
+
+  .result-recommendation span {
+    margin-bottom: 12px;
+
+    font-size: 16px;
+  }
+
+
+  .result-recommendation p {
+    font-size: 18px;
+
+    line-height: 1.7;
+  }
+
+
+  .secondary-result {
+    margin-top: 18px;
+
+    padding: 23px;
+
+    border-radius: 18px;
+  }
+
+
+  .secondary-result span {
+    margin-bottom: 10px;
+
+    font-size: 13px;
+  }
+
+
+  .secondary-result strong {
+    margin-bottom: 8px;
+
+    font-size: 20px;
+  }
+
+
+  .secondary-result p {
+    font-size: 16px;
+
+    line-height: 1.6;
+  }
+
+
+  .score-card {
+    margin-top: 32px;
+
+    padding: 27px;
+
+    border-radius: 19px;
+  }
+
+
+  .score-card h3 {
+    margin-bottom: 25px;
+
+    font-size: 20px;
+  }
+
+
+  .score-row {
+    margin-bottom: 23px;
+  }
+
+
+  .score-label {
+    margin-bottom: 9px;
+
+    font-size: 15px;
+  }
+
+
+  .score-track {
+    height: 9px;
+  }
+
+
+  .result-save-error {
+    margin-top: 22px;
+
+    padding: 15px;
+
+    font-size: 14px;
+  }
+
+
+  .restart-button {
+    height: 64px;
+
+    margin-top: 30px;
+
+    border-radius: 17px;
+
+    font-size: 19px;
+  }
+}
+
+
+/* =========================================================
+   휴대폰
+   600px 이하
+
+   기존 휴대폰 디자인 유지
+========================================================= */
 
 @media (
   max-width: 600px
 ) {
 
   .cover-screen {
-    align-items:
-      stretch;
+    align-items: stretch;
   }
 
 
@@ -1711,16 +2142,17 @@ span:nth-child(3) {
       11px
       14px;
 
-    border-radius:
-      13px;
+    border-radius: 13px;
 
-    font-size:
-      16px;
+    font-size: 16px;
 
-    font-weight:
-      900;
+    font-weight: 900;
+
+    letter-spacing: -0.8px;
   }
 
+
+  /* 개인정보 */
 
   .info-container {
     padding:
@@ -1731,16 +2163,16 @@ span:nth-child(3) {
 
 
   .info-top {
-    margin-bottom:
-      32px;
+    margin-bottom: 32px;
   }
 
 
   .info-top h1 {
-    font-size:
-      28px;
+    font-size: 28px;
   }
 
+
+  /* 설문 */
 
   .survey-container {
     padding:
@@ -1751,20 +2183,17 @@ span:nth-child(3) {
 
 
   .progress {
-    margin-bottom:
-      52px;
+    margin-bottom: 52px;
   }
 
 
   .question-card h2 {
-    font-size:
-      25px;
+    font-size: 25px;
   }
 
 
   .answers button {
-    min-height:
-      60px;
+    min-height: 60px;
 
     padding:
       14px
@@ -1773,10 +2202,11 @@ span:nth-child(3) {
 
 
   .option-text {
-    font-size:
-      14px;
+    font-size: 14px;
   }
 
+
+  /* 결과 */
 
   .result-container {
     padding:
@@ -1787,16 +2217,14 @@ span:nth-child(3) {
 
 
   .result-type h1 {
-    font-size:
-      31px;
+    font-size: 31px;
   }
-
 }
 
 
-/* =========================================
+/* =========================================================
    작은 스마트폰
-========================================= */
+========================================================= */
 
 @media (
   max-width: 380px
@@ -1805,8 +2233,7 @@ span:nth-child(3) {
   .start-button-area {
     width: 60%;
 
-    max-width:
-      230px;
+    max-width: 230px;
   }
 
 
@@ -1815,8 +2242,7 @@ span:nth-child(3) {
       10px
       12px;
 
-    font-size:
-      15px;
+    font-size: 15px;
   }
 
 
@@ -1837,14 +2263,12 @@ span:nth-child(3) {
 
 
   .question-card h2 {
-    font-size:
-      22px;
+    font-size: 22px;
   }
 
 
   .option-text {
-    font-size:
-      13px;
+    font-size: 13px;
   }
 
 
@@ -1857,8 +2281,6 @@ span:nth-child(3) {
 
 
   .result-type h1 {
-    font-size:
-      28px;
+    font-size: 28px;
   }
-
 }
