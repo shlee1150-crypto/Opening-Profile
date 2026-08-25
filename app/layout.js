@@ -2,13 +2,17 @@ import "./globals.css";
 
 export const metadata = {
   title: "Opening Profile",
-  description: "개원성향진단",
+  description: "오스템임플란트 개원성향진단",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({
+  children,
+}) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        {children}
+      </body>
     </html>
   );
 }
