@@ -1,3 +1,7 @@
+/* =========================
+   기본 설정
+========================= */
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,7 +15,11 @@ body {
 }
 
 body {
-  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-family:
+    Arial,
+    "Noto Sans KR",
+    sans-serif;
+
   background: #f4f4f4;
   color: #222;
 }
@@ -20,148 +28,279 @@ button {
   font-family: inherit;
 }
 
+
+/* =========================
+   전체 앱
+========================= */
+
 .app {
   position: relative;
+
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
+
   overflow: hidden;
+
   background: #f4f4f4;
 }
 
+
+/* =========================
+   공통 화면
+========================= */
+
 .screen {
   position: absolute;
+
   top: 0;
   left: 0;
 
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
 
   transition:
     opacity 0.7s ease,
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    transform 0.7s cubic-bezier(
+      0.22,
+      1,
+      0.36,
+      1
+    );
 }
 
-/* ----------------
-   표지
----------------- */
+
+/* =========================
+   표지 화면
+========================= */
 
 .cover-screen {
   z-index: 2;
 
   display: flex;
-  align-items: stretch;
+
   justify-content: center;
+  align-items: center;
 
   opacity: 1;
+
   transform: translateY(0);
 
-  background: #f4f4f4;
+  background: #ef5b00;
 }
+
+
+/* 시작하면 표지 사라짐 */
 
 .cover-screen.hide-screen {
   opacity: 0;
-  transform: translateY(-40px);
+
+  transform: translateY(-35px);
+
   pointer-events: none;
 }
 
-.cover-image-wrap {
+
+/* =========================
+   표지 이미지 영역
+========================= */
+
+.cover-container {
   position: relative;
+
   width: 100%;
-  max-width: 430px;
-  min-height: 100vh;
-  margin: 0 auto;
+  max-width: 520px;
+
+  height: 100vh;
+  height: 100dvh;
+
   overflow: hidden;
-  background: #f26a21;
+
+  background: #ef5b00;
 }
+
+
+/* 이미지 절대 자르지 않음 */
 
 .cover-image {
-  object-fit: cover;
-  object-position: center top;
+  object-fit: contain;
+
+  object-position:
+    center center;
 }
 
-.cover-overlay {
+
+/* =========================
+   진단 시작 버튼 영역
+========================= */
+
+.start-button-area {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 36px;
-  padding: 0 24px;
+
+  z-index: 10;
+
+  left: 50%;
+
+  /*
+    핵심 위치
+
+    상단 글씨와
+    캐릭터 사이의 공간
+  */
+
+  top: 51%;
+
+  transform:
+    translate(-50%, -50%);
+
+  width: 82%;
+  max-width: 390px;
 }
+
+
+/* 버튼 */
 
 .cover-start-button {
   width: 100%;
-  padding: 18px;
+
+  padding: 18px 20px;
 
   border: 0;
-  border-radius: 16px;
 
-  background: #ffffff;
-  color: #f26a21;
+  border-radius: 18px;
+
+  background:
+    rgba(255, 255, 255, 0.97);
+
+  color: #f15a00;
 
   font-size: 18px;
+
   font-weight: 800;
+
+  letter-spacing: -0.4px;
 
   cursor: pointer;
 
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 8px 24px
+    rgba(89, 35, 0, 0.20);
+
+  backdrop-filter: blur(8px);
+
+  -webkit-backdrop-filter:
+    blur(8px);
 
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
-    opacity 0.2s ease;
+    background 0.2s ease;
 }
+
+
+/* PC 마우스 오버 */
 
 .cover-start-button:hover {
-  transform: translateY(-2px);
+  transform:
+    translateY(-3px);
+
+  box-shadow:
+    0 12px 30px
+    rgba(89, 35, 0, 0.25);
 }
+
+
+/* 누르는 효과 */
 
 .cover-start-button:active {
-  transform: scale(0.98);
+  transform:
+    scale(0.97);
 }
 
-/* ----------------
-   설문
----------------- */
+
+/* =========================
+   설문 화면
+========================= */
 
 .survey-screen {
   z-index: 1;
 
   opacity: 0;
-  transform: translateY(50px);
+
+  transform:
+    translateY(50px);
 
   pointer-events: none;
+
   background: white;
 }
 
+
+/* 설문 등장 */
+
 .survey-screen.show-screen {
   opacity: 1;
-  transform: translateY(0);
+
+  transform:
+    translateY(0);
 
   pointer-events: auto;
 }
 
+
+/* =========================
+   설문 전체 영역
+========================= */
+
 .survey-container {
   width: 100%;
+
   max-width: 520px;
+
   min-height: 100vh;
+  min-height: 100dvh;
 
   margin: 0 auto;
-  padding: 32px 24px 50px;
+
+  padding:
+    32px
+    24px
+    50px;
+
+  background: white;
 }
+
+
+/* =========================
+   설문 상단
+========================= */
 
 .survey-header {
   display: flex;
-  justify-content: space-between;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
 
   margin-bottom: 16px;
 
   font-size: 13px;
+
   font-weight: 700;
 
   color: #888;
 }
 
+
+/* =========================
+   진행률
+========================= */
+
 .progress {
   width: 100%;
+
   height: 4px;
 
   margin-bottom: 65px;
@@ -173,53 +312,83 @@ button {
   background: #eeeeee;
 }
 
+
 .progress-bar {
   width: 10%;
+
   height: 100%;
 
   border-radius: 999px;
 
   background: #f26a21;
 
-  transition: width 0.5s ease;
+  transition:
+    width 0.5s ease;
 }
+
+
+/* =========================
+   질문
+========================= */
 
 .question-number {
   margin-bottom: 15px;
 
   font-size: 12px;
+
   font-weight: 800;
+
   letter-spacing: 1.5px;
 
   color: #f26a21;
 }
 
+
 .question-area h2 {
   margin-bottom: 42px;
 
   font-size: 27px;
+
   line-height: 1.45;
+
   letter-spacing: -1px;
+
+  word-break: keep-all;
 }
+
+
+/* =========================
+   선택지
+========================= */
 
 .answers {
   display: flex;
+
   flex-direction: column;
+
   gap: 12px;
 }
 
+
 .answers button {
   width: 100%;
+
   padding: 19px 20px;
 
   text-align: left;
 
-  border: 1px solid #e7e7e7;
+  border:
+    1px solid
+    #e7e7e7;
+
   border-radius: 14px;
 
   background: white;
 
+  color: #222;
+
   font-size: 16px;
+
   font-weight: 600;
 
   cursor: pointer;
@@ -227,33 +396,116 @@ button {
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
+
 
 .answers button:hover {
-  border-color: #f26a21;
-  background: #fff8f4;
-  transform: translateY(-1px);
+  border-color:
+    #f26a21;
+
+  background:
+    #fff8f4;
+
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 5px 14px
+    rgba(242, 106, 33, 0.08);
 }
 
-/* 모바일 */
+
+.answers button:active {
+  transform:
+    scale(0.985);
+}
+
+
+/* =========================
+   모바일
+========================= */
 
 @media (max-width: 600px) {
-  .cover-overlay {
-    bottom: 28px;
-    padding: 0 20px;
+
+  .cover-container {
+    max-width: 100%;
   }
+
+
+  /*
+    모바일에서도
+    글씨와 캐릭터 사이
+  */
+
+  .start-button-area {
+    top: 51%;
+
+    width: 78%;
+
+    max-width: 380px;
+  }
+
 
   .cover-start-button {
-    font-size: 17px;
-    padding: 17px;
+    padding:
+      17px
+      18px;
+
+    border-radius:
+      17px;
+
+    font-size:
+      17px;
   }
+
 
   .survey-container {
-    padding: 26px 22px 40px;
+    padding:
+      26px
+      22px
+      40px;
   }
 
+
+  .progress {
+    margin-bottom:
+      58px;
+  }
+
+
   .question-area h2 {
-    font-size: 25px;
+    font-size:
+      25px;
+  }
+}
+
+
+/* =========================
+   작은 스마트폰
+========================= */
+
+@media (max-width: 380px) {
+
+  .start-button-area {
+    top: 51%;
+
+    width: 82%;
+  }
+
+
+  .cover-start-button {
+    font-size:
+      16px;
+
+    padding:
+      16px;
+  }
+
+
+  .question-area h2 {
+    font-size:
+      23px;
   }
 }
