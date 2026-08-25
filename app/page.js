@@ -8,7 +8,6 @@ export default function Home() {
 
   return (
     <main className="app">
-
       {/* =========================
           첫 표지 화면
       ========================== */}
@@ -18,7 +17,6 @@ export default function Home() {
         }`}
       >
         <div className="cover-container">
-
           {/* 표지 이미지 */}
           <Image
             src="/cover.png"
@@ -38,10 +36,8 @@ export default function Home() {
               진단 시작하기
             </button>
           </div>
-
         </div>
       </section>
-
 
       {/* =========================
           설문 화면
@@ -52,21 +48,19 @@ export default function Home() {
         }`}
       >
         <div className="survey-container">
-
           {/* 상단 */}
           <div className="survey-header">
             <span>개원성향진단</span>
             <span>01 / 10</span>
           </div>
 
-          {/* 진행바 */}
+          {/* 진행률 */}
           <div className="progress">
             <div className="progress-bar" />
           </div>
 
           {/* 질문 */}
           <div className="question-area">
-
             <p className="question-number">
               QUESTION 01
             </p>
@@ -81,7 +75,6 @@ export default function Home() {
 
             {/* 선택지 */}
             <div className="answers">
-
               <button>
                 초기 투자비용
               </button>
@@ -97,14 +90,10 @@ export default function Home() {
               <button>
                 진료 효율성
               </button>
-
             </div>
-
           </div>
-
         </div>
       </section>
-
     </main>
   );
 }
