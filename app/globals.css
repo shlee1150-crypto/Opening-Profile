@@ -14,14 +14,20 @@ body {
   min-height: 100%;
 }
 
+html {
+  background: #ef5b00;
+}
+
 body {
   font-family:
     Arial,
     "Noto Sans KR",
     sans-serif;
 
-  background: #f4f4f4;
+  background: #ef5b00;
   color: #222;
+
+  overflow-x: hidden;
 }
 
 button {
@@ -42,7 +48,7 @@ button {
 
   overflow: hidden;
 
-  background: #f4f4f4;
+  background: #ef5b00;
 }
 
 
@@ -91,7 +97,8 @@ button {
 }
 
 
-/* 시작하면 표지 사라짐 */
+/* 시작 버튼을 누르면
+   표지가 위로 살짝 올라가며 사라짐 */
 
 .cover-screen.hide-screen {
   opacity: 0;
@@ -103,7 +110,7 @@ button {
 
 
 /* =========================
-   표지 이미지 영역
+   표지 이미지 컨테이너
 ========================= */
 
 .cover-container {
@@ -115,24 +122,30 @@ button {
   height: 100vh;
   height: 100dvh;
 
+  margin: 0 auto;
+
   overflow: hidden;
 
   background: #ef5b00;
 }
 
 
-/* 이미지 절대 자르지 않음 */
+/* =========================
+   표지 이미지
+
+   핵심 수정 부분
+   contain → cover
+========================= */
 
 .cover-image {
-  object-fit: contain;
+  object-fit: cover;
 
-  object-position:
-    center center;
+  object-position: center center;
 }
 
 
 /* =========================
-   진단 시작 버튼 영역
+   진단 시작 버튼 위치
 ========================= */
 
 .start-button-area {
@@ -141,25 +154,19 @@ button {
   z-index: 10;
 
   left: 50%;
-
-  /*
-    핵심 위치
-
-    상단 글씨와
-    캐릭터 사이의 공간
-  */
-
   top: 51%;
 
   transform:
     translate(-50%, -50%);
 
-  width: 82%;
+  width: 78%;
   max-width: 390px;
 }
 
 
-/* 버튼 */
+/* =========================
+   진단 시작 버튼
+========================= */
 
 .cover-start-button {
   width: 100%;
@@ -176,7 +183,6 @@ button {
   color: #f15a00;
 
   font-size: 18px;
-
   font-weight: 800;
 
   letter-spacing: -0.4px;
@@ -184,10 +190,11 @@ button {
   cursor: pointer;
 
   box-shadow:
-    0 8px 24px
-    rgba(89, 35, 0, 0.20);
+    0 9px 25px
+    rgba(89, 35, 0, 0.22);
 
-  backdrop-filter: blur(8px);
+  backdrop-filter:
+    blur(8px);
 
   -webkit-backdrop-filter:
     blur(8px);
@@ -206,12 +213,12 @@ button {
     translateY(-3px);
 
   box-shadow:
-    0 12px 30px
-    rgba(89, 35, 0, 0.25);
+    0 13px 30px
+    rgba(89, 35, 0, 0.27);
 }
 
 
-/* 누르는 효과 */
+/* 버튼을 누를 때 */
 
 .cover-start-button:active {
   transform:
@@ -237,7 +244,8 @@ button {
 }
 
 
-/* 설문 등장 */
+/* 표지가 사라진 후
+   설문 화면 등장 */
 
 .survey-screen.show-screen {
   opacity: 1;
@@ -255,7 +263,6 @@ button {
 
 .survey-container {
   width: 100%;
-
   max-width: 520px;
 
   min-height: 100vh;
@@ -287,7 +294,6 @@ button {
   margin-bottom: 16px;
 
   font-size: 13px;
-
   font-weight: 700;
 
   color: #888;
@@ -335,7 +341,6 @@ button {
   margin-bottom: 15px;
 
   font-size: 12px;
-
   font-weight: 800;
 
   letter-spacing: 1.5px;
@@ -388,7 +393,6 @@ button {
   color: #222;
 
   font-size: 16px;
-
   font-weight: 600;
 
   cursor: pointer;
@@ -424,19 +428,29 @@ button {
 
 
 /* =========================
-   모바일
+   태블릿 / 모바일
 ========================= */
 
 @media (max-width: 600px) {
 
+  .cover-screen {
+    align-items: stretch;
+  }
+
+
   .cover-container {
-    max-width: 100%;
+    width: 100%;
+
+    max-width: none;
+
+    height: 100vh;
+    height: 100dvh;
   }
 
 
   /*
-    모바일에서도
-    글씨와 캐릭터 사이
+     제목과 캐릭터 사이
+     버튼 위치
   */
 
   .start-button-area {
@@ -496,16 +510,13 @@ button {
 
 
   .cover-start-button {
-    font-size:
-      16px;
+    padding: 16px;
 
-    padding:
-      16px;
+    font-size: 16px;
   }
 
 
   .question-area h2 {
-    font-size:
-      23px;
+    font-size: 23px;
   }
 }
