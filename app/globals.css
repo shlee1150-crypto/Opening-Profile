@@ -20,8 +20,9 @@ html {
 
 body {
   font-family:
+    "Malgun Gothic",
+    "Apple SD Gothic Neo",
     Arial,
-    "Noto Sans KR",
     sans-serif;
 
   background: #ef5b00;
@@ -43,6 +44,7 @@ button {
   position: relative;
 
   width: 100%;
+
   min-height: 100vh;
   min-height: 100dvh;
 
@@ -63,6 +65,7 @@ button {
   left: 0;
 
   width: 100%;
+
   min-height: 100vh;
   min-height: 100dvh;
 
@@ -97,7 +100,7 @@ button {
 }
 
 
-/* 시작 버튼을 누르면
+/* 시작 버튼 누른 후
    표지가 위로 살짝 올라가며 사라짐 */
 
 .cover-screen.hide-screen {
@@ -110,7 +113,7 @@ button {
 
 
 /* =========================
-   표지 이미지 컨테이너
+   표지 이미지 영역
 ========================= */
 
 .cover-container {
@@ -132,9 +135,7 @@ button {
 
 /* =========================
    표지 이미지
-
-   핵심 수정 부분
-   contain → cover
+   화면을 꽉 채움
 ========================= */
 
 .cover-image {
@@ -156,11 +157,10 @@ button {
   left: 50%;
   top: 51%;
 
-  transform:
-    translate(-50%, -50%);
+  transform: translate(-50%, -50%);
 
-  width: 78%;
-  max-width: 390px;
+  width: 68%;
+  max-width: 320px;
 }
 
 
@@ -171,33 +171,36 @@ button {
 .cover-start-button {
   width: 100%;
 
-  padding: 18px 20px;
+  padding: 14px 16px;
 
   border: 0;
 
-  border-radius: 18px;
+  border-radius: 15px;
 
-  background:
-    rgba(255, 255, 255, 0.97);
+  background: rgba(255, 255, 255, 0.97);
 
   color: #f15a00;
 
-  font-size: 18px;
-  font-weight: 800;
+  font-family:
+    "Malgun Gothic",
+    "Apple SD Gothic Neo",
+    sans-serif;
 
-  letter-spacing: -0.4px;
+  font-size: 17px;
+
+  font-weight: 900;
+
+  letter-spacing: -0.7px;
 
   cursor: pointer;
 
   box-shadow:
-    0 9px 25px
-    rgba(89, 35, 0, 0.22);
+    0 7px 20px
+    rgba(89, 35, 0, 0.20);
 
-  backdrop-filter:
-    blur(8px);
+  backdrop-filter: blur(8px);
 
-  -webkit-backdrop-filter:
-    blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 
   transition:
     transform 0.2s ease,
@@ -206,23 +209,21 @@ button {
 }
 
 
-/* PC 마우스 오버 */
+/* PC 마우스 올렸을 때 */
 
 .cover-start-button:hover {
-  transform:
-    translateY(-3px);
+  transform: translateY(-2px);
 
   box-shadow:
-    0 13px 30px
-    rgba(89, 35, 0, 0.27);
+    0 11px 26px
+    rgba(89, 35, 0, 0.25);
 }
 
 
-/* 버튼을 누를 때 */
+/* 버튼 누르는 순간 */
 
 .cover-start-button:active {
-  transform:
-    scale(0.97);
+  transform: scale(0.97);
 }
 
 
@@ -235,8 +236,7 @@ button {
 
   opacity: 0;
 
-  transform:
-    translateY(50px);
+  transform: translateY(50px);
 
   pointer-events: none;
 
@@ -244,14 +244,12 @@ button {
 }
 
 
-/* 표지가 사라진 후
-   설문 화면 등장 */
+/* 설문 화면 등장 */
 
 .survey-screen.show-screen {
   opacity: 1;
 
-  transform:
-    translateY(0);
+  transform: translateY(0);
 
   pointer-events: auto;
 }
@@ -263,6 +261,7 @@ button {
 
 .survey-container {
   width: 100%;
+
   max-width: 520px;
 
   min-height: 100vh;
@@ -286,14 +285,14 @@ button {
 .survey-header {
   display: flex;
 
-  justify-content:
-    space-between;
+  justify-content: space-between;
 
   align-items: center;
 
   margin-bottom: 16px;
 
   font-size: 13px;
+
   font-weight: 700;
 
   color: #888;
@@ -328,19 +327,19 @@ button {
 
   background: #f26a21;
 
-  transition:
-    width 0.5s ease;
+  transition: width 0.5s ease;
 }
 
 
 /* =========================
-   질문
+   질문 번호
 ========================= */
 
 .question-number {
   margin-bottom: 15px;
 
   font-size: 12px;
+
   font-weight: 800;
 
   letter-spacing: 1.5px;
@@ -348,6 +347,10 @@ button {
   color: #f26a21;
 }
 
+
+/* =========================
+   질문 제목
+========================= */
 
 .question-area h2 {
   margin-bottom: 42px;
@@ -382,9 +385,7 @@ button {
 
   text-align: left;
 
-  border:
-    1px solid
-    #e7e7e7;
+  border: 1px solid #e7e7e7;
 
   border-radius: 14px;
 
@@ -393,6 +394,7 @@ button {
   color: #222;
 
   font-size: 16px;
+
   font-weight: 600;
 
   cursor: pointer;
@@ -405,15 +407,14 @@ button {
 }
 
 
+/* 선택지 마우스 효과 */
+
 .answers button:hover {
-  border-color:
-    #f26a21;
+  border-color: #f26a21;
 
-  background:
-    #fff8f4;
+  background: #fff8f4;
 
-  transform:
-    translateY(-1px);
+  transform: translateY(-1px);
 
   box-shadow:
     0 5px 14px
@@ -421,14 +422,15 @@ button {
 }
 
 
+/* 선택지 클릭 효과 */
+
 .answers button:active {
-  transform:
-    scale(0.985);
+  transform: scale(0.985);
 }
 
 
 /* =========================
-   태블릿 / 모바일
+   모바일
 ========================= */
 
 @media (max-width: 600px) {
@@ -448,32 +450,31 @@ button {
   }
 
 
-  /*
-     제목과 캐릭터 사이
-     버튼 위치
-  */
+  /* 진단 시작 버튼 */
 
   .start-button-area {
     top: 51%;
 
-    width: 78%;
+    width: 68%;
 
-    max-width: 380px;
+    max-width: 320px;
   }
 
 
   .cover-start-button {
-    padding:
-      17px
-      18px;
+    padding: 14px 16px;
 
-    border-radius:
-      17px;
+    border-radius: 15px;
 
-    font-size:
-      17px;
+    font-size: 17px;
+
+    font-weight: 900;
+
+    letter-spacing: -0.7px;
   }
 
+
+  /* 설문 */
 
   .survey-container {
     padding:
@@ -484,14 +485,12 @@ button {
 
 
   .progress {
-    margin-bottom:
-      58px;
+    margin-bottom: 58px;
   }
 
 
   .question-area h2 {
-    font-size:
-      25px;
+    font-size: 25px;
   }
 }
 
@@ -505,14 +504,20 @@ button {
   .start-button-area {
     top: 51%;
 
-    width: 82%;
+    width: 72%;
   }
 
 
   .cover-start-button {
-    padding: 16px;
+    padding: 13px 14px;
+
+    border-radius: 14px;
 
     font-size: 16px;
+
+    font-weight: 900;
+
+    letter-spacing: -0.7px;
   }
 
 
