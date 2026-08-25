@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function Home() {
   const [started, setStarted] = useState(false);
@@ -11,27 +12,23 @@ export default function Home() {
       <section
         className={`screen cover-screen ${started ? "hide-screen" : ""}`}
       >
-        <div className="content">
-          <p className="small-title">OPENING PROFILE</p>
+        <div className="cover-image-wrap">
+          <Image
+            src="/cover.png"
+            alt="오스템임플란트 개원성향진단 표지"
+            fill
+            priority
+            className="cover-image"
+          />
 
-          <h1>
-            개원성향
-            <br />
-            진단
-          </h1>
-
-          <p className="description">
-            몇 가지 질문을 통해
-            <br />
-            나의 개원 성향을 확인해보세요.
-          </p>
-
-          <button
-            className="start-button"
-            onClick={() => setStarted(true)}
-          >
-            진단 시작하기
-          </button>
+          <div className="cover-overlay">
+            <button
+              className="cover-start-button"
+              onClick={() => setStarted(true)}
+            >
+              진단 시작하기
+            </button>
+          </div>
         </div>
       </section>
 
