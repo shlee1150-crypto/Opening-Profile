@@ -233,6 +233,7 @@ button {
 
 /* =========================
    설문 화면
+   웜그레이 적용
 ========================= */
 
 .survey-screen {
@@ -244,7 +245,7 @@ button {
 
   pointer-events: none;
 
-  background: white;
+  background: #F2EFEA;
 }
 
 
@@ -278,7 +279,7 @@ button {
     24px
     50px;
 
-  background: white;
+  background: #F2EFEA;
 }
 
 
@@ -318,7 +319,7 @@ button {
 
   border-radius: 999px;
 
-  background: #eeeeee;
+  background: #DED9D2;
 }
 
 
@@ -366,6 +367,8 @@ button {
   letter-spacing: -1px;
 
   word-break: keep-all;
+
+  color: #26231f;
 }
 
 
@@ -389,11 +392,11 @@ button {
 
   text-align: left;
 
-  border: 1px solid #e7e7e7;
+  border: 1px solid #DED9D2;
 
   border-radius: 14px;
 
-  background: white;
+  background: #FFFFFF;
 
   color: #222;
 
@@ -402,6 +405,10 @@ button {
   font-weight: 600;
 
   cursor: pointer;
+
+  box-shadow:
+    0 3px 10px
+    rgba(70, 55, 40, 0.04);
 
   transition:
     border-color 0.2s ease,
@@ -416,13 +423,13 @@ button {
 .answers button:hover {
   border-color: #f26a21;
 
-  background: #fff8f4;
+  background: #fffaf6;
 
   transform: translateY(-1px);
 
   box-shadow:
     0 5px 14px
-    rgba(242, 106, 33, 0.08);
+    rgba(242, 106, 33, 0.10);
 }
 
 
@@ -454,7 +461,7 @@ button {
   }
 
 
-  /* 확실히 작아진 버튼 */
+  /* 진단 시작 버튼 */
 
   .start-button-area {
     top: 51%;
