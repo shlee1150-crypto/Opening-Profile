@@ -25,7 +25,7 @@ button {
   width: 100%;
   min-height: 100vh;
   overflow: hidden;
-  background: white;
+  background: #f4f4f4;
 }
 
 .screen {
@@ -39,8 +39,6 @@ button {
   transition:
     opacity 0.7s ease,
     transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-
-  background: white;
 }
 
 /* ----------------
@@ -51,11 +49,13 @@ button {
   z-index: 2;
 
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
 
   opacity: 1;
   transform: translateY(0);
+
+  background: #f4f4f4;
 }
 
 .cover-screen.hide-screen {
@@ -64,65 +64,57 @@ button {
   pointer-events: none;
 }
 
-.content {
+.cover-image-wrap {
+  position: relative;
   width: 100%;
   max-width: 430px;
-  padding: 50px 30px;
-  text-align: center;
+  min-height: 100vh;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #f26a21;
 }
 
-.small-title {
-  margin-bottom: 24px;
-
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 3px;
-
-  color: #f26a21;
+.cover-image {
+  object-fit: cover;
+  object-position: center top;
 }
 
-.content h1 {
-  margin-bottom: 28px;
-
-  font-size: 48px;
-  line-height: 1.15;
-  letter-spacing: -2px;
+.cover-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 36px;
+  padding: 0 24px;
 }
 
-.description {
-  margin-bottom: 45px;
-
-  font-size: 17px;
-  line-height: 1.7;
-
-  color: #777;
-}
-
-.start-button {
+.cover-start-button {
   width: 100%;
   padding: 18px;
 
   border: 0;
-  border-radius: 14px;
+  border-radius: 16px;
 
-  background: #f26a21;
-  color: white;
+  background: #ffffff;
+  color: #f26a21;
 
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
 
   cursor: pointer;
 
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+
   transition:
     transform 0.2s ease,
+    box-shadow 0.2s ease,
     opacity 0.2s ease;
 }
 
-.start-button:hover {
+.cover-start-button:hover {
   transform: translateY(-2px);
 }
 
-.start-button:active {
+.cover-start-button:active {
   transform: scale(0.98);
 }
 
@@ -137,6 +129,7 @@ button {
   transform: translateY(50px);
 
   pointer-events: none;
+  background: white;
 }
 
 .survey-screen.show-screen {
@@ -149,7 +142,6 @@ button {
 .survey-container {
   width: 100%;
   max-width: 520px;
-
   min-height: 100vh;
 
   margin: 0 auto;
@@ -241,19 +233,20 @@ button {
 .answers button:hover {
   border-color: #f26a21;
   background: #fff8f4;
-
   transform: translateY(-1px);
 }
 
 /* 모바일 */
 
 @media (max-width: 600px) {
-  .content {
-    padding: 40px 24px;
+  .cover-overlay {
+    bottom: 28px;
+    padding: 0 20px;
   }
 
-  .content h1 {
-    font-size: 42px;
+  .cover-start-button {
+    font-size: 17px;
+    padding: 17px;
   }
 
   .survey-container {
