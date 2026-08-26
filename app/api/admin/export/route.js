@@ -1,26 +1,173 @@
 import {
-  requireAdmin,
-  fetchAllResponses,
-} from "../_lib";
+  createClient,
+} from "@supabase/supabase-js";
+
+import {
+  TYPE_INFO,
+  getTypeKeyFromLabel,
+  getCombinationInfo,
+  getCombinationStrength,
+} from "../../../lib/diagnosisData";
 
 
-function escapeCsv(value) {
+export const runtime =
+  "nodejs";
+
+
+/* =========================================================
+   Supabase
+========================================================= */
+
+function getSupabaseAdmin() {
+  const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  const supabaseSecretKey =
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+
   if (
-    value === null ||
-    value === undefined
+    !supabaseUrl ||
+    !supabaseSecretKey
   ) {
-    return "";
+    throw new Error(
+      "Supabase 서버 환경변수가 설정되어 있지 않습니다."
+    );
   }
 
-  const text =
-    String(value);
 
-  return `"${text.replace(
-    /"/g,
-    '""'
-  )}"`;
+  return createClient(
+    supabaseUrl,
+    supabaseSecretKey,
+    {
+      auth: {
+        persistSession:
+          false,
+
+        autoRefreshToken:
+          false,
+      },
+    }
+  );
 }
 
+
+/* =========================================================
+   관리자 인증
+========================================================= */
+
+async function verifyAdmin(
+  request
+) {
+  const authorization =
+    request.headers.get(
+      "authorization"
+    ) || "";
+
+
+  const token =
+    authorization.startsWith(
+      "Bearer "
+    )
+      ? authorization.slice(7)
+      : null;
+
+
+  if (!token) {
+    return {
+      success:
+        false,
+
+      status:
+        401,
+    };
+  }
+
+
+  const adminEmail =
+    String(
+      process.env.ADMIN_EMAIL ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (!adminEmail) {
+    return {
+      success:
+        false,
+
+      status:
+        500,
+    };
+  }
+
+
+  const supabase =
+    getSupabaseAdmin();
+
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.auth.getUser(
+      token
+    );
+
+
+  if (
+    error ||
+    !data?.user
+  ) {
+    return {
+      success:
+        false,
+
+      status:
+        401,
+    };
+  }
+
+
+  const userEmail =
+    String(
+      data.user.email ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    userEmail !==
+    adminEmail
+  ) {
+    return {
+      success:
+        false,
+
+      status:
+        403,
+    };
+  }
+
+
+  return {
+    success:
+      true,
+
+    supabase,
+  };
+}
+
+
+/* =========================================================
+   날짜
+========================================================= */
 
 function formatDate(
   value
@@ -29,166 +176,457 @@ function formatDate(
     return "";
   }
 
+
   try {
-    return new Date(
-      value
-    ).toISOString();
+    return new Intl.DateTimeFormat(
+      "ko-KR",
+      {
+        timeZone:
+          "Asia/Seoul",
+
+        year:
+          "numeric",
+
+        month:
+          "2-digit",
+
+        day:
+          "2-digit",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        second:
+          "2-digit",
+
+        hour12:
+          false,
+      }
+    ).format(
+      new Date(value)
+    );
+
   } catch {
     return value;
   }
 }
 
 
+/* =========================================================
+   문항 개수
+========================================================= */
+
+function getQuestionCount(
+  answers
+) {
+  if (
+    !answers ||
+    typeof answers !==
+      "object"
+  ) {
+    return 0;
+  }
+
+
+  return Object.keys(
+    answers
+  ).filter(
+    (key) =>
+      /^q\d+$/.test(
+        key
+      )
+  ).length;
+}
+
+
+/* =========================================================
+   버전
+========================================================= */
+
+function getSurveyVersion(
+  answers
+) {
+  const count =
+    getQuestionCount(
+      answers
+    );
+
+
+  if (
+    count >= 12
+  ) {
+    return "12문항";
+  }
+
+
+  if (
+    count > 0
+  ) {
+    return `${count}문항(이전)`;
+  }
+
+
+  return "";
+}
+
+
+/* =========================================================
+   답변
+========================================================= */
+
+function getAnswerText(
+  answers,
+  questionNumber
+) {
+  const entry =
+    answers?.[
+      `q${questionNumber}`
+    ];
+
+
+  if (!entry) {
+    return "";
+  }
+
+
+  if (
+    typeof entry ===
+    "string"
+  ) {
+    return entry;
+  }
+
+
+  return (
+    entry.answer ||
+    entry.text ||
+    ""
+  );
+}
+
+
+/* =========================================================
+   CSV
+========================================================= */
+
+function csvCell(
+  value
+) {
+  const text =
+    String(
+      value ?? ""
+    );
+
+
+  return `"${text.replaceAll(
+    '"',
+    '""'
+  )}"`;
+}
+
+
+/* =========================================================
+   GET
+========================================================= */
+
 export async function GET(
   request
 ) {
-  const auth =
-    await requireAdmin(
-      request
-    );
-
-  if (!auth.ok) {
-    return new Response(
-      auth.message,
-      {
-        status:
-          auth.status,
-      }
-    );
-  }
-
   try {
-    const rows =
-      await fetchAllResponses();
+    const auth =
+      await verifyAdmin(
+        request
+      );
+
+
+    if (!auth.success) {
+      return new Response(
+        "Unauthorized",
+        {
+          status:
+            auth.status,
+        }
+      );
+    }
+
+
+    const {
+      data,
+      error,
+    } =
+      await auth.supabase
+        .from(
+          "diagnosis_responses"
+        )
+        .select(`
+          id,
+          name,
+          phone,
+          license_number,
+          answers,
+          type_scores,
+          result_type,
+          result_score,
+          secondary_type,
+          secondary_score,
+          completed,
+          created_at,
+          completed_at
+        `)
+        .order(
+          "created_at",
+          {
+            ascending:
+              false,
+          }
+        )
+        .limit(
+          5000
+        );
+
+
+    if (error) {
+      console.error(
+        "Export query error:",
+        error
+      );
+
+      return new Response(
+        "Export failed",
+        {
+          status:
+            500,
+        }
+      );
+    }
+
 
     const headers = [
       "이름",
       "휴대폰번호",
       "면허번호",
-      "개인정보동의",
-      "개인정보동의일시",
-      "진단완료",
+
+      "진단시작일",
+      "진단완료일",
+
+      "상태",
+      "진단버전",
+
       "주성향",
       "주성향점수",
+
       "보조성향",
       "보조성향점수",
-      "유형별점수",
-      "설문응답",
-      "참여일시",
-      "완료일시",
-      "ID",
+
+      "복합성향",
+      "복합성향강도",
+
+      "안정정착형점수",
+      "집중공격형점수",
+      "데이터분석형점수",
+      "선점개척형점수",
+
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5",
+      "Q6",
+      "Q7",
+      "Q8",
+      "Q9",
+      "Q10",
+      "Q11",
+      "Q12",
     ];
 
-    const lines = [
-      headers
-        .map(escapeCsv)
-        .join(","),
-    ];
 
-    for (
-      const row
-      of rows
-    ) {
-      const line = [
-        row.name,
-        row.phone,
-        row.license_number,
+    const rows =
+      (data || []).map(
+        (item) => {
 
-        row.privacy_consent
-          ? "동의"
-          : "미동의",
+          const primaryType =
+            item.result_type
+              ? getTypeKeyFromLabel(
+                  item.result_type
+                )
+              : null;
 
-        formatDate(
-          row.privacy_consent_at
-        ),
 
-        row.completed
-          ? "완료"
-          : "미완료",
+          const secondaryType =
+            item.secondary_type
+              ? getTypeKeyFromLabel(
+                  item.secondary_type
+                )
+              : null;
 
-        row.result_type ||
-          "",
 
-        row.result_score ??
-          "",
+          const combination =
+            primaryType &&
+            secondaryType
+              ? getCombinationInfo(
+                  primaryType,
+                  secondaryType
+                )
+              : null;
 
-        row.secondary_type ||
-          "",
 
-        row.secondary_score ??
-          "",
+          const strength =
+            combination
+              ? getCombinationStrength(
+                  item.result_score,
+                  item.secondary_score
+                )
+              : null;
 
-        JSON.stringify(
-          row.type_scores ||
-            {}
-        ),
 
-        JSON.stringify(
-          row.answers ||
-            {}
-        ),
+          const scores =
+            item.type_scores &&
+            typeof item.type_scores ===
+              "object"
+              ? item.type_scores
+              : {};
 
-        formatDate(
-          row.created_at
-        ),
 
-        formatDate(
-          row.completed_at
-        ),
+          return [
+            item.name,
+            item.phone,
+            item.license_number,
 
-        row.id,
-      ];
+            formatDate(
+              item.created_at
+            ),
 
-      lines.push(
-        line
-          .map(escapeCsv)
-          .join(",")
+            formatDate(
+              item.completed_at
+            ),
+
+            item.completed
+              ? "완료"
+              : "진행중",
+
+            getSurveyVersion(
+              item.answers
+            ),
+
+            item.result_type ||
+            "",
+
+            item.result_score ??
+            "",
+
+            item.secondary_type ||
+            "",
+
+            item.secondary_score ??
+            "",
+
+            combination?.name ||
+            "",
+
+            strength?.label ||
+            "",
+
+            scores.stable ??
+            "",
+
+            scores.aggressive ??
+            "",
+
+            scores.analytical ??
+            "",
+
+            scores.pioneer ??
+            "",
+
+            ...Array.from(
+              {
+                length:
+                  12,
+              },
+              (
+                _,
+                index
+              ) =>
+                getAnswerText(
+                  item.answers,
+                  index + 1
+                )
+            ),
+          ];
+        }
       );
-    }
 
-    /*
-      Excel 한글 깨짐 방지를 위한 BOM
-    */
 
     const csv =
-      "\uFEFF" +
-      lines.join("\r\n");
+      [
+        headers,
+        ...rows,
+      ]
+        .map(
+          (row) =>
+            row
+              .map(
+                csvCell
+              )
+              .join(",")
+        )
+        .join("\r\n");
 
-    const today =
+
+    /*
+      Excel에서 한글이 깨지지 않도록
+      UTF-8 BOM 추가
+    */
+
+    const output =
+      "\uFEFF" +
+      csv;
+
+
+    const date =
       new Date()
         .toISOString()
-        .slice(0, 10);
+        .slice(
+          0,
+          10
+        );
 
-    const filename =
-      `opening-profile-${today}.csv`;
 
     return new Response(
-      csv,
+      output,
       {
+        status:
+          200,
+
         headers: {
           "Content-Type":
             "text/csv; charset=utf-8",
 
           "Content-Disposition":
-            `attachment; filename*=UTF-8''${encodeURIComponent(
-              filename
-            )}`,
+            `attachment; filename="opening-profile-${date}.csv"`,
 
           "Cache-Control":
             "no-store",
         },
       }
     );
+
   } catch (error) {
     console.error(
       "Admin export error:",
       error
     );
 
+
     return new Response(
-      "CSV 파일 생성 중 오류가 발생했습니다.",
+      "Export failed",
       {
-        status: 500,
+        status:
+          500,
       }
     );
   }
