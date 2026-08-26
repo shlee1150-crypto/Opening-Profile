@@ -2,18 +2,13 @@
 
 import { useState } from "react";
 import Image from "next/image";
-
-
-/* =========================================
-   유형 정보
-========================================= */
+import Script from "next/script";
 
 const TYPE_INFO = {
   stable: {
     label: "안정정착형",
     emoji: "🏠",
-    title:
-      "오래 갈수록 강한 병원을 만드는 원장님",
+    title: "오래 갈수록 강한 병원을 만드는 원장님",
     description:
       "단기적인 성과보다 안정적인 운영과 꾸준한 환자 확보를 중요하게 생각하는 성향입니다.",
     recommendation:
@@ -23,8 +18,7 @@ const TYPE_INFO = {
   aggressive: {
     label: "집중공격형",
     emoji: "🚀",
-    title:
-      "할 거라면 제대로, 빠르게 성장하는 원장님",
+    title: "할 거라면 제대로, 빠르게 성장하는 원장님",
     description:
       "좋은 기회가 보이면 적극적으로 투자하고 빠른 성장과 높은 성과를 추구하는 성향입니다.",
     recommendation:
@@ -34,8 +28,7 @@ const TYPE_INFO = {
   analytical: {
     label: "데이터분석형",
     emoji: "📊",
-    title:
-      "감보다 숫자가 먼저인 전략가 원장님",
+    title: "감보다 숫자가 먼저인 전략가 원장님",
     description:
       "직감보다 객관적인 데이터와 투자 대비 효율을 확인한 뒤 의사결정하는 성향입니다.",
     recommendation:
@@ -45,8 +38,7 @@ const TYPE_INFO = {
   pioneer: {
     label: "선점개척형",
     emoji: "🌱",
-    title:
-      "남들이 들어가기 전에 먼저 기회를 잡는 원장님",
+    title: "남들이 들어가기 전에 먼저 기회를 잡는 원장님",
     description:
       "현재의 완성도보다 미래 성장 가능성을 중요하게 보고 새로운 기회를 선점하려는 성향입니다.",
     recommendation:
@@ -54,32 +46,12 @@ const TYPE_INFO = {
   },
 };
 
-
-/* =========================================
-   8개 실제 질문
-
-   weight
-   Q1 2
-   Q2 1
-   Q3 2
-   Q4 2
-   Q5 1
-   Q6 2
-   Q7 2
-   Q8 2
-
-   선택지는 유형이 보이지 않도록
-   문항별로 순서를 다르게 배치
-========================================= */
-
 const QUESTIONS = [
   {
     id: 1,
     weight: 2,
-
     question:
       "개원할 때 가장 중요하게 생각하는 것은?",
-
     options: [
       {
         type: "analytical",
@@ -107,10 +79,8 @@ const QUESTIONS = [
   {
     id: 2,
     weight: 1,
-
     question:
       "원장님이 생각하는 ‘잘 운영되는 병원’에 가까운 모습은?",
-
     options: [
       {
         type: "stable",
@@ -138,10 +108,8 @@ const QUESTIONS = [
   {
     id: 3,
     weight: 2,
-
     question:
       "경쟁 치과가 이미 많은 지역이라면?",
-
     options: [
       {
         type: "pioneer",
@@ -169,10 +137,8 @@ const QUESTIONS = [
   {
     id: 4,
     weight: 2,
-
     question:
       "개원 비용이 예상보다 5천만 원 늘어난다면?",
-
     options: [
       {
         type: "analytical",
@@ -200,10 +166,8 @@ const QUESTIONS = [
   {
     id: 5,
     weight: 1,
-
     question:
       "개원 후 생각보다 환자가 빨리 늘어난다면, 원장님은 어떻게 하실 것 같나요?",
-
     options: [
       {
         type: "aggressive",
@@ -231,10 +195,8 @@ const QUESTIONS = [
   {
     id: 6,
     weight: 2,
-
     question:
       "개원 전 상권분석 자료를 받았다면?",
-
     options: [
       {
         type: "pioneer",
@@ -262,10 +224,8 @@ const QUESTIONS = [
   {
     id: 7,
     weight: 2,
-
     question:
       "다음 중 더 끌리는 개원 방식은?",
-
     options: [
       {
         type: "stable",
@@ -293,10 +253,8 @@ const QUESTIONS = [
   {
     id: 8,
     weight: 2,
-
     question:
       "원장님이 가장 중요하게 생각하는 개원의 모습은?",
-
     options: [
       {
         type: "analytical",
@@ -322,11 +280,6 @@ const QUESTIONS = [
   },
 ];
 
-
-/* =========================================
-   동점 판별 질문
-========================================= */
-
 const TIEBREAKER_OPTIONS = {
   stable:
     "안정적인 배후수요와 낮은 운영 부담",
@@ -341,7 +294,6 @@ const TIEBREAKER_OPTIONS = {
     "향후 개발계획과 선점 가능성",
 };
 
-
 const INITIAL_SCORES = {
   stable: 0,
   aggressive: 0,
@@ -349,19 +301,9 @@ const INITIAL_SCORES = {
   pioneer: 0,
 };
 
-
 export default function Home() {
-  /* =========================================
-     화면 단계
-  ========================================= */
-
   const [stage, setStage] =
     useState("cover");
-
-
-  /* =========================================
-     개인정보
-  ========================================= */
 
   const [name, setName] =
     useState("");
@@ -379,20 +321,10 @@ export default function Home() {
     setPrivacyConsent,
   ] = useState(false);
 
-
-  /* =========================================
-     DB 참여자 ID
-  ========================================= */
-
   const [
     responseId,
     setResponseId,
   ] = useState(null);
-
-
-  /* =========================================
-     설문
-  ========================================= */
 
   const [
     currentQuestion,
@@ -407,7 +339,9 @@ export default function Home() {
   const [
     scores,
     setScores,
-  ] = useState(INITIAL_SCORES);
+  ] = useState(
+    INITIAL_SCORES
+  );
 
   const [
     selectedType,
@@ -423,11 +357,6 @@ export default function Home() {
     tieTypes,
     setTieTypes,
   ] = useState([]);
-
-
-  /* =========================================
-     결과
-  ========================================= */
 
   const [
     finalResult,
@@ -449,6 +378,10 @@ export default function Home() {
     setSaveError,
   ] = useState("");
 
+  const [
+    resultToken,
+    setResultToken,
+  ] = useState(null);
 
   /* =========================================
      전화번호 자동 하이픈
@@ -465,7 +398,10 @@ export default function Home() {
 
     if (value.length > 11) {
       value =
-        value.slice(0, 11);
+        value.slice(
+          0,
+          11
+        );
     }
 
     if (value.length <= 3) {
@@ -495,7 +431,6 @@ export default function Home() {
       )}-${value.slice(7)}`
     );
   };
-
 
   /* =========================================
      개인정보 저장
@@ -534,7 +469,9 @@ export default function Home() {
         return;
       }
 
-      if (!licenseNumber.trim()) {
+      if (
+        !licenseNumber.trim()
+      ) {
         setErrorMessage(
           "면허번호를 입력해주세요."
         );
@@ -557,7 +494,8 @@ export default function Home() {
           await fetch(
             "/api/diagnosis/start",
             {
-              method: "POST",
+              method:
+                "POST",
 
               headers: {
                 "Content-Type":
@@ -591,19 +529,24 @@ export default function Home() {
           result.responseId
         );
 
-        setStage("survey");
+        setStage(
+          "survey"
+        );
       } catch (error) {
-        console.error(error);
+        console.error(
+          error
+        );
 
         setErrorMessage(
           error.message ||
             "정보 저장 중 오류가 발생했습니다."
         );
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
-
 
   /* =========================================
      일반 질문 선택
@@ -617,7 +560,9 @@ export default function Home() {
     }
 
     const question =
-      QUESTIONS[currentQuestion];
+      QUESTIONS[
+        currentQuestion
+      ];
 
     const answerKey =
       `q${question.id}`;
@@ -649,152 +594,182 @@ export default function Home() {
       ...scores,
 
       [option.type]:
-        scores[option.type] +
+        scores[
+          option.type
+        ] +
         question.weight,
     };
 
-    setAnswers(nextAnswers);
-    setScores(nextScores);
+    setAnswers(
+      nextAnswers
+    );
+
+    setScores(
+      nextScores
+    );
 
     setSelectedType(
       option.type
     );
 
-    setTransitioning(true);
+    setTransitioning(
+      true
+    );
 
-    setTimeout(() => {
-      setSelectedType(null);
+    setTimeout(
+      () => {
+        setSelectedType(
+          null
+        );
 
-      setTransitioning(false);
+        setTransitioning(
+          false
+        );
+
+        if (
+          currentQuestion <
+          QUESTIONS.length -
+            1
+        ) {
+          setCurrentQuestion(
+            currentQuestion +
+              1
+          );
+
+          return;
+        }
+
+        evaluateMainResult(
+          nextAnswers,
+          nextScores
+        );
+      },
+      380
+    );
+  };
+
+  /* =========================================
+     8문항 완료 후 결과 확인
+  ========================================= */
+
+  const evaluateMainResult =
+    (
+      finalAnswers,
+      finalScores
+    ) => {
+      const highest =
+        Math.max(
+          ...Object.values(
+            finalScores
+          )
+        );
+
+      const highestTypes =
+        Object.keys(
+          finalScores
+        ).filter(
+          (type) =>
+            finalScores[
+              type
+            ] ===
+            highest
+        );
 
       if (
-        currentQuestion <
-        QUESTIONS.length - 1
+        highestTypes.length >
+        1
       ) {
-        setCurrentQuestion(
-          currentQuestion + 1
+        setTieTypes(
+          highestTypes
+        );
+
+        setAnswers(
+          finalAnswers
+        );
+
+        setScores(
+          finalScores
+        );
+
+        setStage(
+          "tiebreaker"
         );
 
         return;
       }
 
-      evaluateMainResult(
-        nextAnswers,
-        nextScores
-      );
-    }, 380);
-  };
-
-
-  /* =========================================
-     8문항 완료 후 1위 확인
-  ========================================= */
-
-  const evaluateMainResult = (
-    finalAnswers,
-    finalScores
-  ) => {
-    const values =
-      Object.values(
+      completeDiagnosis(
+        highestTypes[0],
+        finalAnswers,
         finalScores
       );
-
-    const highest =
-      Math.max(...values);
-
-    const highestTypes =
-      Object.keys(
-        finalScores
-      ).filter(
-        (type) =>
-          finalScores[type] ===
-          highest
-      );
-
-    if (
-      highestTypes.length > 1
-    ) {
-      setTieTypes(
-        highestTypes
-      );
-
-      setAnswers(
-        finalAnswers
-      );
-
-      setScores(
-        finalScores
-      );
-
-      setStage(
-        "tiebreaker"
-      );
-
-      return;
-    }
-
-    completeDiagnosis(
-      highestTypes[0],
-      finalAnswers,
-      finalScores
-    );
-  };
-
-
-  /* =========================================
-     동점 판별 선택
-  ========================================= */
-
-  const selectTiebreaker = (
-    type
-  ) => {
-    if (transitioning) {
-      return;
-    }
-
-    setSelectedType(type);
-
-    setTransitioning(true);
-
-    const tieAnswers = {
-      ...answers,
-
-      tiebreaker: {
-        question:
-          "개원 여부를 최종 결정할 때 가장 큰 확신을 주는 것은 무엇인가요?",
-
-        answer:
-          TIEBREAKER_OPTIONS[
-            type
-          ],
-
-        type,
-
-        typeLabel:
-          TYPE_INFO[
-            type
-          ].label,
-
-        score: 0,
-      },
     };
 
-    setTimeout(() => {
-      setSelectedType(null);
+  /* =========================================
+     동점 판별 질문
+  ========================================= */
 
-      setTransitioning(false);
+  const selectTiebreaker =
+    (type) => {
+      if (
+        transitioning
+      ) {
+        return;
+      }
 
-      completeDiagnosis(
-        type,
-        tieAnswers,
-        scores
+      setSelectedType(
+        type
       );
-    }, 380);
-  };
 
+      setTransitioning(
+        true
+      );
+
+      const tieAnswers = {
+        ...answers,
+
+        tiebreaker: {
+          question:
+            "개원 여부를 최종 결정할 때 가장 큰 확신을 주는 것은 무엇인가요?",
+
+          answer:
+            TIEBREAKER_OPTIONS[
+              type
+            ],
+
+          type,
+
+          typeLabel:
+            TYPE_INFO[
+              type
+            ].label,
+
+          score: 0,
+        },
+      };
+
+      setTimeout(
+        () => {
+          setSelectedType(
+            null
+          );
+
+          setTransitioning(
+            false
+          );
+
+          completeDiagnosis(
+            type,
+            tieAnswers,
+            scores
+          );
+        },
+        380
+      );
+    };
 
   /* =========================================
-     최종 결과 계산 + DB 저장
+     결과 계산 + Supabase 저장
   ========================================= */
 
   const completeDiagnosis =
@@ -814,7 +789,8 @@ export default function Home() {
           finalScores
         ).sort(
           (a, b) =>
-            b[1] - a[1]
+            b[1] -
+            a[1]
         );
 
       const secondaryEntry =
@@ -858,7 +834,9 @@ export default function Home() {
           finalScores,
       };
 
-      setFinalResult(result);
+      setFinalResult(
+        result
+      );
 
       try {
         const [
@@ -922,8 +900,15 @@ export default function Home() {
               "결과 저장에 실패했습니다."
           );
         }
+
+        setResultToken(
+          data.resultToken ||
+            null
+        );
       } catch (error) {
-        console.error(error);
+        console.error(
+          error
+        );
 
         setSaveError(
           "진단 결과 저장 중 오류가 발생했습니다."
@@ -938,9 +923,10 @@ export default function Home() {
         );
       }
 
-      setStage("result");
+      setStage(
+        "result"
+      );
     };
-
 
   /* =========================================
      처음부터 다시
@@ -948,19 +934,29 @@ export default function Home() {
 
   const restartDiagnosis =
     () => {
-      setStage("cover");
+      setStage(
+        "cover"
+      );
 
       setName("");
+
       setPhone("");
-      setLicenseNumber("");
+
+      setLicenseNumber(
+        ""
+      );
 
       setPrivacyConsent(
         false
       );
 
-      setResponseId(null);
+      setResponseId(
+        null
+      );
 
-      setCurrentQuestion(0);
+      setCurrentQuestion(
+        0
+      );
 
       setAnswers({});
 
@@ -968,7 +964,9 @@ export default function Home() {
         ...INITIAL_SCORES,
       });
 
-      setSelectedType(null);
+      setSelectedType(
+        null
+      );
 
       setTransitioning(
         false
@@ -976,13 +974,136 @@ export default function Home() {
 
       setTieTypes([]);
 
-      setFinalResult(null);
+      setFinalResult(
+        null
+      );
 
-      setErrorMessage("");
+      setErrorMessage(
+        ""
+      );
 
       setSaveError("");
+
+      setResultToken(
+        null
+      );
     };
 
+  /* =========================================
+     카카오 SDK 초기화
+  ========================================= */
+
+  const initializeKakao =
+    () => {
+      if (
+        typeof window ===
+          "undefined" ||
+        !window.Kakao
+      ) {
+        return false;
+      }
+
+      const kakaoJavaScriptKey =
+        process.env
+          .NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+
+      if (
+        !kakaoJavaScriptKey
+      ) {
+        console.error(
+          "NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY가 설정되어 있지 않습니다."
+        );
+
+        return false;
+      }
+
+      if (
+        !window.Kakao
+          .isInitialized()
+      ) {
+        window.Kakao.init(
+          kakaoJavaScriptKey
+        );
+      }
+
+      return window.Kakao
+        .isInitialized();
+    };
+
+  /* =========================================
+     카카오톡으로 결과 보내기
+  ========================================= */
+
+  const sendResultByKakao =
+    () => {
+      setSaveError("");
+
+      if (
+        !finalResult ||
+        !resultToken
+      ) {
+        setSaveError(
+          "결과 링크가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요."
+        );
+
+        return;
+      }
+
+      if (
+        !initializeKakao()
+      ) {
+        setSaveError(
+          "카카오톡 공유 기능을 불러오지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해주세요."
+        );
+
+        return;
+      }
+
+      const resultUrl =
+        `${window.location.origin}/r/${resultToken}`;
+
+      try {
+        window.Kakao.Share.sendDefault(
+          {
+            objectType:
+              "text",
+
+            text:
+              `오스템임플란트 개원성향진단\n\n` +
+              `${
+                TYPE_INFO[
+                  finalResult
+                    .primaryType
+                ].emoji
+              } 원장님의 개원성향은 ${
+                finalResult
+                  .primaryLabel
+              }입니다.\n\n` +
+              `아래 버튼을 눌러 상세 결과를 확인해주세요.`,
+
+            link: {
+              mobileWebUrl:
+                resultUrl,
+
+              webUrl:
+                resultUrl,
+            },
+
+            buttonTitle:
+              "개원성향 결과 보기",
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Kakao share error:",
+          error
+        );
+
+        setSaveError(
+          "카카오톡 공유창을 열지 못했습니다. 잠시 후 다시 시도해주세요."
+        );
+      }
+    };
 
   const question =
     QUESTIONS[
@@ -990,13 +1111,31 @@ export default function Home() {
     ];
 
   const progress =
-    ((currentQuestion + 1) /
+    ((currentQuestion +
+      1) /
       QUESTIONS.length) *
     100;
 
-
   return (
     <main className="app">
+
+      {/* 카카오 JavaScript SDK */}
+
+      <Script
+        id="kakao-javascript-sdk"
+        src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.1/kakao.min.js"
+        integrity="sha384-OL+ylM/iuPLtW5U3XcvLSGhE8JzReKDank5InqlHGWPhb4140/yrBw0bg0y7+C9J"
+        crossOrigin="anonymous"
+        strategy="afterInteractive"
+        onLoad={
+          initializeKakao
+        }
+        onError={() => {
+          console.error(
+            "Kakao JavaScript SDK load error"
+          );
+        }}
+      />
 
       {/* =================================
           표지
@@ -1004,7 +1143,8 @@ export default function Home() {
 
       <section
         className={`screen cover-screen ${
-          stage !== "cover"
+          stage !==
+          "cover"
             ? "hide-screen"
             : ""
         }`}
@@ -1016,7 +1156,7 @@ export default function Home() {
             alt="오스템임플란트 개원성향진단"
             fill
             priority
-            sizes="(max-width: 600px) 100vw, 520px"
+            sizes="(max-width: 1100px) 100vw, 520px"
             className="cover-image"
           />
 
@@ -1035,9 +1175,9 @@ export default function Home() {
             </button>
 
           </div>
+
         </div>
       </section>
-
 
       {/* =================================
           개인정보
@@ -1045,12 +1185,15 @@ export default function Home() {
 
       <section
         className={`screen info-screen ${
-          stage === "info"
+          stage ===
+          "info"
             ? "show-screen"
             : ""
         } ${
-          stage !== "cover" &&
-          stage !== "info"
+          stage !==
+            "cover" &&
+          stage !==
+            "info"
             ? "hide-info-screen"
             : ""
         }`}
@@ -1076,7 +1219,6 @@ export default function Home() {
 
           </div>
 
-
           <div className="form-area">
 
             <div className="form-group">
@@ -1089,9 +1231,10 @@ export default function Home() {
                 id="name"
                 type="text"
                 placeholder="이름을 입력해주세요"
-                value={name}
+                value={
+                  name
+                }
                 autoComplete="name"
-
                 onChange={(
                   event
                 ) =>
@@ -1104,7 +1247,6 @@ export default function Home() {
 
             </div>
 
-
             <div className="form-group">
 
               <label htmlFor="phone">
@@ -1115,20 +1257,17 @@ export default function Home() {
                 id="phone"
                 type="tel"
                 inputMode="numeric"
-
                 placeholder="010-0000-0000"
-
-                value={phone}
-
+                value={
+                  phone
+                }
                 autoComplete="tel"
-
                 onChange={
                   handlePhoneChange
                 }
               />
 
             </div>
-
 
             <div className="form-group">
 
@@ -1138,32 +1277,25 @@ export default function Home() {
 
               <input
                 id="license"
-
                 type="text"
-
                 inputMode="numeric"
-
                 placeholder="면허번호를 입력해주세요"
-
                 value={
                   licenseNumber
                 }
-
                 onChange={(
                   event
                 ) =>
                   setLicenseNumber(
-                    event.target
-                      .value.replace(
-                        /[^0-9]/g,
-                        ""
-                      )
+                    event.target.value.replace(
+                      /[^0-9]/g,
+                      ""
+                    )
                   )
                 }
               />
 
             </div>
-
 
             <div className="privacy-box">
 
@@ -1178,7 +1310,8 @@ export default function Home() {
 
                 <br />
 
-                이름, 휴대폰번호,
+                이름,
+                휴대폰번호,
                 면허번호
               </p>
 
@@ -1189,8 +1322,9 @@ export default function Home() {
 
                 <br />
 
-                개원성향진단 진행
-                및 결과 관리
+                개원성향진단 진행,
+                결과 관리 및 요청 시
+                결과 제공
               </p>
 
               <p>
@@ -1216,16 +1350,13 @@ export default function Home() {
 
             </div>
 
-
             <label className="consent-row">
 
               <input
                 type="checkbox"
-
                 checked={
                   privacyConsent
                 }
-
                 onChange={(
                   event
                 ) =>
@@ -1245,31 +1376,32 @@ export default function Home() {
 
             </label>
 
-
             {errorMessage && (
 
               <div className="form-error">
-                {errorMessage}
+                {
+                  errorMessage
+                }
               </div>
 
             )}
 
-
             <button
               type="button"
-
               className="info-submit-button"
-
-              disabled={loading}
-
+              disabled={
+                loading
+              }
               onClick={
                 startSurvey
               }
             >
 
-              {loading
-                ? "정보 저장 중..."
-                : "동의하고 진단 시작"}
+              {
+                loading
+                  ? "정보 저장 중..."
+                  : "동의하고 진단 시작"
+              }
 
             </button>
 
@@ -1279,14 +1411,14 @@ export default function Home() {
 
       </section>
 
-
       {/* =================================
           Q1 ~ Q8
       ================================= */}
 
       <section
         className={`screen survey-screen ${
-          stage === "survey"
+          stage ===
+          "survey"
             ? "show-screen"
             : ""
         }`}
@@ -1301,30 +1433,34 @@ export default function Home() {
             </span>
 
             <span>
-              {String(
-                currentQuestion +
-                  1
-              ).padStart(
-                2,
-                "0"
-              )}
+              {
+                String(
+                  currentQuestion +
+                    1
+                ).padStart(
+                  2,
+                  "0"
+                )
+              }
+
               {" / "}
-              {String(
-                QUESTIONS.length
-              ).padStart(
-                2,
-                "0"
-              )}
+
+              {
+                String(
+                  QUESTIONS.length
+                ).padStart(
+                  2,
+                  "0"
+                )
+              }
             </span>
 
           </div>
-
 
           <div className="progress">
 
             <div
               className="progress-bar"
-
               style={{
                 width:
                   `${progress}%`,
@@ -1333,12 +1469,10 @@ export default function Home() {
 
           </div>
 
-
           <div
             key={
               question.id
             }
-
             className={`question-card ${
               transitioning
                 ? "question-leaving"
@@ -1350,66 +1484,71 @@ export default function Home() {
 
               QUESTION{" "}
 
-              {String(
-                question.id
-              ).padStart(
-                2,
-                "0"
-              )}
+              {
+                String(
+                  question.id
+                ).padStart(
+                  2,
+                  "0"
+                )
+              }
 
             </p>
 
-
             <h2>
-              {question.question}
+              {
+                question.question
+              }
             </h2>
-
 
             <div className="answers">
 
-              {question.options.map(
-                (
-                  option,
-                  index
-                ) => (
+              {
+                question.options.map(
+                  (
+                    option,
+                    index
+                  ) => (
 
-                  <button
-                    key={
-                      `${question.id}-${option.type}`
-                    }
+                    <button
+                      key={
+                        `${question.id}-${option.type}`
+                      }
+                      type="button"
+                      disabled={
+                        transitioning
+                      }
+                      className={
+                        selectedType ===
+                        option.type
+                          ? "selected"
+                          : ""
+                      }
+                      onClick={() =>
+                        selectAnswer(
+                          option
+                        )
+                      }
+                    >
 
-                    type="button"
+                      <span className="option-number">
+                        {
+                          index +
+                          1
+                        }
+                      </span>
 
-                    disabled={
-                      transitioning
-                    }
+                      <span className="option-text">
+                        {
+                          option.text
+                        }
+                      </span>
 
-                    className={
-                      selectedType ===
-                      option.type
-                        ? "selected"
-                        : ""
-                    }
+                    </button>
 
-                    onClick={() =>
-                      selectAnswer(
-                        option
-                      )
-                    }
-                  >
-
-                    <span className="option-number">
-                      {index + 1}
-                    </span>
-
-                    <span className="option-text">
-                      {option.text}
-                    </span>
-
-                  </button>
-
+                  )
                 )
-              )}
+              }
 
             </div>
 
@@ -1418,7 +1557,6 @@ export default function Home() {
         </div>
 
       </section>
-
 
       {/* =================================
           동점 판별 질문
@@ -1447,12 +1585,10 @@ export default function Home() {
 
           </div>
 
-
           <div className="progress">
 
             <div
               className="progress-bar"
-
               style={{
                 width:
                   "100%",
@@ -1460,7 +1596,6 @@ export default function Home() {
             />
 
           </div>
-
 
           <div
             className={`question-card ${
@@ -1474,7 +1609,6 @@ export default function Home() {
               FINAL QUESTION
             </p>
 
-
             <h2>
               개원 여부를 최종
               결정할 때 가장 큰
@@ -1482,61 +1616,62 @@ export default function Home() {
               무엇인가요?
             </h2>
 
-
             <p className="tie-description">
               두 가지 성향의 점수가
               비슷하여 마지막 질문을
               드립니다.
             </p>
 
-
             <div className="answers">
 
-              {tieTypes.map(
-                (
-                  type,
-                  index
-                ) => (
+              {
+                tieTypes.map(
+                  (
+                    type,
+                    index
+                  ) => (
 
-                  <button
-                    key={type}
-
-                    type="button"
-
-                    disabled={
-                      transitioning
-                    }
-
-                    className={
-                      selectedType ===
-                      type
-                        ? "selected"
-                        : ""
-                    }
-
-                    onClick={() =>
-                      selectTiebreaker(
+                    <button
+                      key={
                         type
-                      )
-                    }
-                  >
-
-                    <span className="option-number">
-                      {index + 1}
-                    </span>
-
-                    <span className="option-text">
-                      {
-                        TIEBREAKER_OPTIONS[
-                          type
-                        ]
                       }
-                    </span>
+                      type="button"
+                      disabled={
+                        transitioning
+                      }
+                      className={
+                        selectedType ===
+                        type
+                          ? "selected"
+                          : ""
+                      }
+                      onClick={() =>
+                        selectTiebreaker(
+                          type
+                        )
+                      }
+                    >
 
-                  </button>
+                      <span className="option-number">
+                        {
+                          index +
+                          1
+                        }
+                      </span>
 
+                      <span className="option-text">
+                        {
+                          TIEBREAKER_OPTIONS[
+                            type
+                          ]
+                        }
+                      </span>
+
+                    </button>
+
+                  )
                 )
-              )}
+              }
 
             </div>
 
@@ -1545,7 +1680,6 @@ export default function Home() {
         </div>
 
       </section>
-
 
       {/* =================================
           분석중
@@ -1576,7 +1710,6 @@ export default function Home() {
             분석하고 있습니다.
           </h2>
 
-
           <div className="analysis-dots">
 
             <span />
@@ -1591,240 +1724,318 @@ export default function Home() {
 
       </section>
 
-
       {/* =================================
           결과
       ================================= */}
 
       <section
         className={`screen result-screen ${
-          stage === "result"
+          stage ===
+          "result"
             ? "show-result"
             : ""
         }`}
       >
 
-        {finalResult && (
+        {
+          finalResult &&
+          (
 
-          <div className="result-container">
+            <div className="result-container">
 
-            <div className="result-top">
+              <div className="result-top">
 
-              <p className="result-small">
-                YOUR OPENING PROFILE
-              </p>
+                <p className="result-small">
+                  YOUR OPENING PROFILE
+                </p>
 
-              <p className="result-intro">
-                원장님의 개원 성향은
-              </p>
+                <p className="result-intro">
+                  원장님의 개원 성향은
+                </p>
 
+                <div className="result-type">
 
-              <div className="result-type">
+                  <span className="result-emoji">
+                    {
+                      TYPE_INFO[
+                        finalResult
+                          .primaryType
+                      ].emoji
+                    }
+                  </span>
 
-                <span className="result-emoji">
+                  <h1>
+                    {
+                      finalResult
+                        .primaryLabel
+                    }
+                  </h1>
+
+                </div>
+
+                <h2 className="result-title">
                   {
                     TYPE_INFO[
                       finalResult
                         .primaryType
-                    ].emoji
+                    ].title
                   }
-                </span>
+                </h2>
 
-                <h1>
-                  {
-                    finalResult
-                      .primaryLabel
-                  }
-                </h1>
-
-              </div>
-
-
-              <h2 className="result-title">
-
-                {
-                  TYPE_INFO[
-                    finalResult
-                      .primaryType
-                  ].title
-                }
-
-              </h2>
-
-
-              <p className="result-description">
-
-                {
-                  TYPE_INFO[
-                    finalResult
-                      .primaryType
-                  ].description
-                }
-
-              </p>
-
-            </div>
-
-
-            <div className="result-recommendation">
-
-              <span>
-                💡 추천 개원 방향
-              </span>
-
-              <p>
-                {
-                  TYPE_INFO[
-                    finalResult
-                      .primaryType
-                  ].recommendation
-                }
-              </p>
-
-            </div>
-
-
-            {finalResult.secondaryType && (
-
-              <div className="secondary-result">
-
-                <span>
-                  함께 나타난 보조 성향
-                </span>
-
-                <strong>
-
+                <p className="result-description">
                   {
                     TYPE_INFO[
                       finalResult
-                        .secondaryType
-                    ].emoji
+                        .primaryType
+                    ].description
                   }
-
-                  {" "}
-
-                  {
-                    finalResult
-                      .secondaryLabel
-                  }
-
-                </strong>
-
-                <p>
-                  주 성향과 함께{" "}
-                  {
-                    finalResult
-                      .secondaryLabel
-                  }{" "}
-                  성향도 나타났습니다.
                 </p>
 
               </div>
 
-            )}
+              <div className="result-recommendation">
 
+                <span>
+                  💡 추천 개원 방향
+                </span>
 
-            <div className="score-card">
+                <p>
+                  {
+                    TYPE_INFO[
+                      finalResult
+                        .primaryType
+                    ].recommendation
+                  }
+                </p>
 
-              <h3>
-                개원성향 분석
-              </h3>
+              </div>
 
-              {Object.entries(
-                TYPE_INFO
-              ).map(
-                ([
-                  type,
-                  info,
-                ]) => {
+              {
+                finalResult
+                  .secondaryType &&
+                (
 
-                  const score =
-                    finalResult
-                      .scores[
-                      type
-                    ];
+                  <div className="secondary-result">
 
-                  const percentage =
-                    Math.min(
-                      100,
-                      Math.round(
-                        (score /
-                          14) *
-                          100
-                      )
-                    );
+                    <span>
+                      함께 나타난 보조 성향
+                    </span>
 
-                  return (
+                    <strong>
 
-                    <div
-                      className="score-row"
-                      key={type}
-                    >
+                      {
+                        TYPE_INFO[
+                          finalResult
+                            .secondaryType
+                        ].emoji
+                      }
 
-                      <div className="score-label">
+                      {" "}
 
-                        <span>
-                          {
-                            info.emoji
-                          }{" "}
-                          {
-                            info.label
-                          }
-                        </span>
+                      {
+                        finalResult
+                          .secondaryLabel
+                      }
 
-                        <strong>
-                          {score}점
-                        </strong>
+                    </strong>
 
-                      </div>
+                    <p>
+                      주 성향과 함께{" "}
+                      {
+                        finalResult
+                          .secondaryLabel
+                      }{" "}
+                      성향도 나타났습니다.
+                    </p>
 
+                  </div>
 
-                      <div className="score-track">
+                )
+              }
+
+              <div className="score-card">
+
+                <h3>
+                  개원성향 분석
+                </h3>
+
+                {
+                  Object.entries(
+                    TYPE_INFO
+                  ).map(
+                    ([
+                      type,
+                      info,
+                    ]) => {
+                      const score =
+                        finalResult
+                          .scores[
+                          type
+                        ];
+
+                      const percentage =
+                        Math.min(
+                          100,
+                          Math.round(
+                            (
+                              score /
+                              14
+                            ) *
+                              100
+                          )
+                        );
+
+                      return (
 
                         <div
-                          className="score-fill"
+                          className="score-row"
+                          key={
+                            type
+                          }
+                        >
 
-                          style={{
-                            width:
-                              `${percentage}%`,
-                          }}
-                        />
+                          <div className="score-label">
 
-                      </div>
+                            <span>
+                              {
+                                info.emoji
+                              }{" "}
+                              {
+                                info.label
+                              }
+                            </span>
 
-                    </div>
+                            <strong>
+                              {
+                                score
+                              }
+                              점
+                            </strong>
 
-                  );
+                          </div>
+
+                          <div className="score-track">
+
+                            <div
+                              className="score-fill"
+                              style={{
+                                width:
+                                  `${percentage}%`,
+                              }}
+                            />
+
+                          </div>
+
+                        </div>
+
+                      );
+                    }
+                  )
                 }
-              )}
+
+              </div>
+
+              {
+                saveError &&
+                (
+
+                  <div className="result-save-error">
+                    {
+                      saveError
+                    }
+                  </div>
+
+                )
+              }
+
+              {/* ==============================
+                  카카오톡 공유 버튼
+              ============================== */}
+
+              {
+                resultToken &&
+                (
+                  <>
+
+                    <button
+                      type="button"
+                      className="restart-button"
+                      onClick={
+                        sendResultByKakao
+                      }
+                      style={{
+                        marginTop:
+                          "24px",
+
+                        background:
+                          "#FEE500",
+
+                        color:
+                          "#191919",
+
+                        border:
+                          "0",
+
+                        boxShadow:
+                          "0 7px 18px rgba(0, 0, 0, 0.10)",
+                      }}
+                    >
+                      💬 카카오톡으로 결과 보내기
+                    </button>
+
+                    <p
+                      style={{
+                        marginTop:
+                          "10px",
+
+                        color:
+                          "#817a73",
+
+                        fontSize:
+                          "12px",
+
+                        lineHeight:
+                          1.6,
+
+                        textAlign:
+                          "center",
+
+                        wordBreak:
+                          "keep-all",
+                      }}
+                    >
+                      카카오톡에서 받을
+                      친구 또는 채팅방을
+                      선택해주세요.
+                      <br />
+                      결과 링크가 포함된
+                      메시지가 준비됩니다.
+                    </p>
+
+                  </>
+                )
+              }
+
+              <button
+                type="button"
+                className="restart-button"
+                onClick={
+                  restartDiagnosis
+                }
+                style={{
+                  marginTop:
+                    resultToken
+                      ? "14px"
+                      : "24px",
+                }}
+              >
+                다시 진단하기
+              </button>
 
             </div>
 
-
-            {saveError && (
-
-              <div className="result-save-error">
-                {saveError}
-              </div>
-
-            )}
-
-
-            <button
-              type="button"
-
-              className="restart-button"
-
-              onClick={
-                restartDiagnosis
-              }
-            >
-              다시 진단하기
-            </button>
-
-          </div>
-
-        )}
+          )
+        }
 
       </section>
 
