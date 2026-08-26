@@ -49,7 +49,9 @@ export async function POST(request) {
           message:
             "참여자 정보가 확인되지 않습니다.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
@@ -63,7 +65,9 @@ export async function POST(request) {
           message:
             "설문 응답 정보가 올바르지 않습니다.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
@@ -77,7 +81,9 @@ export async function POST(request) {
           message:
             "점수 정보가 올바르지 않습니다.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
@@ -88,34 +94,55 @@ export async function POST(request) {
           message:
             "최종 결과가 확인되지 않습니다.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    const supabase = getSupabaseAdmin();
+    const supabase =
+      getSupabaseAdmin();
 
-    const { data, error } = await supabase
-      .from("diagnosis_responses")
+    const {
+      data,
+      error,
+    } = await supabase
+      .from(
+        "diagnosis_responses"
+      )
       .update({
         answers,
-        type_scores: typeScores,
 
-        result_type: resultType,
-        result_score: resultScore,
+        type_scores:
+          typeScores,
+
+        result_type:
+          resultType,
+
+        result_score:
+          resultScore,
 
         secondary_type:
-          secondaryType || null,
+          secondaryType ||
+          null,
 
         secondary_score:
-          secondaryScore ?? null,
+          secondaryScore ??
+          null,
 
-        completed: true,
+        completed:
+          true,
 
         completed_at:
           new Date().toISOString(),
       })
-      .eq("id", responseId)
-      .select("id")
+      .eq(
+        "id",
+        responseId
+      )
+      .select(
+        "id, result_token"
+      )
       .single();
 
     if (error) {
@@ -130,13 +157,37 @@ export async function POST(request) {
           message:
             "진단 결과 저장 중 오류가 발생했습니다.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!data.result_token) {
+      console.error(
+        "Result token missing"
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "결과 링크 생성에 실패했습니다.",
+        },
+        {
+          status: 500,
+        }
       );
     }
 
     return NextResponse.json({
       success: true,
-      responseId: data.id,
+
+      responseId:
+        data.id,
+
+      resultToken:
+        data.result_token,
     });
   } catch (error) {
     console.error(
@@ -150,7 +201,9 @@ export async function POST(request) {
         message:
           "진단 결과 저장 중 오류가 발생했습니다.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
