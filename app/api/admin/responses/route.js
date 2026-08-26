@@ -1,19 +1,8 @@
-import {
-  NextResponse,
-} from "next/server";
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-import {
-  createClient,
-} from "@supabase/supabase-js";
+export const runtime = "nodejs";
 
-
-export const runtime =
-  "nodejs";
-
-
-/* =========================================================
-   Supabase Admin
-========================================================= */
 
 function getSupabaseAdmin() {
   const supabaseUrl =
@@ -24,12 +13,9 @@ function getSupabaseAdmin() {
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (
-    !supabaseUrl ||
-    !supabaseSecretKey
-  ) {
+  if (!supabaseUrl || !supabaseSecretKey) {
     throw new Error(
-      "Supabase 서버 환경변수가 설정되어 있지 않습니다."
+      "Supabase 환경변수가 없습니다."
     );
   }
 
@@ -38,84 +24,46 @@ function getSupabaseAdmin() {
     supabaseSecretKey,
     {
       auth: {
-        persistSession:
-          false,
-
-        autoRefreshToken:
-          false,
+        persistSession: false,
+        autoRefreshToken: false,
       },
     }
   );
 }
 
 
-/* =========================================================
-   관리자 인증
-
-   브라우저에서 전달한 Supabase Access Token 확인
-   ADMIN_EMAIL과 같은 계정만 허용
-========================================================= */
-
 async function verifyAdmin(
   request
 ) {
-  const authorization =
+  const auth =
     request.headers.get(
       "authorization"
     ) || "";
 
   const token =
-    authorization.startsWith(
+    auth.startsWith(
       "Bearer "
     )
-      ? authorization.slice(7)
+      ? auth.slice(7)
       : null;
-
 
   if (!token) {
     return {
-      success:
-        false,
-
-      status:
-        401,
-
-      message:
-        "로그인이 필요합니다.",
+      success: false,
+      status: 401,
     };
   }
-
 
   const adminEmail =
     String(
       process.env.ADMIN_EMAIL ||
-      ""
+        ""
     )
       .trim()
       .toLowerCase();
 
-
-  if (!adminEmail) {
-    console.error(
-      "ADMIN_EMAIL 환경변수가 없습니다."
-    );
-
-    return {
-      success:
-        false,
-
-      status:
-        500,
-
-      message:
-        "관리자 설정이 완료되지 않았습니다.",
-    };
-  }
-
-
   const supabase =
     getSupabaseAdmin();
-
 
   const {
     data,
@@ -125,65 +73,34 @@ async function verifyAdmin(
       token
     );
 
-
   if (
     error ||
     !data?.user
   ) {
     return {
-      success:
-        false,
-
-      status:
-        401,
-
-      message:
-        "로그인 정보가 만료되었습니다.",
+      success: false,
+      status: 401,
     };
   }
 
-
-  const userEmail =
-    String(
-      data.user.email ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
   if (
-    userEmail !==
+    String(
+      data.user.email || ""
+    ).toLowerCase() !==
     adminEmail
   ) {
     return {
-      success:
-        false,
-
-      status:
-        403,
-
-      message:
-        "관리자 권한이 없습니다.",
+      success: false,
+      status: 403,
     };
   }
 
-
   return {
-    success:
-      true,
-
+    success: true,
     supabase,
-
-    user:
-      data.user,
   };
 }
 
-
-/* =========================================================
-   GET
-========================================================= */
 
 export async function GET(
   request
@@ -194,15 +111,10 @@ export async function GET(
         request
       );
 
-
     if (!auth.success) {
       return NextResponse.json(
         {
-          success:
-            false,
-
-          message:
-            auth.message,
+          success: false,
         },
         {
           status:
@@ -211,10 +123,9 @@ export async function GET(
       );
     }
 
-
     const {
-      data,
-      error,
+      data: responses,
+      error: responseError,
     } =
       await auth.supabase
         .from(
@@ -239,63 +150,103 @@ export async function GET(
         .order(
           "created_at",
           {
-            ascending:
-              false,
+            ascending: false,
           }
         )
         .limit(
           5000
         );
 
-
-    if (error) {
-      console.error(
-        "Admin responses error:",
-        error
-      );
-
-      return NextResponse.json(
-        {
-          success:
-            false,
-
-          message:
-            "진단 데이터를 불러오지 못했습니다.",
-        },
-        {
-          status:
-            500,
-        }
-      );
+    if (responseError) {
+      throw responseError;
     }
 
 
-    return NextResponse.json({
-      success:
-        true,
+    const {
+      data: consultations,
+      error:
+        consultationError,
+    } =
+      await auth.supabase
+        .from(
+          "consultation_requests"
+        )
+        .select(`
+          id,
+          diagnosis_response_id,
+          category,
+          needs_manager_matching,
+          manager_name,
+          status,
+          created_at,
+          updated_at
+        `)
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          }
+        )
+        .limit(
+          5000
+        );
 
-      items:
-        data || [],
-    });
+    if (consultationError) {
+      throw consultationError;
+    }
 
-  } catch (error) {
-    console.error(
-      "Admin responses API error:",
-      error
+
+    const consultationMap =
+      new Map();
+
+    (
+      consultations ||
+      []
+    ).forEach(
+      (item) => {
+        consultationMap.set(
+          item.diagnosis_response_id,
+          item
+        );
+      }
     );
 
 
+    const items =
+      (
+        responses ||
+        []
+      ).map(
+        (item) => ({
+          ...item,
+
+          consultation:
+            consultationMap.get(
+              item.id
+            ) ||
+            null,
+        })
+      );
+
+
+    return NextResponse.json({
+      success: true,
+      items,
+    });
+  } catch (error) {
+    console.error(
+      "Admin responses:",
+      error
+    );
+
     return NextResponse.json(
       {
-        success:
-          false,
-
+        success: false,
         message:
-          "관리자 데이터를 불러오는 중 오류가 발생했습니다.",
+          "관리자 데이터를 불러오지 못했습니다.",
       },
       {
-        status:
-          500,
+        status: 500,
       }
     );
   }
