@@ -1,46 +1,60 @@
-import {
-  createClient,
-} from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
 import {
-  TYPE_INFO,
   getTypeKeyFromLabel,
   getCombinationInfo,
   getCombinationStrength,
 } from "../../../lib/diagnosisData";
 
-
 export const runtime =
   "nodejs";
 
 
-/* =========================================================
-   Supabase
-========================================================= */
+const CATEGORY_LABEL = {
+  location:
+    "입지",
+
+  major_equipment:
+    "대장비",
+
+  supplies:
+    "소장비·기구·재료",
+};
+
+
+const STATUS_LABEL = {
+  new:
+    "신규",
+
+  reviewing:
+    "확인중",
+
+  assigned:
+    "담당자 배정",
+
+  completed:
+    "상담 완료",
+};
+
 
 function getSupabaseAdmin() {
-  const supabaseUrl =
+  const url =
     process.env.SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  const supabaseSecretKey =
+  const key =
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-
-  if (
-    !supabaseUrl ||
-    !supabaseSecretKey
-  ) {
+  if (!url || !key) {
     throw new Error(
-      "Supabase 서버 환경변수가 설정되어 있지 않습니다."
+      "Supabase 환경변수가 없습니다."
     );
   }
 
-
   return createClient(
-    supabaseUrl,
-    supabaseSecretKey,
+    url,
+    key,
     {
       auth: {
         persistSession:
@@ -54,120 +68,55 @@ function getSupabaseAdmin() {
 }
 
 
-/* =========================================================
-   관리자 인증
-========================================================= */
-
 async function verifyAdmin(
   request
 ) {
-  const authorization =
+  const auth =
     request.headers.get(
       "authorization"
     ) || "";
 
-
   const token =
-    authorization.startsWith(
+    auth.startsWith(
       "Bearer "
     )
-      ? authorization.slice(7)
+      ? auth.slice(7)
       : null;
 
-
   if (!token) {
-    return {
-      success:
-        false,
-
-      status:
-        401,
-    };
+    return null;
   }
-
-
-  const adminEmail =
-    String(
-      process.env.ADMIN_EMAIL ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  if (!adminEmail) {
-    return {
-      success:
-        false,
-
-      status:
-        500,
-    };
-  }
-
 
   const supabase =
     getSupabaseAdmin();
 
-
   const {
     data,
-    error,
   } =
     await supabase.auth.getUser(
       token
     );
 
-
-  if (
-    error ||
-    !data?.user
-  ) {
-    return {
-      success:
-        false,
-
-      status:
-        401,
-    };
+  if (!data?.user) {
+    return null;
   }
 
-
-  const userEmail =
+  if (
     String(
       data.user.email ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  if (
-    userEmail !==
-    adminEmail
+        ""
+    ).toLowerCase() !==
+    String(
+      process.env.ADMIN_EMAIL ||
+        ""
+    ).toLowerCase()
   ) {
-    return {
-      success:
-        false,
-
-      status:
-        403,
-    };
+    return null;
   }
 
-
-  return {
-    success:
-      true,
-
-    supabase,
-  };
+  return supabase;
 }
 
-
-/* =========================================================
-   날짜
-========================================================= */
 
 function formatDate(
   value
@@ -176,50 +125,37 @@ function formatDate(
     return "";
   }
 
+  return new Intl.DateTimeFormat(
+    "ko-KR",
+    {
+      timeZone:
+        "Asia/Seoul",
 
-  try {
-    return new Intl.DateTimeFormat(
-      "ko-KR",
-      {
-        timeZone:
-          "Asia/Seoul",
+      year:
+        "numeric",
 
-        year:
-          "numeric",
+      month:
+        "2-digit",
 
-        month:
-          "2-digit",
+      day:
+        "2-digit",
 
-        day:
-          "2-digit",
+      hour:
+        "2-digit",
 
-        hour:
-          "2-digit",
+      minute:
+        "2-digit",
 
-        minute:
-          "2-digit",
-
-        second:
-          "2-digit",
-
-        hour12:
-          false,
-      }
-    ).format(
-      new Date(value)
-    );
-
-  } catch {
-    return value;
-  }
+      hour12:
+        false,
+    }
+  ).format(
+    new Date(value)
+  );
 }
 
 
-/* =========================================================
-   문항 개수
-========================================================= */
-
-function getQuestionCount(
+function questionCount(
   answers
 ) {
   if (
@@ -229,7 +165,6 @@ function getQuestionCount(
   ) {
     return 0;
   }
-
 
   return Object.keys(
     answers
@@ -242,55 +177,18 @@ function getQuestionCount(
 }
 
 
-/* =========================================================
-   버전
-========================================================= */
-
-function getSurveyVersion(
-  answers
-) {
-  const count =
-    getQuestionCount(
-      answers
-    );
-
-
-  if (
-    count >= 12
-  ) {
-    return "12문항";
-  }
-
-
-  if (
-    count > 0
-  ) {
-    return `${count}문항(이전)`;
-  }
-
-
-  return "";
-}
-
-
-/* =========================================================
-   답변
-========================================================= */
-
-function getAnswerText(
+function answerText(
   answers,
-  questionNumber
+  number
 ) {
   const entry =
     answers?.[
-      `q${questionNumber}`
+      `q${number}`
     ];
-
 
   if (!entry) {
     return "";
   }
-
 
   if (
     typeof entry ===
@@ -299,65 +197,49 @@ function getAnswerText(
     return entry;
   }
 
-
   return (
     entry.answer ||
-    entry.text ||
     ""
   );
 }
 
 
-/* =========================================================
-   CSV
-========================================================= */
-
 function csvCell(
   value
 ) {
-  const text =
-    String(
-      value ?? ""
-    );
-
-
-  return `"${text.replaceAll(
+  return `"${String(
+    value ?? ""
+  ).replaceAll(
     '"',
     '""'
   )}"`;
 }
 
 
-/* =========================================================
-   GET
-========================================================= */
-
 export async function GET(
   request
 ) {
   try {
-    const auth =
+    const supabase =
       await verifyAdmin(
         request
       );
 
-
-    if (!auth.success) {
+    if (!supabase) {
       return new Response(
         "Unauthorized",
         {
-          status:
-            auth.status,
+          status: 403,
         }
       );
     }
 
 
     const {
-      data,
+      data: responses,
       error,
     } =
-      await auth.supabase
+      await supabase
         .from(
           "diagnosis_responses"
         )
@@ -379,29 +261,53 @@ export async function GET(
         .order(
           "created_at",
           {
-            ascending:
-              false,
+            ascending: false,
           }
         )
         .limit(
           5000
         );
 
-
     if (error) {
-      console.error(
-        "Export query error:",
-        error
-      );
-
-      return new Response(
-        "Export failed",
-        {
-          status:
-            500,
-        }
-      );
+      throw error;
     }
+
+
+    const {
+      data:
+        consultations,
+      error:
+        consultationError,
+    } =
+      await supabase
+        .from(
+          "consultation_requests"
+        )
+        .select(
+          "*"
+        )
+        .limit(
+          5000
+        );
+
+    if (consultationError) {
+      throw consultationError;
+    }
+
+
+    const map =
+      new Map();
+
+    (
+      consultations ||
+      []
+    ).forEach(
+      (item) =>
+        map.set(
+          item.diagnosis_response_id,
+          item
+        )
+    );
 
 
     const headers = [
@@ -409,10 +315,7 @@ export async function GET(
       "휴대폰번호",
       "면허번호",
 
-      "진단시작일",
-      "진단완료일",
-
-      "상태",
+      "진단일",
       "진단버전",
 
       "주성향",
@@ -429,50 +332,50 @@ export async function GET(
       "데이터분석형점수",
       "선점개척형점수",
 
-      "Q1",
-      "Q2",
-      "Q3",
-      "Q4",
-      "Q5",
-      "Q6",
-      "Q7",
-      "Q8",
-      "Q9",
-      "Q10",
-      "Q11",
-      "Q12",
+      "상담신청여부",
+      "희망상담",
+      "지역담당자매칭",
+      "현재담당자",
+      "상담상태",
+      "상담신청일",
+
+      ...Array.from(
+        {
+          length: 12,
+        },
+        (
+          _,
+          index
+        ) =>
+          `Q${index + 1}`
+      ),
     ];
 
 
     const rows =
-      (data || []).map(
+      (
+        responses ||
+        []
+      ).map(
         (item) => {
+          const primary =
+            getTypeKeyFromLabel(
+              item.result_type
+            );
 
-          const primaryType =
-            item.result_type
-              ? getTypeKeyFromLabel(
-                  item.result_type
-                )
-              : null;
-
-
-          const secondaryType =
-            item.secondary_type
-              ? getTypeKeyFromLabel(
-                  item.secondary_type
-                )
-              : null;
-
+          const secondary =
+            getTypeKeyFromLabel(
+              item.secondary_type
+            );
 
           const combination =
-            primaryType &&
-            secondaryType
+            primary &&
+            secondary
               ? getCombinationInfo(
-                  primaryType,
-                  secondaryType
+                  primary,
+                  secondary
                 )
               : null;
-
 
           const strength =
             combination
@@ -482,13 +385,33 @@ export async function GET(
                 )
               : null;
 
-
           const scores =
-            item.type_scores &&
-            typeof item.type_scores ===
-              "object"
-              ? item.type_scores
-              : {};
+            item.type_scores ||
+            {};
+
+          const consultation =
+            map.get(
+              item.id
+            );
+
+
+          let matching =
+            "";
+
+          if (consultation) {
+            if (
+              consultation.category ===
+              "location"
+            ) {
+              matching =
+                "해당없음";
+            } else {
+              matching =
+                consultation.needs_manager_matching
+                  ? "필요"
+                  : "불필요";
+            }
+          }
 
 
           return [
@@ -497,50 +420,69 @@ export async function GET(
             item.license_number,
 
             formatDate(
+              item.completed_at ||
               item.created_at
             ),
 
-            formatDate(
-              item.completed_at
-            ),
-
-            item.completed
-              ? "완료"
-              : "진행중",
-
-            getSurveyVersion(
+            questionCount(
               item.answers
-            ),
+            ) >= 12
+              ? "12문항"
+              : `${questionCount(
+                  item.answers
+                )}문항 이전버전`,
 
-            item.result_type ||
-            "",
+            item.result_type,
+            item.result_score,
 
-            item.result_score ??
-            "",
-
-            item.secondary_type ||
-            "",
-
-            item.secondary_score ??
-            "",
+            item.secondary_type,
+            item.secondary_score,
 
             combination?.name ||
-            "",
+              "",
 
             strength?.label ||
-            "",
+              "",
 
             scores.stable ??
-            "",
+              "",
 
             scores.aggressive ??
-            "",
+              "",
 
             scores.analytical ??
-            "",
+              "",
 
             scores.pioneer ??
-            "",
+              "",
+
+            consultation
+              ? "신청"
+              : "미신청",
+
+            consultation
+              ? CATEGORY_LABEL[
+                  consultation.category
+                ]
+              : "",
+
+            matching,
+
+            consultation
+              ?.manager_name ||
+              "",
+
+            consultation
+              ? STATUS_LABEL[
+                  consultation.status
+                ]
+              : "",
+
+            consultation
+              ? formatDate(
+                  consultation.created_at
+                )
+              : "",
 
             ...Array.from(
               {
@@ -551,7 +493,7 @@ export async function GET(
                 _,
                 index
               ) =>
-                getAnswerText(
+                answerText(
                   item.answers,
                   index + 1
                 )
@@ -577,56 +519,36 @@ export async function GET(
         .join("\r\n");
 
 
-    /*
-      Excel에서 한글이 깨지지 않도록
-      UTF-8 BOM 추가
-    */
-
-    const output =
-      "\uFEFF" +
-      csv;
-
-
-    const date =
-      new Date()
-        .toISOString()
-        .slice(
-          0,
-          10
-        );
-
-
     return new Response(
-      output,
+      "\uFEFF" +
+      csv,
       {
-        status:
-          200,
-
         headers: {
           "Content-Type":
             "text/csv; charset=utf-8",
 
           "Content-Disposition":
-            `attachment; filename="opening-profile-${date}.csv"`,
+            `attachment; filename="opening-profile-${new Date()
+              .toISOString()
+              .slice(
+                0,
+                10
+              )}.csv"`,
 
           "Cache-Control":
             "no-store",
         },
       }
     );
-
   } catch (error) {
     console.error(
-      "Admin export error:",
       error
     );
-
 
     return new Response(
       "Export failed",
       {
-        status:
-          500,
+        status: 500,
       }
     );
   }
