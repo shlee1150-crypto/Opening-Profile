@@ -25,6 +25,10 @@ import {
 
 /* =========================================================
    보조성향 판정
+
+   1. 메인성향 제외 최고 점수
+   2. 동점이면 해당 유형 선택 문항 수
+   3. 그래도 동점이면 뒤쪽 문항에서 나타난 유형 우선
 ========================================================= */
 
 function selectSecondaryType(
@@ -40,6 +44,7 @@ function selectSecondaryType(
         type !== primaryType
     );
 
+
   const highestScore =
     Math.max(
       ...candidates.map(
@@ -47,6 +52,7 @@ function selectSecondaryType(
           score
       )
     );
+
 
   const tied =
     candidates
@@ -60,21 +66,24 @@ function selectSecondaryType(
           type
       );
 
+
   if (
     tied.length === 1
   ) {
     return tied[0];
   }
 
+
   const answerValues =
     Object.entries(
       answers
     ).filter(
       ([key]) =>
-        key.startsWith(
-          "q"
+        /^q\d+$/.test(
+          key
         )
     );
+
 
   const ranked =
     tied.map(
@@ -85,6 +94,7 @@ function selectSecondaryType(
               answer.type ===
               type
           );
+
 
         const lastQuestion =
           selected.reduce(
@@ -108,6 +118,7 @@ function selectSecondaryType(
             0
           );
 
+
         return {
           type,
 
@@ -118,6 +129,7 @@ function selectSecondaryType(
         };
       }
     );
+
 
   ranked.sort(
     (a, b) => {
@@ -138,17 +150,20 @@ function selectSecondaryType(
     }
   );
 
-  return ranked[0].type;
+
+  return ranked[0]?.type ||
+    candidates[0]?.[0];
 }
 
 
 /* =========================================================
-   상세 결과
+   상세 결과 리포트
 ========================================================= */
 
 function DetailedReport({
   primaryInfo,
   secondaryInfo,
+
   combination,
   combinationStrength,
 
@@ -170,13 +185,20 @@ function DetailedReport({
   const detail =
     primaryInfo.detail;
 
+
   return (
     <div className="detail-report">
 
+      {/* ===================================================
+          HEADER
+      =================================================== */}
+
       <div className="detail-report-header">
+
         <p>
           DETAILED OPENING REPORT
         </p>
+
 
         <h2>
           {primaryInfo.emoji}{" "}
@@ -186,25 +208,31 @@ function DetailedReport({
           {secondaryInfo.label}
         </h2>
 
+
         <span>
-          기본 성향과 보조 성향을 함께
-          분석해 원장님의 개원 의사결정
-          스타일을 조금 더 구체적으로
-          정리했습니다.
+          기본 성향과 보조 성향을 함께 분석해
+          원장님의 개원 의사결정 스타일을
+          조금 더 구체적으로 정리했습니다.
         </span>
+
       </div>
 
 
-      {/* 복합성향 */}
+      {/* ===================================================
+          복합성향
+      =================================================== */}
 
       <section className="detail-section combination-detail-section">
 
         <div className="detail-section-title">
+
           <span className="detail-icon">
             00
           </span>
 
+
           <div>
+
             <small>
               COMBINATION
             </small>
@@ -212,66 +240,60 @@ function DetailedReport({
             <h3>
               나의 복합 개원성향
             </h3>
+
           </div>
+
         </div>
 
 
         <div className="combination-big-name">
-          {
-            combination.name
-          }
+          {combination.name}
         </div>
 
 
         <div className="combination-strength-badge">
-          {
-            combinationStrength.label
-          }
+          {combinationStrength.label}
         </div>
 
 
         <p className="combination-tagline">
-          “{
-            combination.tagline
-          }”
+          “{combination.tagline}”
         </p>
 
 
         <p className="detail-main-text">
-          {
-            combination.description
-          }
+          {combination.description}
         </p>
 
 
         <div className="combo-analysis-grid">
 
           <div className="combo-analysis-box">
+
             <span className="combo-box-label">
               STRONG POINT
             </span>
+
 
             <h4>
               강점
             </h4>
 
+
             <ul>
-              {
-                combination.strengths.map(
-                  (item) => (
-                    <li
-                      key={
-                        item
-                      }
-                    >
-                      {
-                        item
-                      }
-                    </li>
-                  )
+
+              {combination.strengths.map(
+                (item) => (
+                  <li
+                    key={item}
+                  >
+                    {item}
+                  </li>
                 )
-              }
+              )}
+
             </ul>
+
           </div>
 
 
@@ -281,57 +303,62 @@ function DetailedReport({
               CHECK POINT
             </span>
 
+
             <h4>
               주의할 점
             </h4>
 
+
             <ul>
-              {
-                combination.cautions.map(
-                  (item) => (
-                    <li
-                      key={
-                        item
-                      }
-                    >
-                      {
-                        item
-                      }
-                    </li>
-                  )
+
+              {combination.cautions.map(
+                (item) => (
+                  <li
+                    key={item}
+                  >
+                    {item}
+                  </li>
                 )
-              }
+              )}
+
             </ul>
+
           </div>
 
         </div>
 
 
         <div className="combo-strategy">
+
           <span>
             추천 전략
           </span>
 
+
           <strong>
-            “{
-              combination.strategy
-            }”
+            “{combination.strategy}”
           </strong>
+
         </div>
 
       </section>
 
 
-      {/* 기본성향 */}
+      {/* ===================================================
+          기본성향
+      =================================================== */}
 
       <section className="detail-section">
 
         <div className="detail-section-title">
+
           <span className="detail-icon">
             01
           </span>
 
+
           <div>
+
             <small>
               PROFILE
             </small>
@@ -339,28 +366,34 @@ function DetailedReport({
             <h3>
               원장님의 기본 성향
             </h3>
+
           </div>
+
         </div>
 
+
         <p className="detail-main-text">
-          {
-            detail.trait
-          }
+          {detail.trait}
         </p>
 
       </section>
 
 
-      {/* 추천입지 */}
+      {/* ===================================================
+          추천 입지
+      =================================================== */}
 
       <section className="detail-section">
 
         <div className="detail-section-title">
+
           <span className="detail-icon">
             02
           </span>
 
+
           <div>
+
             <small>
               LOCATION
             </small>
@@ -368,55 +401,54 @@ function DetailedReport({
             <h3>
               추천 입지
             </h3>
+
           </div>
+
         </div>
 
 
         <div className="detail-highlight">
-          📍 {
-            detail.locationTitle
-          }
+          📍 {detail.locationTitle}
         </div>
 
 
         <p className="detail-main-text">
-          {
-            detail.locationDescription
-          }
+          {detail.locationDescription}
         </p>
 
 
         <div className="detail-tags">
-          {
-            detail.locationPoints.map(
-              (point) => (
-                <span
-                  key={
-                    point
-                  }
-                >
-                  {
-                    point
-                  }
-                </span>
-              )
+
+          {detail.locationPoints.map(
+            (point) => (
+              <span
+                key={point}
+              >
+                {point}
+              </span>
             )
-          }
+          )}
+
         </div>
 
       </section>
 
 
-      {/* 전략 */}
+      {/* ===================================================
+          추천 전략
+      =================================================== */}
 
       <section className="detail-section">
 
         <div className="detail-section-title">
+
           <span className="detail-icon">
             03
           </span>
 
+
           <div>
+
             <small>
               STRATEGY
             </small>
@@ -424,36 +456,39 @@ function DetailedReport({
             <h3>
               추천 개원전략
             </h3>
+
           </div>
+
         </div>
 
 
         <div className="strategy-title">
-          “{
-            detail.strategyTitle
-          }”
+          “{detail.strategyTitle}”
         </div>
 
 
         <p className="detail-main-text">
-          {
-            detail.strategy
-          }
+          {detail.strategy}
         </p>
 
       </section>
 
 
-      {/* 꿀팁 */}
+      {/* ===================================================
+          개원 꿀팁
+      =================================================== */}
 
       <section className="detail-section">
 
         <div className="detail-section-title">
+
           <span className="detail-icon">
             04
           </span>
 
+
           <div>
+
             <small>
               OPENING TIP
             </small>
@@ -461,62 +496,68 @@ function DetailedReport({
             <h3>
               개원 꿀팁
             </h3>
+
           </div>
+
         </div>
 
 
         <div className="tip-list">
-          {
-            detail.tips.map(
-              (
-                tip,
-                index
-              ) => (
-                <div
-                  className="tip-item"
-                  key={
-                    tip.title
-                  }
-                >
-                  <div className="tip-number">
-                    {
-                      index +
-                      1
-                    }
-                  </div>
 
-                  <div>
-                    <strong>
-                      {
-                        tip.title
-                      }
-                    </strong>
+          {detail.tips.map(
+            (
+              tip,
+              index
+            ) => (
+              <div
+                className="tip-item"
+                key={
+                  tip.title
+                }
+              >
 
-                    <p>
-                      {
-                        tip.text
-                      }
-                    </p>
-                  </div>
+                <div className="tip-number">
+                  {index + 1}
                 </div>
-              )
+
+
+                <div>
+
+                  <strong>
+                    {tip.title}
+                  </strong>
+
+
+                  <p>
+                    {tip.text}
+                  </p>
+
+                </div>
+
+              </div>
             )
-          }
+          )}
+
         </div>
 
       </section>
 
 
-      {/* 홍보 */}
+      {/* ===================================================
+          운영·홍보
+      =================================================== */}
 
       <section className="detail-section">
 
         <div className="detail-section-title">
+
           <span className="detail-icon">
             05
           </span>
 
+
           <div>
+
             <small>
               OPERATION & MARKETING
             </small>
@@ -524,55 +565,54 @@ function DetailedReport({
             <h3>
               운영·홍보 포인트
             </h3>
+
           </div>
+
         </div>
 
 
         <div className="promotion-title">
-          “{
-            detail.promotionTitle
-          }”
+          “{detail.promotionTitle}”
         </div>
 
 
         <ul className="promotion-list">
-          {
-            detail.promotionPoints.map(
-              (point) => (
-                <li
-                  key={
-                    point
-                  }
-                >
-                  {
-                    point
-                  }
-                </li>
-              )
+
+          {detail.promotionPoints.map(
+            (point) => (
+              <li
+                key={point}
+              >
+                {point}
+              </li>
             )
-          }
+          )}
+
         </ul>
 
 
         <p className="detail-main-text">
-          {
-            detail.promotionDescription
-          }
+          {detail.promotionDescription}
         </p>
 
       </section>
 
 
-      {/* 주의 */}
+      {/* ===================================================
+          주의사항
+      =================================================== */}
 
       <section className="detail-section">
 
         <div className="detail-section-title">
+
           <span className="detail-icon warning">
             !
           </span>
 
+
           <div>
+
             <small>
               CHECK POINT
             </small>
@@ -580,20 +620,22 @@ function DetailedReport({
             <h3>
               기본 성향에서 주의할 점
             </h3>
+
           </div>
+
         </div>
 
 
         <div className="caution-box">
-          {
-            detail.caution
-          }
+          {detail.caution}
         </div>
 
       </section>
 
 
-      {/* TIP */}
+      {/* ===================================================
+          한줄 TIP
+      =================================================== */}
 
       <div className="one-line-tip">
 
@@ -601,10 +643,9 @@ function DetailedReport({
           ONE LINE TIP
         </span>
 
+
         <strong>
-          “{
-            detail.oneLineTip
-          }”
+          “{detail.oneLineTip}”
         </strong>
 
       </div>
@@ -620,15 +661,18 @@ function DetailedReport({
           🦷
         </div>
 
+
         <p className="consultation-cta-kicker">
           OPENING CONSULTATION
         </p>
+
 
         <h3>
           개원 준비,
           이제 실제 상담으로
           이어가보세요.
         </h3>
+
 
         <p className="consultation-cta-description">
           입지부터 대장비,
@@ -638,14 +682,11 @@ function DetailedReport({
         </p>
 
 
-        {
-          consultationCompleted &&
-          (
-            <div className="consultation-complete-message">
-              ✓ 상담 신청이 완료되었습니다.
-            </div>
-          )
-        }
+        {consultationCompleted && (
+          <div className="consultation-complete-message">
+            ✓ 상담 신청이 완료되었습니다.
+          </div>
+        )}
 
 
         <button
@@ -655,11 +696,9 @@ function DetailedReport({
             openConsultation
           }
         >
-          {
-            consultationCompleted
-              ? "상담 내용 다시 신청하기"
-              : "상담 신청하기"
-          }
+          {consultationCompleted
+            ? "상담 내용 다시 신청하기"
+            : "🦷 상담 신청하기"}
         </button>
 
       </section>
@@ -672,27 +711,35 @@ function DetailedReport({
       <section className="detail-email">
 
         <div className="detail-email-head">
+
           <span>
             📧
           </span>
 
+
           <div>
+
             <h3>
               결과 이메일로 받기
             </h3>
+
 
             <p>
               지금 확인한 기본성향 +
               복합성향 상세 분석을
               이메일로 받아보세요.
             </p>
+
           </div>
+
         </div>
 
 
         <input
           type="email"
+
           inputMode="email"
+
           autoComplete="email"
 
           placeholder="이메일 주소를 입력해주세요"
@@ -712,39 +759,24 @@ function DetailedReport({
               event.target.value
             );
 
-            setEmailError(
-              ""
-            );
-
-            setEmailSuccess(
-              ""
-            );
+            setEmailError("");
+            setEmailSuccess("");
           }}
         />
 
 
-        {
-          emailError &&
-          (
-            <div className="detail-email-error">
-              {
-                emailError
-              }
-            </div>
-          )
-        }
+        {emailError && (
+          <div className="detail-email-error">
+            {emailError}
+          </div>
+        )}
 
 
-        {
-          emailSuccess &&
-          (
-            <div className="detail-email-success">
-              ✓ {
-                emailSuccess
-              }
-            </div>
-          )
-        }
+        {emailSuccess && (
+          <div className="detail-email-success">
+            ✓ {emailSuccess}
+          </div>
+        )}
 
 
         <button
@@ -758,22 +790,23 @@ function DetailedReport({
             sendResultEmail
           }
         >
-          {
-            emailSending
-              ? "이메일 발송 중..."
-              : "📧 상세 결과 이메일로 받기"
-          }
+          {emailSending
+            ? "이메일 발송 중..."
+            : "📧 상세 결과 이메일로 받기"}
         </button>
 
 
         <p className="email-privacy-note">
-          입력한 이메일 주소는 결과
-          발송에만 사용되며 진단 DB에는
-          별도로 저장하지 않습니다.
+          입력한 이메일 주소는 결과 발송에만
+          사용되며 진단 DB에는 별도로 저장하지 않습니다.
         </p>
 
       </section>
 
+
+      {/* ===================================================
+          상세 결과 CSS
+      =================================================== */}
 
       <style jsx>{`
 
@@ -783,457 +816,1270 @@ function DetailedReport({
           border-radius: 22px;
           overflow: hidden;
           background: #ffffff;
-          box-shadow: 0 12px 35px rgba(70, 50, 35, 0.08);
+          box-shadow:
+            0 12px 35px
+            rgba(
+              70,
+              50,
+              35,
+              0.08
+            );
         }
+
 
         .detail-report-header {
-          padding: clamp(25px, 4vw, 38px);
-          background: linear-gradient(145deg, #fff8f3 0%, #ffffff 100%);
-          border-bottom: 1px solid #eee6de;
+          padding:
+            clamp(
+              25px,
+              4vw,
+              38px
+            );
+
+          background:
+            linear-gradient(
+              145deg,
+              #fff8f3 0%,
+              #ffffff 100%
+            );
+
+          border-bottom:
+            1px solid #eee6de;
         }
+
 
         .detail-report-header > p {
-          margin: 0 0 9px;
-          color: #f26a21;
-          font-size: 11px;
-          font-weight: 900;
-          letter-spacing: 1.8px;
+          margin:
+            0 0 9px;
+
+          color:
+            #f26a21;
+
+          font-size:
+            11px;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            1.8px;
         }
+
 
         .detail-report-header h2 {
-          margin: 0 0 10px;
-          color: #28231f;
-          font-size: clamp(23px, 4vw, 31px);
-          line-height: 1.4;
-          font-weight: 900;
-          letter-spacing: -1px;
-          word-break: keep-all;
+          margin:
+            0 0 10px;
+
+          color:
+            #28231f;
+
+          font-size:
+            clamp(
+              23px,
+              4vw,
+              31px
+            );
+
+          line-height:
+            1.4;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            -1px;
+
+          word-break:
+            keep-all;
         }
+
 
         .detail-report-header > span {
-          color: #777069;
-          font-size: clamp(13px, 2vw, 15px);
-          line-height: 1.7;
-          word-break: keep-all;
+          display:
+            block;
+
+          color:
+            #777069;
+
+          font-size:
+            clamp(
+              13px,
+              2vw,
+              15px
+            );
+
+          line-height:
+            1.7;
+
+          word-break:
+            keep-all;
         }
+
 
         .detail-section {
-          padding: clamp(24px, 4vw, 32px);
-          border-bottom: 1px solid #eee8e1;
+          padding:
+            clamp(
+              24px,
+              4vw,
+              32px
+            );
+
+          border-bottom:
+            1px solid #eee8e1;
         }
+
 
         .combination-detail-section {
-          background: #fffdfb;
+          background:
+            #fffdfb;
         }
+
 
         .detail-section-title {
-          display: flex;
-          align-items: center;
-          gap: 13px;
-          margin-bottom: 19px;
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          gap:
+            13px;
+
+          margin-bottom:
+            19px;
         }
+
 
         .detail-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 36px;
-          height: 36px;
-          flex: 0 0 36px;
-          border-radius: 10px;
-          background: #fff1e8;
-          color: #f26a21;
-          font-size: 12px;
-          font-weight: 900;
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            center;
+
+          width:
+            36px;
+
+          height:
+            36px;
+
+          flex:
+            0 0 36px;
+
+          border-radius:
+            10px;
+
+          background:
+            #fff1e8;
+
+          color:
+            #f26a21;
+
+          font-size:
+            12px;
+
+          font-weight:
+            900;
         }
+
 
         .detail-icon.warning {
-          background: #fff0ed;
-          color: #dc4c36;
-          font-size: 18px;
+          background:
+            #fff0ed;
+
+          color:
+            #dc4c36;
+
+          font-size:
+            18px;
         }
+
 
         .detail-section-title small {
-          display: block;
-          margin-bottom: 2px;
-          color: #aaa29a;
-          font-size: 9px;
-          font-weight: 900;
-          letter-spacing: 1.3px;
+          display:
+            block;
+
+          margin-bottom:
+            2px;
+
+          color:
+            #aaa29a;
+
+          font-size:
+            9px;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            1.3px;
         }
+
 
         .detail-section-title h3 {
-          margin: 0;
-          color: #332e29;
-          font-size: clamp(17px, 3vw, 20px);
-          font-weight: 900;
+          margin:
+            0;
+
+          color:
+            #332e29;
+
+          font-size:
+            clamp(
+              17px,
+              3vw,
+              20px
+            );
+
+          font-weight:
+            900;
         }
+
 
         .combination-big-name {
-          color: #26221e;
-          font-size: clamp(28px, 5vw, 39px);
-          font-weight: 900;
-          letter-spacing: -1.3px;
+          color:
+            #26221e;
+
+          font-size:
+            clamp(
+              28px,
+              5vw,
+              39px
+            );
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            -1.3px;
         }
+
 
         .combination-strength-badge {
-          display: inline-block;
-          margin-top: 9px;
-          padding: 7px 11px;
-          border-radius: 999px;
-          background: #fff0e6;
-          color: #f26a21;
-          font-size: 12px;
-          font-weight: 900;
+          display:
+            inline-block;
+
+          margin-top:
+            9px;
+
+          padding:
+            7px 11px;
+
+          border-radius:
+            999px;
+
+          background:
+            #fff0e6;
+
+          color:
+            #f26a21;
+
+          font-size:
+            12px;
+
+          font-weight:
+            900;
         }
+
 
         .combination-tagline {
-          margin: 18px 0 12px;
-          color: #3a3530;
-          font-size: clamp(17px, 3vw, 20px);
-          font-weight: 900;
-          line-height: 1.6;
-          word-break: keep-all;
+          margin:
+            18px 0 12px;
+
+          color:
+            #3a3530;
+
+          font-size:
+            clamp(
+              17px,
+              3vw,
+              20px
+            );
+
+          font-weight:
+            900;
+
+          line-height:
+            1.6;
+
+          word-break:
+            keep-all;
         }
+
 
         .detail-main-text {
-          margin: 0;
-          color: #5f5851;
-          font-size: clamp(14px, 2.3vw, 16px);
-          line-height: 1.8;
-          word-break: keep-all;
+          margin:
+            0;
+
+          color:
+            #5f5851;
+
+          font-size:
+            clamp(
+              14px,
+              2.3vw,
+              16px
+            );
+
+          line-height:
+            1.8;
+
+          word-break:
+            keep-all;
         }
+
 
         .combo-analysis-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
-          margin-top: 23px;
+          display:
+            grid;
+
+          grid-template-columns:
+            1fr;
+
+          gap:
+            12px;
+
+          margin-top:
+            23px;
         }
+
 
         .combo-analysis-box {
-          padding: 18px;
-          border-radius: 15px;
-          background: #f8f6f3;
+          padding:
+            18px;
+
+          border-radius:
+            15px;
+
+          background:
+            #f8f6f3;
         }
+
 
         .combo-analysis-box.caution {
-          background: #fff5f2;
+          background:
+            #fff5f2;
         }
+
 
         .combo-box-label {
-          display: block;
-          margin-bottom: 5px;
-          color: #f26a21;
-          font-size: 9px;
-          letter-spacing: 1.3px;
-          font-weight: 900;
+          display:
+            block;
+
+          margin-bottom:
+            5px;
+
+          color:
+            #f26a21;
+
+          font-size:
+            9px;
+
+          letter-spacing:
+            1.3px;
+
+          font-weight:
+            900;
         }
+
+
+        .combo-analysis-box.caution
+        .combo-box-label {
+          color:
+            #d75c47;
+        }
+
 
         .combo-analysis-box h4 {
-          margin: 0 0 10px;
-          color: #37322d;
-          font-size: 16px;
-          font-weight: 900;
+          margin:
+            0 0 10px;
+
+          color:
+            #37322d;
+
+          font-size:
+            16px;
+
+          font-weight:
+            900;
         }
+
 
         .combo-analysis-box ul {
-          margin: 0;
-          padding-left: 19px;
-          color: #68615a;
-          font-size: 13px;
-          line-height: 1.7;
+          margin:
+            0;
+
+          padding-left:
+            19px;
+
+          color:
+            #68615a;
+
+          font-size:
+            13px;
+
+          line-height:
+            1.7;
         }
+
 
         .combo-analysis-box li {
-          margin-bottom: 6px;
+          margin-bottom:
+            6px;
         }
+
+
+        .combo-analysis-box li:last-child {
+          margin-bottom:
+            0;
+        }
+
 
         .combo-strategy {
-          margin-top: 15px;
-          padding: 18px;
-          border-radius: 15px;
-          background: #332d28;
+          margin-top:
+            15px;
+
+          padding:
+            18px;
+
+          border-radius:
+            15px;
+
+          background:
+            #332d28;
         }
+
 
         .combo-strategy span {
-          display: block;
-          margin-bottom: 7px;
-          color: #f8a16e;
-          font-size: 10px;
-          font-weight: 900;
+          display:
+            block;
+
+          margin-bottom:
+            7px;
+
+          color:
+            #f8a16e;
+
+          font-size:
+            10px;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            1px;
         }
+
 
         .combo-strategy strong {
-          color: #ffffff;
-          font-size: clamp(15px, 2.7vw, 18px);
-          line-height: 1.6;
-          word-break: keep-all;
+          display:
+            block;
+
+          color:
+            #ffffff;
+
+          font-size:
+            clamp(
+              15px,
+              2.7vw,
+              18px
+            );
+
+          line-height:
+            1.6;
+
+          word-break:
+            keep-all;
         }
+
 
         .detail-highlight {
-          margin-bottom: 12px;
-          color: #f26a21;
-          font-size: clamp(16px, 2.8vw, 19px);
-          font-weight: 900;
-          line-height: 1.5;
+          margin-bottom:
+            12px;
+
+          color:
+            #f26a21;
+
+          font-size:
+            clamp(
+              16px,
+              2.8vw,
+              19px
+            );
+
+          font-weight:
+            900;
+
+          line-height:
+            1.5;
+
+          word-break:
+            keep-all;
         }
+
 
         .detail-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 17px;
+          display:
+            flex;
+
+          flex-wrap:
+            wrap;
+
+          gap:
+            8px;
+
+          margin-top:
+            17px;
         }
+
 
         .detail-tags span {
-          padding: 8px 11px;
-          border-radius: 999px;
-          background: #f7f4f0;
-          color: #665f58;
-          font-size: 12px;
-          font-weight: 700;
+          padding:
+            8px 11px;
+
+          border-radius:
+            999px;
+
+          background:
+            #f7f4f0;
+
+          color:
+            #665f58;
+
+          font-size:
+            clamp(
+              11px,
+              2vw,
+              13px
+            );
+
+          font-weight:
+            700;
         }
 
-        .strategy-title,
-        .promotion-title {
-          margin-bottom: 12px;
-          color: #33302c;
-          font-size: clamp(16px, 3vw, 20px);
-          font-weight: 900;
-          line-height: 1.55;
+
+        .strategy-title {
+          margin-bottom:
+            12px;
+
+          color:
+            #33302c;
+
+          font-size:
+            clamp(
+              17px,
+              3vw,
+              20px
+            );
+
+          font-weight:
+            900;
+
+          line-height:
+            1.5;
+
+          word-break:
+            keep-all;
         }
+
 
         .tip-list {
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
+          display:
+            flex;
+
+          flex-direction:
+            column;
+
+          gap:
+            18px;
         }
+
 
         .tip-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 13px;
+          display:
+            flex;
+
+          align-items:
+            flex-start;
+
+          gap:
+            13px;
         }
+
 
         .tip-number {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 28px;
-          height: 28px;
-          flex: 0 0 28px;
-          border-radius: 50%;
-          background: #f26a21;
-          color: #ffffff;
-          font-size: 12px;
-          font-weight: 900;
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            center;
+
+          width:
+            28px;
+
+          height:
+            28px;
+
+          flex:
+            0 0 28px;
+
+          border-radius:
+            50%;
+
+          background:
+            #f26a21;
+
+          color:
+            #ffffff;
+
+          font-size:
+            12px;
+
+          font-weight:
+            900;
         }
+
 
         .tip-item strong {
-          display: block;
-          margin-bottom: 5px;
-          color: #3c3732;
-          font-size: 15px;
-          font-weight: 900;
+          display:
+            block;
+
+          margin-bottom:
+            5px;
+
+          color:
+            #3c3732;
+
+          font-size:
+            clamp(
+              14px,
+              2.3vw,
+              16px
+            );
+
+          font-weight:
+            900;
         }
+
 
         .tip-item p {
-          margin: 0;
-          color: #746d66;
-          font-size: 14px;
-          line-height: 1.7;
+          margin:
+            0;
+
+          color:
+            #746d66;
+
+          font-size:
+            clamp(
+              13px,
+              2vw,
+              15px
+            );
+
+          line-height:
+            1.7;
+
+          word-break:
+            keep-all;
         }
+
+
+        .promotion-title {
+          margin-bottom:
+            16px;
+
+          color:
+            #33302c;
+
+          font-size:
+            clamp(
+              16px,
+              2.8vw,
+              19px
+            );
+
+          line-height:
+            1.55;
+
+          font-weight:
+            900;
+
+          word-break:
+            keep-all;
+        }
+
 
         .promotion-list {
-          margin: 0 0 17px;
-          padding: 17px 18px 17px 37px;
-          border-radius: 14px;
-          background: #f8f6f3;
-          color: #5d5650;
-          line-height: 1.7;
+          margin:
+            0 0 17px;
+
+          padding:
+            17px
+            18px
+            17px
+            37px;
+
+          border-radius:
+            14px;
+
+          background:
+            #f8f6f3;
+
+          color:
+            #5d5650;
         }
+
+
+        .promotion-list li {
+          margin-bottom:
+            8px;
+
+          font-size:
+            clamp(
+              13px,
+              2.1vw,
+              15px
+            );
+
+          line-height:
+            1.6;
+        }
+
+
+        .promotion-list li:last-child {
+          margin-bottom:
+            0;
+        }
+
 
         .caution-box {
-          padding: 17px 18px;
-          border-radius: 14px;
-          background: #fff5f2;
-          border-left: 4px solid #e6654d;
-          color: #67534d;
-          font-size: 14px;
-          line-height: 1.75;
+          padding:
+            17px 18px;
+
+          border-radius:
+            14px;
+
+          background:
+            #fff5f2;
+
+          border-left:
+            4px solid #e6654d;
+
+          color:
+            #67534d;
+
+          font-size:
+            clamp(
+              13px,
+              2.2vw,
+              15px
+            );
+
+          line-height:
+            1.75;
+
+          word-break:
+            keep-all;
         }
+
 
         .one-line-tip {
-          padding: clamp(24px, 4vw, 31px);
-          background: #332d28;
-          text-align: center;
+          padding:
+            clamp(
+              24px,
+              4vw,
+              31px
+            );
+
+          background:
+            #332d28;
+
+          text-align:
+            center;
         }
+
 
         .one-line-tip span {
-          display: block;
-          margin-bottom: 9px;
-          color: #f8a16e;
-          font-size: 10px;
-          font-weight: 900;
-          letter-spacing: 1.7px;
+          display:
+            block;
+
+          margin-bottom:
+            9px;
+
+          color:
+            #f8a16e;
+
+          font-size:
+            10px;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            1.7px;
         }
+
 
         .one-line-tip strong {
-          color: #ffffff;
-          font-size: clamp(16px, 3vw, 20px);
-          line-height: 1.6;
+          display:
+            block;
+
+          color:
+            #ffffff;
+
+          font-size:
+            clamp(
+              16px,
+              3vw,
+              20px
+            );
+
+          line-height:
+            1.6;
+
+          font-weight:
+            900;
+
+          word-break:
+            keep-all;
         }
+
+
+        /* ===============================================
+           상담 CTA
+        =============================================== */
 
         .consultation-cta {
-          padding: clamp(29px, 5vw, 40px);
-          background: #fffaf6;
-          border-bottom: 1px solid #eee5de;
-          text-align: center;
+          padding:
+            clamp(
+              29px,
+              5vw,
+              40px
+            );
+
+          background:
+            #fffaf6;
+
+          border-bottom:
+            1px solid #eee5de;
+
+          text-align:
+            center;
         }
+
 
         .consultation-cta-icon {
-          margin-bottom: 10px;
-          font-size: 32px;
+          margin-bottom:
+            10px;
+
+          font-size:
+            32px;
         }
+
 
         .consultation-cta-kicker {
-          margin: 0 0 7px;
-          color: #f26a21;
-          font-size: 9px;
-          font-weight: 900;
-          letter-spacing: 1.7px;
+          margin:
+            0 0 7px;
+
+          color:
+            #f26a21;
+
+          font-size:
+            9px;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            1.7px;
         }
+
 
         .consultation-cta h3 {
-          margin: 0 auto 10px;
-          max-width: 430px;
-          color: #302b27;
-          font-size: clamp(20px, 3.5vw, 26px);
-          line-height: 1.45;
-          font-weight: 900;
-          word-break: keep-all;
+          max-width:
+            430px;
+
+          margin:
+            0 auto 10px;
+
+          color:
+            #302b27;
+
+          font-size:
+            clamp(
+              20px,
+              3.5vw,
+              26px
+            );
+
+          line-height:
+            1.45;
+
+          font-weight:
+            900;
+
+          word-break:
+            keep-all;
         }
+
 
         .consultation-cta-description {
-          max-width: 430px;
-          margin: 0 auto 20px;
-          color: #7d756e;
-          font-size: 13px;
-          line-height: 1.7;
-          word-break: keep-all;
+          max-width:
+            430px;
+
+          margin:
+            0 auto 20px;
+
+          color:
+            #7d756e;
+
+          font-size:
+            13px;
+
+          line-height:
+            1.7;
+
+          word-break:
+            keep-all;
         }
+
 
         .consultation-button {
-          width: 100%;
-          max-width: 420px;
-          height: 56px;
-          border: 0;
-          border-radius: 14px;
-          background: #f26a21;
-          color: #ffffff;
-          font-size: 16px;
-          font-weight: 900;
-          cursor: pointer;
-          box-shadow: 0 8px 20px rgba(242, 106, 33, 0.2);
+          width:
+            100%;
+
+          max-width:
+            420px;
+
+          height:
+            56px;
+
+          border:
+            0;
+
+          border-radius:
+            14px;
+
+          background:
+            #f26a21;
+
+          color:
+            #ffffff;
+
+          font-size:
+            16px;
+
+          font-weight:
+            900;
+
+          cursor:
+            pointer;
+
+          box-shadow:
+            0 8px 20px
+            rgba(
+              242,
+              106,
+              33,
+              0.2
+            );
+
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
         }
+
+
+        .consultation-button:hover {
+          transform:
+            translateY(-1px);
+
+          box-shadow:
+            0 10px 24px
+            rgba(
+              242,
+              106,
+              33,
+              0.24
+            );
+        }
+
 
         .consultation-complete-message {
-          max-width: 420px;
-          margin: 0 auto 11px;
-          padding: 11px;
-          border-radius: 10px;
-          background: #edf7ed;
-          color: #34753b;
-          font-size: 12px;
-          font-weight: 900;
+          max-width:
+            420px;
+
+          margin:
+            0 auto 11px;
+
+          padding:
+            11px;
+
+          border-radius:
+            10px;
+
+          background:
+            #edf7ed;
+
+          color:
+            #34753b;
+
+          font-size:
+            12px;
+
+          font-weight:
+            900;
         }
+
+
+        /* ===============================================
+           이메일
+        =============================================== */
 
         .detail-email {
-          padding: clamp(25px, 4vw, 33px);
-          background: #f8f5f1;
+          padding:
+            clamp(
+              25px,
+              4vw,
+              33px
+            );
+
+          background:
+            #f8f5f1;
         }
+
 
         .detail-email-head {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 18px;
+          display:
+            flex;
+
+          align-items:
+            flex-start;
+
+          gap:
+            12px;
+
+          margin-bottom:
+            18px;
         }
+
+
+        .detail-email-head > span {
+          font-size:
+            23px;
+        }
+
 
         .detail-email-head h3 {
-          margin: 0 0 5px;
-          color: #332f2b;
-          font-size: 19px;
-          font-weight: 900;
+          margin:
+            0 0 5px;
+
+          color:
+            #332f2b;
+
+          font-size:
+            clamp(
+              17px,
+              3vw,
+              20px
+            );
+
+          font-weight:
+            900;
         }
+
 
         .detail-email-head p {
-          margin: 0;
-          color: #777069;
-          font-size: 13px;
-          line-height: 1.6;
+          margin:
+            0;
+
+          color:
+            #777069;
+
+          font-size:
+            13px;
+
+          line-height:
+            1.6;
         }
+
 
         .detail-email input {
-          width: 100%;
-          height: 56px;
-          padding: 0 16px;
-          border: 1px solid #d9d1ca;
-          border-radius: 13px;
-          outline: none;
-          background: #ffffff;
-          color: #222;
-          font-size: 16px;
-          font-weight: 600;
+          width:
+            100%;
+
+          height:
+            56px;
+
+          padding:
+            0 16px;
+
+          border:
+            1px solid #d9d1ca;
+
+          border-radius:
+            13px;
+
+          outline:
+            none;
+
+          background:
+            #ffffff;
+
+          color:
+            #222222;
+
+          font-size:
+            16px;
+
+          font-weight:
+            600;
         }
+
+
+        .detail-email input:focus {
+          border-color:
+            #f26a21;
+
+          box-shadow:
+            0 0 0 3px
+            rgba(
+              242,
+              106,
+              33,
+              0.1
+            );
+        }
+
 
         .detail-email > button {
-          width: 100%;
-          height: 56px;
-          margin-top: 13px;
-          border: 0;
-          border-radius: 14px;
-          background: #f26a21;
-          color: #ffffff;
-          font-size: 16px;
-          font-weight: 900;
-          cursor: pointer;
+          width:
+            100%;
+
+          height:
+            56px;
+
+          margin-top:
+            13px;
+
+          border:
+            0;
+
+          border-radius:
+            14px;
+
+          background:
+            #f26a21;
+
+          color:
+            #ffffff;
+
+          font-size:
+            16px;
+
+          font-weight:
+            900;
+
+          cursor:
+            pointer;
+
+          box-shadow:
+            0 7px 18px
+            rgba(
+              242,
+              106,
+              33,
+              0.2
+            );
         }
 
+
         .detail-email > button:disabled {
-          background: #c9c3bd;
+          background:
+            #c9c3bd;
+
+          box-shadow:
+            none;
+
+          cursor:
+            default;
         }
+
 
         .detail-email-error,
         .detail-email-success {
-          margin-top: 11px;
-          padding: 11px 13px;
-          border-radius: 10px;
-          font-size: 13px;
-          font-weight: 700;
+          margin-top:
+            11px;
+
+          padding:
+            11px 13px;
+
+          border-radius:
+            10px;
+
+          font-size:
+            13px;
+
+          font-weight:
+            700;
+
+          line-height:
+            1.5;
         }
+
 
         .detail-email-error {
-          background: #fff0eb;
-          color: #d4512c;
+          background:
+            #fff0eb;
+
+          color:
+            #d4512c;
         }
+
 
         .detail-email-success {
-          background: #eef8ee;
-          color: #317b3a;
+          background:
+            #eef8ee;
+
+          color:
+            #317b3a;
         }
+
 
         .email-privacy-note {
-          margin: 11px 0 0;
-          color: #99918a;
-          font-size: 11px;
-          text-align: center;
+          margin:
+            11px 0 0;
+
+          color:
+            #99918a;
+
+          font-size:
+            11px;
+
+          line-height:
+            1.55;
+
+          text-align:
+            center;
+
+          word-break:
+            keep-all;
         }
 
-        @media (min-width: 700px) {
+
+        @media (
+          min-width: 700px
+        ) {
+
           .combo-analysis-grid {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns:
+              1fr 1fr;
           }
+
         }
 
       `}</style>
@@ -1251,8 +2097,14 @@ export default function Home() {
   const router =
     useRouter();
 
+
   const detailRef =
     useRef(null);
+
+
+  /* =======================================================
+     화면
+  ======================================================= */
 
   const [
     stage,
@@ -1262,11 +2114,17 @@ export default function Home() {
       "cover"
     );
 
+
+  /* =======================================================
+     기본정보
+  ======================================================= */
+
   const [
     name,
     setName,
   ] =
     useState("");
+
 
   const [
     phone,
@@ -1274,11 +2132,13 @@ export default function Home() {
   ] =
     useState("");
 
+
   const [
     licenseNumber,
     setLicenseNumber,
   ] =
     useState("");
+
 
   const [
     privacyConsent,
@@ -1286,11 +2146,17 @@ export default function Home() {
   ] =
     useState(false);
 
+
   const [
     responseId,
     setResponseId,
   ] =
     useState(null);
+
+
+  /* =======================================================
+     설문
+  ======================================================= */
 
   const [
     currentQuestion,
@@ -1298,11 +2164,13 @@ export default function Home() {
   ] =
     useState(0);
 
+
   const [
     answers,
     setAnswers,
   ] =
     useState({});
+
 
   const [
     scores,
@@ -1312,11 +2180,13 @@ export default function Home() {
       INITIAL_SCORES
     );
 
+
   const [
     selectedType,
     setSelectedType,
   ] =
     useState(null);
+
 
   const [
     transitioning,
@@ -1324,11 +2194,17 @@ export default function Home() {
   ] =
     useState(false);
 
+
   const [
     tieTypes,
     setTieTypes,
   ] =
     useState([]);
+
+
+  /* =======================================================
+     결과
+  ======================================================= */
 
   const [
     finalResult,
@@ -1336,11 +2212,20 @@ export default function Home() {
   ] =
     useState(null);
 
+
+  const [
+    pendingCompletion,
+    setPendingCompletion,
+  ] =
+    useState(null);
+
+
   const [
     loading,
     setLoading,
   ] =
     useState(false);
+
 
   const [
     errorMessage,
@@ -1348,11 +2233,13 @@ export default function Home() {
   ] =
     useState("");
 
+
   const [
     saveError,
     setSaveError,
   ] =
     useState("");
+
 
   const [
     detailsOpen,
@@ -1360,11 +2247,17 @@ export default function Home() {
   ] =
     useState(false);
 
+
   const [
     consultationCompleted,
     setConsultationCompleted,
   ] =
     useState(false);
+
+
+  /* =======================================================
+     이메일
+  ======================================================= */
 
   const [
     resultEmail,
@@ -1372,17 +2265,20 @@ export default function Home() {
   ] =
     useState("");
 
+
   const [
     emailSending,
     setEmailSending,
   ] =
     useState(false);
 
+
   const [
     emailError,
     setEmailError,
   ] =
     useState("");
+
 
   const [
     emailSuccess,
@@ -1391,9 +2287,37 @@ export default function Home() {
     useState("");
 
 
-  /* =====================================================
-     상담페이지 복귀 시 결과 복원
-  ===================================================== */
+  /* =======================================================
+     SessionStorage 초기화
+  ======================================================= */
+
+  const clearResultSession =
+    () => {
+      if (
+        typeof window ===
+        "undefined"
+      ) {
+        return;
+      }
+
+
+      sessionStorage.removeItem(
+        "openingProfileResultState"
+      );
+
+      sessionStorage.removeItem(
+        "openingProfileReturnToResult"
+      );
+
+      sessionStorage.removeItem(
+        "openingProfileConsultationCompleted"
+      );
+    };
+
+
+  /* =======================================================
+     상담 페이지에서 돌아왔을 때 결과 복원
+  ======================================================= */
 
   useEffect(
     () => {
@@ -1403,77 +2327,112 @@ export default function Home() {
             "openingProfileReturnToResult"
           );
 
+
+        if (
+          shouldRestore !==
+          "1"
+        ) {
+          return;
+        }
+
+
         const stored =
           sessionStorage.getItem(
             "openingProfileResultState"
           );
 
-        if (
-          shouldRestore !==
-            "1" ||
-          !stored
-        ) {
+
+        if (!stored) {
+          sessionStorage.removeItem(
+            "openingProfileReturnToResult"
+          );
+
           return;
         }
+
 
         const parsed =
           JSON.parse(
             stored
           );
 
+
         if (
-          parsed?.responseId &&
-          parsed?.finalResult
+          !parsed?.responseId ||
+          !parsed?.finalResult
         ) {
-          setResponseId(
-            parsed.responseId
+          sessionStorage.removeItem(
+            "openingProfileReturnToResult"
           );
 
-          setFinalResult(
-            parsed.finalResult
+          sessionStorage.removeItem(
+            "openingProfileResultState"
           );
 
-          setResultEmail(
-            parsed.resultEmail ||
-            ""
-          );
-
-          setStage(
-            "result"
-          );
-
-          setDetailsOpen(
-            true
-          );
-
-          setConsultationCompleted(
-            sessionStorage.getItem(
-              "openingProfileConsultationCompleted"
-            ) === "1"
-          );
+          return;
         }
+
+
+        setResponseId(
+          parsed.responseId
+        );
+
+
+        setFinalResult(
+          parsed.finalResult
+        );
+
+
+        setResultEmail(
+          parsed.resultEmail ||
+          ""
+        );
+
+
+        setStage(
+          "result"
+        );
+
+
+        setDetailsOpen(
+          true
+        );
+
+
+        setConsultationCompleted(
+          sessionStorage.getItem(
+            "openingProfileConsultationCompleted"
+          ) === "1"
+        );
+
+
+        /*
+          '돌아오기' 플래그만 제거.
+          결과 데이터는 현재 세션에서
+          다시 상담신청할 수 있도록 유지.
+        */
 
         sessionStorage.removeItem(
           "openingProfileReturnToResult"
         );
 
-        sessionStorage.removeItem(
-          "openingProfileResultState"
-        );
       } catch (error) {
         console.error(
           "Result restoration error:",
           error
         );
+
+
+        clearResultSession();
       }
     },
     []
   );
 
 
-  /* =====================================================
+  /* =======================================================
      전화번호
-  ===================================================== */
+  ======================================================= */
 
   const handlePhoneChange =
     (event) => {
@@ -1482,6 +2441,7 @@ export default function Home() {
           /[^0-9]/g,
           ""
         );
+
 
       if (
         value.length >
@@ -1494,6 +2454,7 @@ export default function Home() {
           );
       }
 
+
       if (
         value.length <=
         3
@@ -1504,6 +2465,7 @@ export default function Home() {
 
         return;
       }
+
 
       if (
         value.length <=
@@ -1521,6 +2483,7 @@ export default function Home() {
         return;
       }
 
+
       setPhone(
         `${value.slice(
           0,
@@ -1535,9 +2498,9 @@ export default function Home() {
     };
 
 
-  /* =====================================================
-     START
-  ===================================================== */
+  /* =======================================================
+     진단 시작
+  ======================================================= */
 
   const startSurvey =
     async () => {
@@ -1545,13 +2508,28 @@ export default function Home() {
         ""
       );
 
-      if (!name.trim()) {
+
+      if (
+        !name.trim()
+      ) {
         setErrorMessage(
           "이름을 입력해주세요."
         );
 
         return;
       }
+
+
+      if (
+        !phone.trim()
+      ) {
+        setErrorMessage(
+          "휴대폰 번호를 입력해주세요."
+        );
+
+        return;
+      }
+
 
       if (
         phone.replace(
@@ -1567,6 +2545,7 @@ export default function Home() {
         return;
       }
 
+
       if (
         !licenseNumber.trim()
       ) {
@@ -1577,7 +2556,10 @@ export default function Home() {
         return;
       }
 
-      if (!privacyConsent) {
+
+      if (
+        !privacyConsent
+      ) {
         setErrorMessage(
           "개인정보 수집 및 이용에 동의해주세요."
         );
@@ -1585,10 +2567,20 @@ export default function Home() {
         return;
       }
 
+
       try {
         setLoading(
           true
         );
+
+
+        /*
+          새로운 진단을 시작할 때
+          이전 테스트/상담 세션 완전 삭제.
+        */
+
+        clearResultSession();
+
 
         const response =
           await fetch(
@@ -1604,20 +2596,28 @@ export default function Home() {
 
               body:
                 JSON.stringify({
-                  name,
+                  name:
+                    name.trim(),
+
                   phone,
-                  licenseNumber,
+
+                  licenseNumber:
+                    licenseNumber.trim(),
+
                   privacyConsent,
                 }),
             }
           );
 
+
         const result =
           await response.json();
 
+
         if (
           !response.ok ||
-          !result.success
+          !result.success ||
+          !result.responseId
         ) {
           throw new Error(
             result.message ||
@@ -1625,18 +2625,63 @@ export default function Home() {
           );
         }
 
+
+        /*
+          DB에서 발급받은 실제 ID만 저장.
+        */
+
         setResponseId(
           result.responseId
         );
 
+
+        setCurrentQuestion(
+          0
+        );
+
+
+        setAnswers({});
+
+
+        setScores({
+          ...INITIAL_SCORES,
+        });
+
+
+        setFinalResult(
+          null
+        );
+
+
+        setPendingCompletion(
+          null
+        );
+
+
+        setSaveError("");
+
+
+        setConsultationCompleted(
+          false
+        );
+
+
         setStage(
           "survey"
         );
+
       } catch (error) {
+        console.error(
+          "Diagnosis start error:",
+          error
+        );
+
+
         setErrorMessage(
           error.message ||
             "정보 저장 중 오류가 발생했습니다."
         );
+
       } finally {
         setLoading(
           false
@@ -1645,25 +2690,33 @@ export default function Home() {
     };
 
 
-  /* =====================================================
-     ANSWER
-  ===================================================== */
+  /* =======================================================
+     일반 질문
+  ======================================================= */
 
   const selectAnswer =
     (option) => {
-      if (transitioning) {
+      if (
+        transitioning
+      ) {
         return;
       }
+
 
       const question =
         QUESTIONS[
           currentQuestion
         ];
 
+
+      const answerKey =
+        `q${question.id}`;
+
+
       const nextAnswers = {
         ...answers,
 
-        [`q${question.id}`]: {
+        [answerKey]: {
           question:
             question.question,
 
@@ -1687,6 +2740,7 @@ export default function Home() {
         },
       };
 
+
       const nextScores = {
         ...scores,
 
@@ -1697,21 +2751,26 @@ export default function Home() {
           question.weight,
       };
 
+
       setAnswers(
         nextAnswers
       );
+
 
       setScores(
         nextScores
       );
 
+
       setSelectedType(
         option.type
       );
 
+
       setTransitioning(
         true
       );
+
 
       setTimeout(
         () => {
@@ -1719,32 +2778,40 @@ export default function Home() {
             null
           );
 
+
           setTransitioning(
             false
           );
 
+
           if (
             currentQuestion <
             QUESTIONS.length -
-              1
+            1
           ) {
             setCurrentQuestion(
               currentQuestion +
-                1
+              1
             );
 
             return;
           }
 
+
           evaluateMainResult(
             nextAnswers,
             nextScores
           );
+
         },
         380
       );
     };
 
+
+  /* =======================================================
+     메인 성향 판정
+  ======================================================= */
 
   const evaluateMainResult =
     (
@@ -1758,6 +2825,7 @@ export default function Home() {
           )
         );
 
+
       const highestTypes =
         Object.keys(
           finalScores
@@ -1769,6 +2837,7 @@ export default function Home() {
             highest
         );
 
+
       if (
         highestTypes.length >
         1
@@ -1777,20 +2846,25 @@ export default function Home() {
           highestTypes
         );
 
+
         setAnswers(
           finalAnswers
         );
+
 
         setScores(
           finalScores
         );
 
+
         setStage(
           "tiebreaker"
         );
 
+
         return;
       }
+
 
       completeDiagnosis(
         highestTypes[0],
@@ -1800,19 +2874,28 @@ export default function Home() {
     };
 
 
+  /* =======================================================
+     동점 판별
+  ======================================================= */
+
   const selectTiebreaker =
     (type) => {
-      if (transitioning) {
+      if (
+        transitioning
+      ) {
         return;
       }
+
 
       setSelectedType(
         type
       );
 
+
       setTransitioning(
         true
       );
+
 
       const tieAnswers = {
         ...answers,
@@ -1838,30 +2921,155 @@ export default function Home() {
         },
       };
 
+
       setTimeout(
         () => {
           setSelectedType(
             null
           );
 
+
           setTransitioning(
             false
           );
+
 
           completeDiagnosis(
             type,
             tieAnswers,
             scores
           );
+
         },
         380
       );
     };
 
 
-  /* =====================================================
-     COMPLETE
-  ===================================================== */
+  /* =======================================================
+     DB 결과 저장 공통 함수
+
+     ★ 이번 보완의 핵심
+     결과 저장에 성공해야만 결과화면으로 진입
+  ======================================================= */
+
+  const persistDiagnosisResult =
+    async (
+      payload,
+      minimumDelay = 0
+    ) => {
+      if (
+        !payload?.responseId
+      ) {
+        throw new Error(
+          "진단 참여자 정보를 확인할 수 없습니다."
+        );
+      }
+
+
+      const [
+        response,
+      ] =
+        await Promise.all([
+          fetch(
+            "/api/diagnosis/complete",
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body:
+                JSON.stringify({
+                  responseId:
+                    payload.responseId,
+
+                  answers:
+                    payload.finalAnswers,
+
+                  typeScores:
+                    payload.finalScores,
+
+                  resultType:
+                    payload.result.primaryLabel,
+
+                  resultScore:
+                    payload.result.primaryScore,
+
+                  secondaryType:
+                    payload.result.secondaryLabel,
+
+                  secondaryScore:
+                    payload.result.secondaryScore,
+                }),
+            }
+          ),
+
+
+          new Promise(
+            (resolve) =>
+              setTimeout(
+                resolve,
+                minimumDelay
+              )
+          ),
+        ]);
+
+
+      let data =
+        null;
+
+
+      try {
+        data =
+          await response.json();
+      } catch {
+        data =
+          null;
+      }
+
+
+      if (
+        !response.ok ||
+        !data?.success
+      ) {
+        throw new Error(
+          data?.message ||
+            "진단 결과 저장에 실패했습니다."
+        );
+      }
+
+
+      /*
+        API가 반환한 ID가 있으면
+        실제 DB ID를 다시 한 번 반영.
+      */
+
+      const savedResponseId =
+        data.responseId ||
+        payload.responseId;
+
+
+      setResponseId(
+        savedResponseId
+      );
+
+
+      return {
+        ...data,
+
+        responseId:
+          savedResponseId,
+      };
+    };
+
+
+  /* =======================================================
+     결과 계산
+  ======================================================= */
 
   const completeDiagnosis =
     async (
@@ -1873,17 +3081,21 @@ export default function Home() {
         "analyzing"
       );
 
+
       setSaveError(
         ""
       );
+
 
       setDetailsOpen(
         false
       );
 
+
       setConsultationCompleted(
         false
       );
+
 
       const secondaryType =
         selectSecondaryType(
@@ -1892,15 +3104,33 @@ export default function Home() {
           finalAnswers
         );
 
+
+      if (
+        !secondaryType
+      ) {
+        setSaveError(
+          "보조 성향을 계산하지 못했습니다."
+        );
+
+        setStage(
+          "save-error"
+        );
+
+        return;
+      }
+
+
       const primaryScore =
         finalScores[
           primaryType
         ];
 
+
       const secondaryScore =
         finalScores[
           secondaryType
         ];
+
 
       const combination =
         getCombinationInfo(
@@ -1908,11 +3138,28 @@ export default function Home() {
           secondaryType
         );
 
+
       const strength =
         getCombinationStrength(
           primaryScore,
           secondaryScore
         );
+
+
+      if (
+        !combination
+      ) {
+        setSaveError(
+          "복합성향을 계산하지 못했습니다."
+        );
+
+        setStage(
+          "save-error"
+        );
+
+        return;
+      }
+
 
       const result = {
         primaryType,
@@ -1941,94 +3188,216 @@ export default function Home() {
           finalScores,
       };
 
+
       setFinalResult(
         result
       );
 
+
+      const payload = {
+        responseId,
+
+        result,
+
+        finalAnswers,
+
+        finalScores,
+      };
+
+
+      /*
+        실패 시 동일한 데이터를
+        다시 저장할 수 있도록 보관.
+      */
+
+      setPendingCompletion(
+        payload
+      );
+
+
       try {
-        const [
-          response,
-        ] =
-          await Promise.all([
-            fetch(
-              "/api/diagnosis/complete",
-              {
-                method:
-                  "POST",
-
-                headers: {
-                  "Content-Type":
-                    "application/json",
-                },
-
-                body:
-                  JSON.stringify({
-                    responseId,
-
-                    answers:
-                      finalAnswers,
-
-                    typeScores:
-                      finalScores,
-
-                    resultType:
-                      result.primaryLabel,
-
-                    resultScore:
-                      primaryScore,
-
-                    secondaryType:
-                      result.secondaryLabel,
-
-                    secondaryScore,
-                  }),
-              }
-            ),
-
-            new Promise(
-              (resolve) =>
-                setTimeout(
-                  resolve,
-                  1400
-                )
-            ),
-          ]);
-
-        const data =
-          await response.json();
-
-        if (
-          !response.ok ||
-          !data.success
-        ) {
-          throw new Error(
-            data.message ||
-              "결과 저장에 실패했습니다."
+        const saved =
+          await persistDiagnosisResult(
+            payload,
+            1400
           );
-        }
+
+
+        const savedResultState = {
+          responseId:
+            saved.responseId,
+
+          finalResult:
+            result,
+
+          resultEmail:
+            "",
+        };
+
+
+        /*
+          결과 DB 저장이 성공한 경우에만
+          세션에 저장.
+        */
+
+        sessionStorage.setItem(
+          "openingProfileResultState",
+          JSON.stringify(
+            savedResultState
+          )
+        );
+
+
+        sessionStorage.removeItem(
+          "openingProfileReturnToResult"
+        );
+
+
+        sessionStorage.removeItem(
+          "openingProfileConsultationCompleted"
+        );
+
+
+        setPendingCompletion(
+          null
+        );
+
+
+        setStage(
+          "result"
+        );
+
       } catch (error) {
         console.error(
+          "Diagnosis complete error:",
           error
         );
 
+
+        /*
+          ★ 결과 화면으로 넘어가지 않는다.
+          상담신청과 이메일 모두 실행할 수 없음.
+        */
+
         setSaveError(
-          "진단 결과 저장 중 오류가 발생했습니다."
+          error.message ||
+            "진단 결과 저장에 실패했습니다."
+        );
+
+
+        setStage(
+          "save-error"
         );
       }
-
-      setStage(
-        "result"
-      );
     };
 
 
-  /* =====================================================
+  /* =======================================================
+     저장 실패 시 재시도
+
+     Q12를 다시 선택하게 하지 않음.
+     → 점수가 중복 누적되는 문제 방지
+  ======================================================= */
+
+  const retryDiagnosisSave =
+    async () => {
+      if (
+        !pendingCompletion
+      ) {
+        setSaveError(
+          "다시 저장할 진단 정보를 확인할 수 없습니다. 처음부터 다시 진단해주세요."
+        );
+
+        return;
+      }
+
+
+      try {
+        setSaveError(
+          ""
+        );
+
+
+        setStage(
+          "analyzing"
+        );
+
+
+        const saved =
+          await persistDiagnosisResult(
+            pendingCompletion,
+            900
+          );
+
+
+        const savedResultState = {
+          responseId:
+            saved.responseId,
+
+          finalResult:
+            pendingCompletion.result,
+
+          resultEmail:
+            "",
+        };
+
+
+        sessionStorage.setItem(
+          "openingProfileResultState",
+          JSON.stringify(
+            savedResultState
+          )
+        );
+
+
+        sessionStorage.removeItem(
+          "openingProfileReturnToResult"
+        );
+
+
+        sessionStorage.removeItem(
+          "openingProfileConsultationCompleted"
+        );
+
+
+        setPendingCompletion(
+          null
+        );
+
+
+        setStage(
+          "result"
+        );
+
+      } catch (error) {
+        console.error(
+          "Diagnosis retry error:",
+          error
+        );
+
+
+        setSaveError(
+          error.message ||
+            "진단 결과 저장에 다시 실패했습니다."
+        );
+
+
+        setStage(
+          "save-error"
+        );
+      }
+    };
+
+
+  /* =======================================================
      상세보기
-  ===================================================== */
+  ======================================================= */
 
   const toggleDetails =
     () => {
-      if (detailsOpen) {
+      if (
+        detailsOpen
+      ) {
         setDetailsOpen(
           false
         );
@@ -2036,9 +3405,11 @@ export default function Home() {
         return;
       }
 
+
       setDetailsOpen(
         true
       );
+
 
       setTimeout(
         () => {
@@ -2056,12 +3427,18 @@ export default function Home() {
     };
 
 
-  /* =====================================================
-     상담
-  ===================================================== */
+  /* =======================================================
+     상담 신청
+  ======================================================= */
 
   const openConsultation =
     () => {
+      /*
+        결과 화면까지 왔다는 것은
+        DB 저장이 정상 완료된 상태지만
+        한 번 더 방어.
+      */
+
       if (
         !responseId ||
         !finalResult
@@ -2072,6 +3449,12 @@ export default function Home() {
 
         return;
       }
+
+
+      /*
+        상담 페이지에서 사용할 결과 상태 저장.
+        개인정보는 저장하지 않음.
+      */
 
       sessionStorage.setItem(
         "openingProfileResultState",
@@ -2084,10 +3467,19 @@ export default function Home() {
         })
       );
 
-      sessionStorage.setItem(
-        "openingProfileReturnToResult",
-        "1"
+
+      /*
+        여기서는 return 플래그를 만들지 않음.
+
+        실제 '진단 결과로 돌아가기' 버튼을 누를 때
+        consultation/page.js가
+        openingProfileReturnToResult = 1 로 설정.
+      */
+
+      sessionStorage.removeItem(
+        "openingProfileReturnToResult"
       );
+
 
       router.push(
         "/consultation"
@@ -2095,9 +3487,9 @@ export default function Home() {
     };
 
 
-  /* =====================================================
-     EMAIL
-  ===================================================== */
+  /* =======================================================
+     이메일 발송
+  ======================================================= */
 
   const sendResultEmail =
     async () => {
@@ -2105,14 +3497,28 @@ export default function Home() {
         ""
       );
 
+
       setEmailSuccess(
         ""
       );
+
 
       const email =
         resultEmail
           .trim()
           .toLowerCase();
+
+
+      if (
+        !email
+      ) {
+        setEmailError(
+          "이메일 주소를 입력해주세요."
+        );
+
+        return;
+      }
+
 
       if (
         !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
@@ -2126,10 +3532,23 @@ export default function Home() {
         return;
       }
 
+
+      if (
+        !responseId
+      ) {
+        setEmailError(
+          "진단 결과 정보를 확인할 수 없습니다."
+        );
+
+        return;
+      }
+
+
       try {
         setEmailSending(
           true
         );
+
 
         const response =
           await fetch(
@@ -2151,8 +3570,10 @@ export default function Home() {
             }
           );
 
+
         const result =
           await response.json();
+
 
         if (
           !response.ok ||
@@ -2164,14 +3585,44 @@ export default function Home() {
           );
         }
 
+
         setEmailSuccess(
           "상세 진단 결과를 이메일로 보내드렸습니다."
         );
+
+
+        /*
+          상담 다녀와도 이메일 입력값 유지
+        */
+
+        if (
+          finalResult
+        ) {
+          sessionStorage.setItem(
+            "openingProfileResultState",
+            JSON.stringify({
+              responseId,
+
+              finalResult,
+
+              resultEmail:
+                email,
+            })
+          );
+        }
+
       } catch (error) {
+        console.error(
+          "Email error:",
+          error
+        );
+
+
         setEmailError(
           error.message ||
             "이메일 발송 중 오류가 발생했습니다."
         );
+
       } finally {
         setEmailSending(
           false
@@ -2180,86 +3631,101 @@ export default function Home() {
     };
 
 
-  /* =====================================================
-     RESTART
-  ===================================================== */
+  /* =======================================================
+     다시 진단
+  ======================================================= */
 
   const restartDiagnosis =
     () => {
+      clearResultSession();
+
+
       setStage(
         "cover"
       );
+
 
       setName("");
       setPhone("");
       setLicenseNumber("");
 
+
       setPrivacyConsent(
         false
       );
+
 
       setResponseId(
         null
       );
 
+
       setCurrentQuestion(
         0
       );
 
+
       setAnswers({});
+
 
       setScores({
         ...INITIAL_SCORES,
       });
 
+
       setSelectedType(
         null
       );
+
 
       setTransitioning(
         false
       );
 
+
       setTieTypes([]);
+
 
       setFinalResult(
         null
       );
 
+
+      setPendingCompletion(
+        null
+      );
+
+
       setErrorMessage("");
       setSaveError("");
+
 
       setDetailsOpen(
         false
       );
 
+
       setConsultationCompleted(
         false
       );
+
 
       setResultEmail("");
       setEmailSending(false);
       setEmailError("");
       setEmailSuccess("");
-
-      sessionStorage.removeItem(
-        "openingProfileResultState"
-      );
-
-      sessionStorage.removeItem(
-        "openingProfileReturnToResult"
-      );
-
-      sessionStorage.removeItem(
-        "openingProfileConsultationCompleted"
-      );
     };
 
+
+  /* =======================================================
+     현재 질문
+  ======================================================= */
 
   const question =
     QUESTIONS[
       currentQuestion
     ];
+
 
   const progress =
     (
@@ -2275,7 +3741,10 @@ export default function Home() {
   return (
     <main className="app">
 
-      {/* COVER */}
+
+      {/* ===================================================
+          표지
+      =================================================== */}
 
       <section
         className={`screen cover-screen ${
@@ -2285,21 +3754,31 @@ export default function Home() {
             : ""
         }`}
       >
+
         <div className="cover-container">
 
           <Image
             src="/cover.png"
+
             alt="오스템임플란트 개원성향진단"
+
             fill
+
             priority
+
             sizes="(max-width: 1100px) 100vw, 520px"
+
             className="cover-image"
           />
 
+
           <div className="start-button-area">
+
             <button
               type="button"
+
               className="cover-start-button"
+
               onClick={() =>
                 setStage(
                   "info"
@@ -2308,13 +3787,17 @@ export default function Home() {
             >
               진단 시작하기
             </button>
+
           </div>
 
         </div>
+
       </section>
 
 
-      {/* INFO */}
+      {/* ===================================================
+          개인정보
+      =================================================== */}
 
       <section
         className={`screen info-screen ${
@@ -2331,78 +3814,122 @@ export default function Home() {
             : ""
         }`}
       >
+
         <div className="info-container">
 
           <div className="info-top">
+
             <p className="info-label">
               OPENING PROFILE
             </p>
+
 
             <h1>
               개원성향진단
             </h1>
 
+
             <p className="info-description">
+
               진단을 시작하기 전
+
               <br />
+
               기본 정보를 입력해주세요.
+
             </p>
+
           </div>
 
 
           <div className="form-area">
 
+
             <div className="form-group">
+
               <label htmlFor="name">
                 이름
               </label>
 
+
               <input
                 id="name"
+
                 type="text"
+
+                autoComplete="name"
+
                 placeholder="이름을 입력해주세요"
-                value={name}
-                onChange={(event) =>
+
+                value={
+                  name
+                }
+
+                onChange={(
+                  event
+                ) =>
                   setName(
                     event.target.value
                   )
                 }
               />
+
             </div>
 
 
             <div className="form-group">
+
               <label htmlFor="phone">
                 휴대폰 번호
               </label>
 
+
               <input
                 id="phone"
+
                 type="tel"
+
                 inputMode="numeric"
+
+                autoComplete="tel"
+
                 placeholder="010-0000-0000"
-                value={phone}
+
+                value={
+                  phone
+                }
+
                 onChange={
                   handlePhoneChange
                 }
               />
+
             </div>
 
 
             <div className="form-group">
+
               <label htmlFor="license">
                 면허번호
               </label>
 
+
               <input
                 id="license"
+
                 type="text"
+
                 inputMode="numeric"
+
                 placeholder="면허번호를 입력해주세요"
+
                 value={
                   licenseNumber
                 }
-                onChange={(event) =>
+
+                onChange={(
+                  event
+                ) =>
                   setLicenseNumber(
                     event.target.value.replace(
                       /[^0-9]/g,
@@ -2411,6 +3938,7 @@ export default function Home() {
                   )
                 }
               />
+
             </div>
 
 
@@ -2420,101 +3948,127 @@ export default function Home() {
                 개인정보 수집 및 이용 안내
               </div>
 
+
               <p>
+
                 <strong>
                   수집 항목
                 </strong>
+
                 <br />
+
                 이름, 휴대폰번호,
                 면허번호
+
               </p>
 
+
               <p>
+
                 <strong>
                   수집 목적
                 </strong>
+
                 <br />
+
                 개원성향진단 진행,
                 결과 관리 및 선택 시
                 상담 신청 처리
+
               </p>
 
+
               <p>
+
                 <strong>
                   보유 및 이용기간
                 </strong>
+
                 <br />
-                사내 개인정보 처리
-                기준에 따라 별도 고지
+
+                사내 개인정보 처리 기준에
+                따라 별도 고지
+
               </p>
 
+
               <p className="privacy-notice">
+
                 개인정보 수집 및 이용에 대한
                 동의를 거부할 수 있으며,
-                동의하지 않을 경우 진단
-                서비스 이용이 제한될 수 있습니다.
+                동의하지 않을 경우 진단 서비스
+                이용이 제한될 수 있습니다.
+
               </p>
 
             </div>
 
 
             <label className="consent-row">
+
               <input
                 type="checkbox"
+
                 checked={
                   privacyConsent
                 }
-                onChange={(event) =>
+
+                onChange={(
+                  event
+                ) =>
                   setPrivacyConsent(
                     event.target.checked
                   )
                 }
               />
 
+
               <span className="custom-check" />
+
 
               <span>
                 개인정보 수집 및 이용에
                 동의합니다.
               </span>
+
             </label>
 
 
-            {
-              errorMessage &&
-              (
-                <div className="form-error">
-                  {
-                    errorMessage
-                  }
-                </div>
-              )
-            }
+            {errorMessage && (
+              <div className="form-error">
+                {errorMessage}
+              </div>
+            )}
 
 
             <button
               type="button"
+
               className="info-submit-button"
+
               disabled={
                 loading
               }
+
               onClick={
                 startSurvey
               }
             >
-              {
-                loading
-                  ? "정보 저장 중..."
-                  : "동의하고 진단 시작"
-              }
+              {loading
+                ? "정보 저장 중..."
+                : "동의하고 진단 시작"}
             </button>
 
           </div>
+
         </div>
+
       </section>
 
 
-      {/* SURVEY */}
+      {/* ===================================================
+          설문
+      =================================================== */}
 
       <section
         className={`screen survey-screen ${
@@ -2524,44 +4078,52 @@ export default function Home() {
             : ""
         }`}
       >
+
         <div className="survey-container">
 
+
           <div className="survey-header">
+
             <span>
               개원성향진단
             </span>
 
+
             <span>
-              {
-                String(
-                  currentQuestion +
-                    1
-                ).padStart(
-                  2,
-                  "0"
-                )
-              }
+
+              {String(
+                currentQuestion +
+                1
+              ).padStart(
+                2,
+                "0"
+              )}
+
               {" / "}
-              {
-                String(
-                  QUESTIONS.length
-                ).padStart(
-                  2,
-                  "0"
-                )
-              }
+
+              {String(
+                QUESTIONS.length
+              ).padStart(
+                2,
+                "0"
+              )}
+
             </span>
+
           </div>
 
 
           <div className="progress">
+
             <div
               className="progress-bar"
+
               style={{
                 width:
                   `${progress}%`,
               }}
             />
+
           </div>
 
 
@@ -2569,119 +4131,133 @@ export default function Home() {
             key={
               question.id
             }
+
             className={`question-card ${
               transitioning
                 ? "question-leaving"
                 : ""
             }`}
           >
+
             <p className="question-number">
+
               QUESTION{" "}
-              {
-                String(
-                  question.id
-                ).padStart(
-                  2,
-                  "0"
-                )
-              }
+
+              {String(
+                question.id
+              ).padStart(
+                2,
+                "0"
+              )}
+
             </p>
 
+
             <h2>
-              {
-                question.question
-              }
+              {question.question}
             </h2>
 
 
-            {
-              question.context &&
-              (
-                <div
-                  style={{
-                    margin:
-                      "-22px 0 27px",
+            {question.context && (
 
-                    padding:
-                      "15px 16px",
+              <div
+                style={{
+                  margin:
+                    "-22px 0 27px",
 
-                    borderRadius:
-                      "13px",
+                  padding:
+                    "15px 16px",
 
-                    background:
-                      "#fff",
+                  borderRadius:
+                    "13px",
 
-                    border:
-                      "1px solid #e3dcd5",
+                  background:
+                    "#ffffff",
 
-                    color:
-                      "#746d66",
+                  border:
+                    "1px solid #e3dcd5",
 
-                    fontSize:
-                      "14px",
+                  color:
+                    "#746d66",
 
-                    lineHeight:
-                      "1.7",
-                  }}
-                >
-                  {
-                    question.context
-                  }
-                </div>
-              )
-            }
+                  fontSize:
+                    "14px",
+
+                  fontWeight:
+                    "600",
+
+                  lineHeight:
+                    "1.7",
+
+                  wordBreak:
+                    "keep-all",
+                }}
+              >
+
+                {question.context}
+
+              </div>
+
+            )}
 
 
             <div className="answers">
 
-              {
-                question.options.map(
-                  (
-                    option,
-                    index
-                  ) => (
-                    <button
-                      key={`${question.id}-${option.type}`}
-                      type="button"
-                      disabled={
-                        transitioning
-                      }
-                      className={
-                        selectedType ===
-                        option.type
-                          ? "selected"
-                          : ""
-                      }
-                      onClick={() =>
-                        selectAnswer(
-                          option
-                        )
-                      }
-                    >
-                      <span className="option-number">
-                        {
-                          index +
-                          1
-                        }
-                      </span>
+              {question.options.map(
+                (
+                  option,
+                  index
+                ) => (
 
-                      <span className="option-text">
-                        {
-                          option.text
-                        }
-                      </span>
-                    </button>
-                  )
+                  <button
+                    key={`${question.id}-${option.type}`}
+
+                    type="button"
+
+                    disabled={
+                      transitioning
+                    }
+
+                    className={
+                      selectedType ===
+                      option.type
+                        ? "selected"
+                        : ""
+                    }
+
+                    onClick={() =>
+                      selectAnswer(
+                        option
+                      )
+                    }
+                  >
+
+                    <span className="option-number">
+                      {index + 1}
+                    </span>
+
+
+                    <span className="option-text">
+                      {option.text}
+                    </span>
+
+                  </button>
+
                 )
-              }
+              )}
 
             </div>
+
           </div>
+
         </div>
+
       </section>
 
 
-      {/* TIEBREAKER */}
+      {/* ===================================================
+          동점 질문
+      =================================================== */}
 
       <section
         className={`screen survey-screen ${
@@ -2691,9 +4267,12 @@ export default function Home() {
             : ""
         }`}
       >
+
         <div className="survey-container">
 
+
           <div className="survey-header">
+
             <span>
               개원성향진단
             </span>
@@ -2701,30 +4280,43 @@ export default function Home() {
             <span>
               FINAL
             </span>
+
           </div>
 
+
           <div className="progress">
+
             <div
               className="progress-bar"
+
               style={{
                 width:
                   "100%",
               }}
             />
+
           </div>
 
 
-          <div className="question-card">
+          <div
+            className={`question-card ${
+              transitioning
+                ? "question-leaving"
+                : ""
+            }`}
+          >
 
             <p className="question-number">
               FINAL QUESTION
             </p>
+
 
             <h2>
               개원 여부를 최종 결정할 때
               가장 큰 확신을 주는 것은
               무엇인가요?
             </h2>
+
 
             <p className="tie-description">
               두 가지 이상의 성향 점수가
@@ -2735,52 +4327,67 @@ export default function Home() {
 
             <div className="answers">
 
-              {
-                tieTypes.map(
-                  (
-                    type,
-                    index
-                  ) => (
-                    <button
-                      key={
-                        type
-                      }
-                      type="button"
-                      disabled={
-                        transitioning
-                      }
-                      onClick={() =>
-                        selectTiebreaker(
-                          type
-                        )
-                      }
-                    >
-                      <span className="option-number">
-                        {
-                          index +
-                          1
-                        }
-                      </span>
+              {tieTypes.map(
+                (
+                  type,
+                  index
+                ) => (
 
-                      <span className="option-text">
-                        {
-                          TIEBREAKER_OPTIONS[
-                            type
-                          ]
-                        }
-                      </span>
-                    </button>
-                  )
+                  <button
+                    key={type}
+
+                    type="button"
+
+                    disabled={
+                      transitioning
+                    }
+
+                    className={
+                      selectedType ===
+                      type
+                        ? "selected"
+                        : ""
+                    }
+
+                    onClick={() =>
+                      selectTiebreaker(
+                        type
+                      )
+                    }
+                  >
+
+                    <span className="option-number">
+                      {index + 1}
+                    </span>
+
+
+                    <span className="option-text">
+
+                      {
+                        TIEBREAKER_OPTIONS[
+                          type
+                        ]
+                      }
+
+                    </span>
+
+                  </button>
+
                 )
-              }
+              )}
 
             </div>
+
           </div>
+
         </div>
+
       </section>
 
 
-      {/* ANALYZING */}
+      {/* ===================================================
+          분석중
+      =================================================== */}
 
       <section
         className={`screen analyzing-screen ${
@@ -2790,21 +4397,25 @@ export default function Home() {
             : ""
         }`}
       >
+
         <div className="analyzing-content">
 
           <div className="analysis-icon">
             🦷
           </div>
 
+
           <p className="analysis-small">
             OPENING PROFILE
           </p>
+
 
           <h2>
             원장님의 개원성향을
             <br />
             분석하고 있습니다.
           </h2>
+
 
           <div className="analysis-dots">
             <span />
@@ -2813,10 +4424,271 @@ export default function Home() {
           </div>
 
         </div>
+
       </section>
 
 
-      {/* RESULT */}
+      {/* ===================================================
+          저장 실패 전용 화면
+
+          ★ 결과화면을 보여주지 않음
+      =================================================== */}
+
+      <section
+        className={`screen result-screen ${
+          stage ===
+          "save-error"
+            ? "show-result"
+            : ""
+        }`}
+      >
+
+        {stage ===
+          "save-error" && (
+
+          <div className="result-container">
+
+            <div
+              style={{
+                padding:
+                  "38px 27px",
+
+                border:
+                  "1px solid #ead9d1",
+
+                borderRadius:
+                  "22px",
+
+                background:
+                  "#ffffff",
+
+                textAlign:
+                  "center",
+
+                boxShadow:
+                  "0 10px 30px rgba(60,45,35,0.07)",
+              }}
+            >
+
+              <div
+                style={{
+                  display:
+                    "flex",
+
+                  alignItems:
+                    "center",
+
+                  justifyContent:
+                    "center",
+
+                  width:
+                    "62px",
+
+                  height:
+                    "62px",
+
+                  margin:
+                    "0 auto 18px",
+
+                  borderRadius:
+                    "50%",
+
+                  background:
+                    "#fff0eb",
+
+                  fontSize:
+                    "28px",
+                }}
+              >
+                ⚠️
+              </div>
+
+
+              <p
+                style={{
+                  margin:
+                    "0 0 7px",
+
+                  color:
+                    "#f26a21",
+
+                  fontSize:
+                    "10px",
+
+                  fontWeight:
+                    "900",
+
+                  letterSpacing:
+                    "1.5px",
+                }}
+              >
+                SAVE ERROR
+              </p>
+
+
+              <h2
+                style={{
+                  margin:
+                    "0 0 12px",
+
+                  color:
+                    "#332e29",
+
+                  fontSize:
+                    "23px",
+
+                  lineHeight:
+                    "1.45",
+
+                  fontWeight:
+                    "900",
+
+                  wordBreak:
+                    "keep-all",
+                }}
+              >
+                진단 결과 저장이
+                완료되지 않았습니다.
+              </h2>
+
+
+              <p
+                style={{
+                  margin:
+                    "0",
+
+                  color:
+                    "#756d66",
+
+                  fontSize:
+                    "13px",
+
+                  lineHeight:
+                    "1.7",
+
+                  wordBreak:
+                    "keep-all",
+                }}
+              >
+                결과가 정상적으로 저장되어야
+                상담 신청과 이메일 발송을
+                이용할 수 있습니다.
+              </p>
+
+
+              {saveError && (
+
+                <div
+                  style={{
+                    marginTop:
+                      "18px",
+
+                    padding:
+                      "13px 15px",
+
+                    borderRadius:
+                      "11px",
+
+                    background:
+                      "#fff3ef",
+
+                    color:
+                      "#bf5134",
+
+                    fontSize:
+                      "12px",
+
+                    fontWeight:
+                      "700",
+
+                    lineHeight:
+                      "1.6",
+
+                    wordBreak:
+                      "keep-all",
+                  }}
+                >
+                  {saveError}
+                </div>
+
+              )}
+
+
+              <button
+                type="button"
+
+                onClick={
+                  retryDiagnosisSave
+                }
+
+                style={{
+                  width:
+                    "100%",
+
+                  height:
+                    "56px",
+
+                  marginTop:
+                    "22px",
+
+                  border:
+                    "0",
+
+                  borderRadius:
+                    "14px",
+
+                  background:
+                    "#f26a21",
+
+                  color:
+                    "#ffffff",
+
+                  fontSize:
+                    "15px",
+
+                  fontWeight:
+                    "900",
+
+                  cursor:
+                    "pointer",
+
+                  boxShadow:
+                    "0 7px 18px rgba(242,106,33,.2)",
+                }}
+              >
+                다시 저장하기
+              </button>
+
+
+              <button
+                type="button"
+
+                className="restart-button"
+
+                onClick={
+                  restartDiagnosis
+                }
+
+                style={{
+                  marginTop:
+                    "11px",
+                }}
+              >
+                처음부터 다시 진단하기
+              </button>
+
+            </div>
+
+          </div>
+
+        )}
+
+      </section>
+
+
+      {/* ===================================================
+          정상 결과
+      =================================================== */}
 
       <section
         className={`screen result-screen ${
@@ -2826,461 +4698,593 @@ export default function Home() {
             : ""
         }`}
       >
-        {
-          finalResult &&
-          (
-            <div className="result-container">
 
-              <div className="result-top">
+        {finalResult && (
+          <div className="result-container">
 
-                <p className="result-small">
-                  YOUR OPENING PROFILE
-                </p>
 
-                <p className="result-intro">
-                  원장님의 개원 성향은
-                </p>
+            {/* 기본 성향 */}
 
-                <div className="result-type">
+            <div className="result-top">
 
-                  <span className="result-emoji">
-                    {
-                      TYPE_INFO[
-                        finalResult.primaryType
-                      ].emoji
-                    }
-                  </span>
+              <p className="result-small">
+                YOUR OPENING PROFILE
+              </p>
 
-                  <h1>
-                    {
-                      finalResult.primaryLabel
-                    }
-                  </h1>
 
-                </div>
+              <p className="result-intro">
+                원장님의 개원 성향은
+              </p>
 
-                <h2 className="result-title">
+
+              <div className="result-type">
+
+                <span className="result-emoji">
+
                   {
                     TYPE_INFO[
                       finalResult.primaryType
-                    ].title
+                    ].emoji
                   }
-                </h2>
 
-                <p className="result-description">
-                  {
-                    TYPE_INFO[
-                      finalResult.primaryType
-                    ].description
-                  }
-                </p>
-
-              </div>
-
-
-              <div className="result-recommendation">
-                <span>
-                  💡 추천 개원 방향
                 </span>
 
-                <p>
+
+                <h1>
                   {
-                    TYPE_INFO[
-                      finalResult.primaryType
-                    ].recommendation
+                    finalResult.primaryLabel
                   }
-                </p>
+                </h1>
+
               </div>
+
+
+              <h2 className="result-title">
+
+                {
+                  TYPE_INFO[
+                    finalResult.primaryType
+                  ].title
+                }
+
+              </h2>
+
+
+              <p className="result-description">
+
+                {
+                  TYPE_INFO[
+                    finalResult.primaryType
+                  ].description
+                }
+
+              </p>
+
+            </div>
+
+
+            {/* 추천 */}
+
+            <div className="result-recommendation">
+
+              <span>
+                💡 추천 개원 방향
+              </span>
+
+
+              <p>
+
+                {
+                  TYPE_INFO[
+                    finalResult.primaryType
+                  ].recommendation
+                }
+
+              </p>
+
+            </div>
+
+
+            {/* 복합성향 */}
+
+            <div
+              style={{
+                marginTop:
+                  "16px",
+
+                padding:
+                  "22px",
+
+                borderRadius:
+                  "18px",
+
+                background:
+                  "#332d28",
+
+                boxShadow:
+                  "0 7px 22px rgba(50,40,30,.12)",
+              }}
+            >
+
+              <p
+                style={{
+                  margin:
+                    "0 0 10px",
+
+                  color:
+                    "#f8a16e",
+
+                  fontSize:
+                    "10px",
+
+                  fontWeight:
+                    "900",
+
+                  letterSpacing:
+                    "1.7px",
+                }}
+              >
+                YOUR COMBINATION
+              </p>
 
 
               <div
                 style={{
-                  marginTop:
-                    "16px",
-
-                  padding:
-                    "22px",
-
-                  borderRadius:
-                    "18px",
-
-                  background:
-                    "#332d28",
-                }}
-              >
-                <p
-                  style={{
-                    margin:
-                      "0 0 10px",
-
-                    color:
-                      "#f8a16e",
-
-                    fontSize:
-                      "10px",
-
-                    fontWeight:
-                      "900",
-
-                    letterSpacing:
-                      "1.7px",
-                  }}
-                >
-                  YOUR COMBINATION
-                </p>
-
-                <div
-                  style={{
-                    marginBottom:
-                      "7px",
-
-                    color:
-                      "#d9d2cc",
-
-                    fontSize:
-                      "13px",
-                  }}
-                >
-                  {
-                    TYPE_INFO[
-                      finalResult.primaryType
-                    ].emoji
-                  }
-                  {" "}
-                  {
-                    finalResult.primaryLabel
-                  }
-
-                  {" × "}
-
-                  {
-                    TYPE_INFO[
-                      finalResult.secondaryType
-                    ].emoji
-                  }
-                  {" "}
-                  {
-                    finalResult.secondaryLabel
-                  }
-                </div>
-
-                <h2
-                  style={{
-                    margin:
-                      "0 0 8px",
-
-                    color:
-                      "#fff",
-
-                    fontSize:
-                      "28px",
-
-                    fontWeight:
-                      "900",
-                  }}
-                >
-                  {
-                    finalResult.combination.name
-                  }
-                </h2>
-
-                <span
-                  style={{
-                    display:
-                      "inline-block",
-
-                    padding:
-                      "6px 10px",
-
-                    borderRadius:
-                      "999px",
-
-                    background:
-                      "rgba(242,106,33,.17)",
-
-                    color:
-                      "#f8a16e",
-
-                    fontSize:
-                      "11px",
-
-                    fontWeight:
-                      "900",
-                  }}
-                >
-                  {
-                    finalResult.strength.label
-                  }
-                </span>
-
-                <p
-                  style={{
-                    margin:
-                      "13px 0 0",
-
-                    color:
-                      "#fff",
-
-                    lineHeight:
-                      "1.65",
-
-                    fontWeight:
-                      "800",
-                  }}
-                >
-                  “{
-                    finalResult.combination.tagline
-                  }”
-                </p>
-              </div>
-
-
-              <div className="score-card">
-                <h3>
-                  개원성향 분석
-                </h3>
-
-                {
-                  Object.entries(
-                    TYPE_INFO
-                  ).map(
-                    ([
-                      type,
-                      info,
-                    ]) => {
-                      const score =
-                        finalResult.scores[
-                          type
-                        ];
-
-                      const percentage =
-                        Math.min(
-                          100,
-
-                          Math.round(
-                            (
-                              score /
-                              TOTAL_SCORE
-                            ) *
-                              100
-                          )
-                        );
-
-                      return (
-                        <div
-                          className="score-row"
-                          key={
-                            type
-                          }
-                        >
-                          <div className="score-label">
-                            <span>
-                              {
-                                info.emoji
-                              }
-                              {" "}
-                              {
-                                info.label
-                              }
-                            </span>
-
-                            <strong>
-                              {
-                                score
-                              }
-                              점
-                            </strong>
-                          </div>
-
-                          <div className="score-track">
-                            <div
-                              className="score-fill"
-                              style={{
-                                width:
-                                  `${percentage}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    }
-                  )
-                }
-              </div>
-
-
-              {
-                saveError &&
-                (
-                  <div className="result-save-error">
-                    {
-                      saveError
-                    }
-                  </div>
-                )
-              }
-
-
-              <button
-                type="button"
-                onClick={
-                  toggleDetails
-                }
-                style={{
-                  width:
-                    "100%",
-
-                  height:
-                    "58px",
-
-                  marginTop:
-                    "24px",
-
-                  border:
-                    "1.5px solid #f26a21",
-
-                  borderRadius:
-                    "15px",
-
-                  background:
-                    detailsOpen
-                      ? "#332d28"
-                      : "#fff8f3",
+                  marginBottom:
+                    "7px",
 
                   color:
-                    detailsOpen
-                      ? "#fff"
-                      : "#f26a21",
+                    "#d9d2cc",
 
                   fontSize:
-                    "16px",
+                    "13px",
+
+                  fontWeight:
+                    "700",
+                }}
+              >
+
+                {
+                  TYPE_INFO[
+                    finalResult.primaryType
+                  ].emoji
+                }
+
+                {" "}
+
+                {
+                  finalResult.primaryLabel
+                }
+
+                {" × "}
+
+                {
+                  TYPE_INFO[
+                    finalResult.secondaryType
+                  ].emoji
+                }
+
+                {" "}
+
+                {
+                  finalResult.secondaryLabel
+                }
+
+              </div>
+
+
+              <h2
+                style={{
+                  margin:
+                    "0 0 8px",
+
+                  color:
+                    "#ffffff",
+
+                  fontSize:
+                    "28px",
+
+                  fontWeight:
+                    "900",
+
+                  letterSpacing:
+                    "-1px",
+                }}
+              >
+
+                {
+                  finalResult.combination.name
+                }
+
+              </h2>
+
+
+              <div
+                style={{
+                  display:
+                    "inline-block",
+
+                  marginBottom:
+                    "13px",
+
+                  padding:
+                    "6px 10px",
+
+                  borderRadius:
+                    "999px",
+
+                  background:
+                    "rgba(242,106,33,.17)",
+
+                  color:
+                    "#f8a16e",
+
+                  fontSize:
+                    "11px",
 
                   fontWeight:
                     "900",
                 }}
               >
+
                 {
-                  detailsOpen
-                    ? "▲ 상세 분석 접기"
-                    : "🔍 자세히 보기"
+                  finalResult.strength.label
                 }
-              </button>
 
-
-              <div
-                ref={
-                  detailRef
-                }
-                style={{
-                  maxHeight:
-                    detailsOpen
-                      ? "18000px"
-                      : "0px",
-
-                  opacity:
-                    detailsOpen
-                      ? 1
-                      : 0,
-
-                  transform:
-                    detailsOpen
-                      ? "translateY(0)"
-                      : "translateY(-14px)",
-
-                  marginTop:
-                    detailsOpen
-                      ? "18px"
-                      : "0",
-
-                  overflow:
-                    "hidden",
-
-                  pointerEvents:
-                    detailsOpen
-                      ? "auto"
-                      : "none",
-
-                  transition:
-                    "max-height 1.15s cubic-bezier(.22,1,.36,1), opacity .5s ease, transform .55s ease",
-                }}
-              >
-                <DetailedReport
-                  primaryInfo={
-                    TYPE_INFO[
-                      finalResult.primaryType
-                    ]
-                  }
-
-                  secondaryInfo={
-                    TYPE_INFO[
-                      finalResult.secondaryType
-                    ]
-                  }
-
-                  combination={
-                    finalResult.combination
-                  }
-
-                  combinationStrength={
-                    finalResult.strength
-                  }
-
-                  consultationCompleted={
-                    consultationCompleted
-                  }
-
-                  openConsultation={
-                    openConsultation
-                  }
-
-                  resultEmail={
-                    resultEmail
-                  }
-
-                  setResultEmail={
-                    setResultEmail
-                  }
-
-                  emailSending={
-                    emailSending
-                  }
-
-                  emailError={
-                    emailError
-                  }
-
-                  emailSuccess={
-                    emailSuccess
-                  }
-
-                  setEmailError={
-                    setEmailError
-                  }
-
-                  setEmailSuccess={
-                    setEmailSuccess
-                  }
-
-                  sendResultEmail={
-                    sendResultEmail
-                  }
-                />
               </div>
 
 
-              <button
-                type="button"
-                className="restart-button"
-                onClick={
-                  restartDiagnosis
-                }
+              <p
+                style={{
+                  margin:
+                    "0",
+
+                  color:
+                    "#f3efeb",
+
+                  fontSize:
+                    "15px",
+
+                  fontWeight:
+                    "800",
+
+                  lineHeight:
+                    "1.65",
+
+                  wordBreak:
+                    "keep-all",
+                }}
               >
-                다시 진단하기
-              </button>
+
+                “{
+                  finalResult.combination.tagline
+                }”
+
+              </p>
+
+
+              <p
+                style={{
+                  margin:
+                    "11px 0 0",
+
+                  color:
+                    "#bdb5ae",
+
+                  fontSize:
+                    "12px",
+
+                  lineHeight:
+                    "1.6",
+
+                  wordBreak:
+                    "keep-all",
+                }}
+              >
+
+                {
+                  finalResult.strength.description
+                }
+
+              </p>
 
             </div>
-          )
-        }
+
+
+            {/* 점수 */}
+
+            <div className="score-card">
+
+              <h3>
+                개원성향 분석
+              </h3>
+
+
+              {Object.entries(
+                TYPE_INFO
+              ).map(
+                ([
+                  type,
+                  info,
+                ]) => {
+                  const score =
+                    finalResult.scores[
+                      type
+                    ] || 0;
+
+
+                  const percentage =
+                    Math.min(
+                      100,
+
+                      Math.round(
+                        (
+                          score /
+                          TOTAL_SCORE
+                        ) *
+                        100
+                      )
+                    );
+
+
+                  return (
+
+                    <div
+                      className="score-row"
+
+                      key={type}
+                    >
+
+                      <div className="score-label">
+
+                        <span>
+
+                          {info.emoji}
+
+                          {" "}
+
+                          {info.label}
+
+                        </span>
+
+
+                        <strong>
+                          {score}점
+                        </strong>
+
+                      </div>
+
+
+                      <div className="score-track">
+
+                        <div
+                          className="score-fill"
+
+                          style={{
+                            width:
+                              `${percentage}%`,
+                          }}
+                        />
+
+                      </div>
+
+                    </div>
+
+                  );
+                }
+              )}
+
+            </div>
+
+
+            {/* 자세히보기 */}
+
+            <button
+              type="button"
+
+              aria-expanded={
+                detailsOpen
+              }
+
+              onClick={
+                toggleDetails
+              }
+
+              style={{
+                width:
+                  "100%",
+
+                height:
+                  "58px",
+
+                marginTop:
+                  "24px",
+
+                border:
+                  detailsOpen
+                    ? "0"
+                    : "1.5px solid #f26a21",
+
+                borderRadius:
+                  "15px",
+
+                background:
+                  detailsOpen
+                    ? "#332d28"
+                    : "#fff8f3",
+
+                color:
+                  detailsOpen
+                    ? "#ffffff"
+                    : "#f26a21",
+
+                fontSize:
+                  "16px",
+
+                fontWeight:
+                  "900",
+
+                cursor:
+                  "pointer",
+
+                transition:
+                  "all .3s ease",
+              }}
+            >
+
+              {detailsOpen
+                ? "▲ 상세 분석 접기"
+                : "🔍 자세히 보기"}
+
+            </button>
+
+
+            {/* 상세 펼침 */}
+
+            <div
+              ref={
+                detailRef
+              }
+
+              style={{
+                maxHeight:
+                  detailsOpen
+                    ? "18000px"
+                    : "0px",
+
+                opacity:
+                  detailsOpen
+                    ? 1
+                    : 0,
+
+                transform:
+                  detailsOpen
+                    ? "translateY(0)"
+                    : "translateY(-14px)",
+
+                marginTop:
+                  detailsOpen
+                    ? "18px"
+                    : "0px",
+
+                overflow:
+                  "hidden",
+
+                pointerEvents:
+                  detailsOpen
+                    ? "auto"
+                    : "none",
+
+                transition:
+                  "max-height 1.15s cubic-bezier(.22,1,.36,1), " +
+                  "opacity .5s ease, " +
+                  "transform .55s cubic-bezier(.22,1,.36,1), " +
+                  "margin-top .45s ease",
+              }}
+            >
+
+              <DetailedReport
+
+                primaryInfo={
+                  TYPE_INFO[
+                    finalResult.primaryType
+                  ]
+                }
+
+
+                secondaryInfo={
+                  TYPE_INFO[
+                    finalResult.secondaryType
+                  ]
+                }
+
+
+                combination={
+                  finalResult.combination
+                }
+
+
+                combinationStrength={
+                  finalResult.strength
+                }
+
+
+                consultationCompleted={
+                  consultationCompleted
+                }
+
+
+                openConsultation={
+                  openConsultation
+                }
+
+
+                resultEmail={
+                  resultEmail
+                }
+
+
+                setResultEmail={
+                  setResultEmail
+                }
+
+
+                emailSending={
+                  emailSending
+                }
+
+
+                emailError={
+                  emailError
+                }
+
+
+                emailSuccess={
+                  emailSuccess
+                }
+
+
+                setEmailError={
+                  setEmailError
+                }
+
+
+                setEmailSuccess={
+                  setEmailSuccess
+                }
+
+
+                sendResultEmail={
+                  sendResultEmail
+                }
+
+              />
+
+            </div>
+
+
+            <button
+              type="button"
+
+              className="restart-button"
+
+              onClick={
+                restartDiagnosis
+              }
+
+              style={{
+                marginTop:
+                  detailsOpen
+                    ? "18px"
+                    : "14px",
+              }}
+            >
+              다시 진단하기
+            </button>
+
+          </div>
+        )}
+
       </section>
 
     </main>
