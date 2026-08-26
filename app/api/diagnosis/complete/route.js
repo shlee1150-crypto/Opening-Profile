@@ -30,7 +30,8 @@ function getSupabaseAdmin() {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const {
       responseId,
@@ -57,7 +58,8 @@ export async function POST(request) {
 
     if (
       !answers ||
-      typeof answers !== "object"
+      typeof answers !==
+        "object"
     ) {
       return NextResponse.json(
         {
@@ -73,7 +75,8 @@ export async function POST(request) {
 
     if (
       !typeScores ||
-      typeof typeScores !== "object"
+      typeof typeScores !==
+        "object"
     ) {
       return NextResponse.json(
         {
@@ -140,9 +143,7 @@ export async function POST(request) {
         "id",
         responseId
       )
-      .select(
-        "id, result_token"
-      )
+      .select("id")
       .single();
 
     if (error) {
@@ -163,31 +164,10 @@ export async function POST(request) {
       );
     }
 
-    if (!data.result_token) {
-      console.error(
-        "Result token missing"
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "결과 링크 생성에 실패했습니다.",
-        },
-        {
-          status: 500,
-        }
-      );
-    }
-
     return NextResponse.json({
       success: true,
-
       responseId:
         data.id,
-
-      resultToken:
-        data.result_token,
     });
   } catch (error) {
     console.error(
