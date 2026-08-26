@@ -11,29 +11,63 @@ import {
 } from "next/navigation";
 
 import {
-  getSupabaseBrowser,
-} from "./supabaseClient";
+  createClient,
+} from "@supabase/supabase-js";
 
 import styles from "./admin.module.css";
 
-
-const TYPE_LABELS = {
-  stable:
-    "안정정착형",
-
-  aggressive:
-    "집중공격형",
-
-  analytical:
-    "데이터분석형",
-
-  pioneer:
-    "선점개척형",
-};
+import {
+  TYPE_INFO,
+  QUESTIONS,
+  getTypeKeyFromLabel,
+  getCombinationInfo,
+  getCombinationStrength,
+} from "../lib/diagnosisData";
 
 
-const PAGE_SIZE = 20;
+/* =========================================================
+   Supabase Browser Client
 
+   기존 로그인 세션과 같은 Supabase 프로젝트 사용
+========================================================= */
+
+const supabaseUrl =
+  process.env
+    .NEXT_PUBLIC_SUPABASE_URL;
+
+
+const supabasePublicKey =
+  process.env
+    .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env
+    .NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+
+const supabase =
+  supabaseUrl &&
+  supabasePublicKey
+    ? createClient(
+        supabaseUrl,
+        supabasePublicKey,
+        {
+          auth: {
+            persistSession:
+              true,
+
+            autoRefreshToken:
+              true,
+
+            detectSessionInUrl:
+              true,
+          },
+        }
+      )
+    : null;
+
+
+/* =========================================================
+   날짜
+========================================================= */
 
 function formatDate(
   value
@@ -42,12 +76,14 @@ function formatDate(
     return "-";
   }
 
+
   try {
-    return new Date(
-      value
-    ).toLocaleString(
+    return new Intl.DateTimeFormat(
       "ko-KR",
       {
+        timeZone:
+          "Asia/Seoul",
+
         year:
           "numeric",
 
@@ -62,152 +98,380 @@ function formatDate(
 
         minute:
           "2-digit",
+
+        hour12:
+          false,
       }
+    ).format(
+      new Date(value)
     );
+
   } catch {
-    return value;
+    return "-";
   }
 }
 
+
+/* =========================================================
+   전화번호 마스킹용
+
+   관리자 화면에서는 전체 번호를 보여주되
+   아래 함수는 추후 마스킹 필요 시 사용 가능
+========================================================= */
+
+function safeText(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "-";
+  }
+
+  return String(value);
+}
+
+
+/* =========================================================
+   질문 개수
+========================================================= */
+
+function getQuestionCount(
+  answers
+) {
+  if (
+    !answers ||
+    typeof answers !==
+      "object"
+  ) {
+    return 0;
+  }
+
+
+  return Object.keys(
+    answers
+  ).filter(
+    (key) =>
+      /^q\d+$/.test(
+        key
+      )
+  ).length;
+}
+
+
+/* =========================================================
+   진단 버전
+========================================================= */
+
+function getSurveyVersion(
+  answers
+) {
+  const count =
+    getQuestionCount(
+      answers
+    );
+
+
+  if (
+    count >= 12
+  ) {
+    return {
+      label:
+        "12문항",
+
+      isNew:
+        true,
+    };
+  }
+
+
+  if (
+    count > 0
+  ) {
+    return {
+      label:
+        `${count}문항 이전버전`,
+
+      isNew:
+        false,
+    };
+  }
+
+
+  return {
+    label:
+      "미완료",
+
+    isNew:
+      false,
+  };
+}
+
+
+/* =========================================================
+   결과 분석
+========================================================= */
+
+function getResultMeta(
+  item
+) {
+  const primaryType =
+    item.result_type
+      ? getTypeKeyFromLabel(
+          item.result_type
+        )
+      : null;
+
+
+  const secondaryType =
+    item.secondary_type
+      ? getTypeKeyFromLabel(
+          item.secondary_type
+        )
+      : null;
+
+
+  const combination =
+    primaryType &&
+    secondaryType
+      ? getCombinationInfo(
+          primaryType,
+          secondaryType
+        )
+      : null;
+
+
+  const strength =
+    combination
+      ? getCombinationStrength(
+          item.result_score,
+          item.secondary_score
+        )
+      : null;
+
+
+  const version =
+    getSurveyVersion(
+      item.answers
+    );
+
+
+  return {
+    primaryType,
+    secondaryType,
+    combination,
+    strength,
+    version,
+  };
+}
+
+
+/* =========================================================
+   답변 정보
+========================================================= */
+
+function getAnswerEntry(
+  answers,
+  questionNumber
+) {
+  if (
+    !answers ||
+    typeof answers !==
+      "object"
+  ) {
+    return null;
+  }
+
+
+  return (
+    answers[
+      `q${questionNumber}`
+    ] || null
+  );
+}
+
+
+function getAnswerText(
+  entry
+) {
+  if (!entry) {
+    return "-";
+  }
+
+
+  if (
+    typeof entry ===
+    "string"
+  ) {
+    return entry;
+  }
+
+
+  return (
+    entry.answer ||
+    entry.text ||
+    "-"
+  );
+}
+
+
+function getAnswerTypeLabel(
+  entry
+) {
+  if (
+    !entry ||
+    typeof entry ===
+      "string"
+  ) {
+    return "";
+  }
+
+
+  return (
+    entry.typeLabel ||
+    (
+      entry.type &&
+      TYPE_INFO[
+        entry.type
+      ]?.label
+    ) ||
+    ""
+  );
+}
+
+
+/* =========================================================
+   Admin
+========================================================= */
 
 export default function AdminPage() {
   const router =
     useRouter();
 
-  const [
-    rows,
-    setRows,
-  ] = useState([]);
-
-  const [
-    adminEmail,
-    setAdminEmail,
-  ] = useState("");
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
-  const [
-    refreshing,
-    setRefreshing,
-  ] = useState(false);
 
   const [
     errorMessage,
     setErrorMessage,
-  ] = useState("");
+  ] =
+    useState("");
+
+
+  const [
+    rows,
+    setRows,
+  ] =
+    useState([]);
+
 
   const [
     search,
     setSearch,
-  ] = useState("");
+  ] =
+    useState("");
 
-  const [
-    statusFilter,
-    setStatusFilter,
-  ] = useState("all");
 
   const [
     typeFilter,
     setTypeFilter,
-  ] = useState("all");
+  ] =
+    useState("all");
+
 
   const [
-    selectedRow,
-    setSelectedRow,
-  ] = useState(null);
+    statusFilter,
+    setStatusFilter,
+  ] =
+    useState("all");
+
 
   const [
-    page,
-    setPage,
-  ] = useState(1);
+    versionFilter,
+    setVersionFilter,
+  ] =
+    useState("all");
+
+
+  const [
+    expandedId,
+    setExpandedId,
+  ] =
+    useState(null);
+
 
   const [
     exporting,
     setExporting,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
-  /* ========================================
-     현재 Access Token
-  ======================================== */
+  /* =======================================================
+     Access Token
+  ======================================================= */
 
   async function getAccessToken() {
-    const supabase =
-      getSupabaseBrowser();
-
-    const {
-      data: {
-        session,
-      },
-    } =
-      await supabase.auth.getSession();
-
-    if (!session) {
-      throw new Error(
-        "LOGIN_REQUIRED"
-      );
+    if (!supabase) {
+      return null;
     }
 
-    return session.access_token;
+
+    const {
+      data,
+    } =
+      await supabase.auth
+        .getSession();
+
+
+    return (
+      data?.session
+        ?.access_token ||
+      null
+    );
   }
 
 
-  /* ========================================
-     관리자 데이터 조회
-  ======================================== */
+  /* =======================================================
+     데이터 로드
+  ======================================================= */
 
-  async function loadData(
-    isRefresh = false
-  ) {
+  async function loadResponses() {
     try {
-      if (isRefresh) {
-        setRefreshing(
-          true
+      setLoading(
+        true
+      );
+
+      setErrorMessage(
+        ""
+      );
+
+
+      if (!supabase) {
+        throw new Error(
+          "Supabase 연결 설정을 확인해주세요."
         );
-      } else {
-        setLoading(true);
       }
 
-      setErrorMessage("");
 
-      const accessToken =
+      const token =
         await getAccessToken();
 
 
-      const meResponse =
-        await fetch(
-          "/api/admin/me",
-          {
-            headers: {
-              Authorization:
-                `Bearer ${accessToken}`,
-            },
-            cache:
-              "no-store",
-          }
+      if (!token) {
+        router.replace(
+          "/admin/login"
         );
 
-      const me =
-        await meResponse.json();
-
-      if (
-        !meResponse.ok ||
-        !me.success
-      ) {
-        throw new Error(
-          meResponse.status ===
-            403
-            ? "FORBIDDEN"
-            : "LOGIN_REQUIRED"
-        );
+        return;
       }
-
-      setAdminEmail(
-        me.email || ""
-      );
 
 
       const response =
@@ -216,40 +480,27 @@ export default function AdminPage() {
           {
             headers: {
               Authorization:
-                `Bearer ${accessToken}`,
+                `Bearer ${token}`,
             },
+
             cache:
               "no-store",
           }
         );
 
+
       const result =
         await response.json();
 
-      if (
-        !response.ok ||
-        !result.success
-      ) {
-        throw new Error(
-          result.message ||
-            "데이터 조회에 실패했습니다."
-        );
-      }
 
-      setRows(
-        result.rows || []
-      );
-    } catch (error) {
       if (
-        error.message ===
-          "LOGIN_REQUIRED" ||
-        error.message ===
-          "FORBIDDEN"
+        response.status ===
+        401 ||
+        response.status ===
+        403
       ) {
-        const supabase =
-          getSupabaseBrowser();
-
-        await supabase.auth.signOut();
+        await supabase.auth
+          .signOut();
 
         router.replace(
           "/admin/login"
@@ -258,198 +509,60 @@ export default function AdminPage() {
         return;
       }
 
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+          "데이터를 불러오지 못했습니다."
+        );
+      }
+
+
+      setRows(
+        result.items ||
+        []
+      );
+
+  } catch (error) {
+      console.error(
+        error
+      );
+
+
       setErrorMessage(
         error.message ||
-          "관리자 데이터를 불러오지 못했습니다."
+        "관리자 데이터를 불러오는 중 오류가 발생했습니다."
       );
-    } finally {
-      setLoading(false);
 
-      setRefreshing(false);
+    } finally {
+      setLoading(
+        false
+      );
     }
   }
 
 
-  useEffect(() => {
-    loadData();
-
-    const supabase =
-      getSupabaseBrowser();
-
-    const {
-      data: listener,
-    } =
-      supabase.auth.onAuthStateChange(
-        (
-          event
-        ) => {
-          if (
-            event ===
-            "SIGNED_OUT"
-          ) {
-            router.replace(
-              "/admin/login"
-            );
-          }
-        }
-      );
-
-    return () => {
-      listener
-        .subscription
-        .unsubscribe();
-    };
-  }, []);
+  useEffect(
+    () => {
+      loadResponses();
+    },
+    []
+  );
 
 
-  /* ========================================
-     검색 + 필터
-  ======================================== */
-
-  const filteredRows =
-    useMemo(() => {
-      const keyword =
-        search
-          .trim()
-          .toLowerCase();
-
-      return rows.filter(
-        (row) => {
-          if (
-            statusFilter ===
-              "completed" &&
-            !row.completed
-          ) {
-            return false;
-          }
-
-          if (
-            statusFilter ===
-              "incomplete" &&
-            row.completed
-          ) {
-            return false;
-          }
-
-          if (
-            typeFilter !==
-              "all" &&
-            row.result_type !==
-              typeFilter
-          ) {
-            return false;
-          }
-
-          if (!keyword) {
-            return true;
-          }
-
-          const values = [
-            row.name,
-            row.phone,
-            row.license_number,
-            row.result_type,
-            row.secondary_type,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-
-          return values.includes(
-            keyword
-          );
-        }
-      );
-    }, [
-      rows,
-      search,
-      statusFilter,
-      typeFilter,
-    ]);
-
-
-  /*
-    필터가 바뀌면 1페이지
-  */
-
-  useEffect(() => {
-    setPage(1);
-  }, [
-    search,
-    statusFilter,
-    typeFilter,
-  ]);
-
-
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        filteredRows.length /
-          PAGE_SIZE
-      )
-    );
-
-
-  const pageRows =
-    filteredRows.slice(
-      (page - 1) *
-        PAGE_SIZE,
-
-      page *
-        PAGE_SIZE
-    );
-
-
-  /* ========================================
-     통계
-  ======================================== */
-
-  const completedCount =
-    rows.filter(
-      (row) =>
-        row.completed
-    ).length;
-
-  const incompleteCount =
-    rows.length -
-    completedCount;
-
-
-  const typeCounts =
-    rows.reduce(
-      (
-        accumulator,
-        row
-      ) => {
-        if (
-          row.result_type
-        ) {
-          accumulator[
-            row.result_type
-          ] =
-            (
-              accumulator[
-                row.result_type
-              ] || 0
-            ) + 1;
-        }
-
-        return accumulator;
-      },
-      {}
-    );
-
-
-  /* ========================================
+  /* =======================================================
      로그아웃
-  ======================================== */
+  ======================================================= */
 
   async function handleLogout() {
-    const supabase =
-      getSupabaseBrowser();
+    if (supabase) {
+      await supabase.auth
+        .signOut();
+    }
 
-    await supabase.auth.signOut();
 
     router.replace(
       "/admin/login"
@@ -457,16 +570,29 @@ export default function AdminPage() {
   }
 
 
-  /* ========================================
-     CSV 다운로드
-  ======================================== */
+  /* =======================================================
+     CSV
+  ======================================================= */
 
   async function downloadCsv() {
     try {
-      setExporting(true);
+      setExporting(
+        true
+      );
 
-      const accessToken =
+
+      const token =
         await getAccessToken();
+
+
+      if (!token) {
+        router.replace(
+          "/admin/login"
+        );
+
+        return;
+      }
+
 
       const response =
         await fetch(
@@ -474,941 +600,1991 @@ export default function AdminPage() {
           {
             headers: {
               Authorization:
-                `Bearer ${accessToken}`,
+                `Bearer ${token}`,
             },
-            cache:
-              "no-store",
           }
         );
 
+
+      if (
+        response.status ===
+        401 ||
+        response.status ===
+        403
+      ) {
+        await supabase.auth
+          .signOut();
+
+        router.replace(
+          "/admin/login"
+        );
+
+        return;
+      }
+
+
       if (!response.ok) {
         throw new Error(
-          "CSV 다운로드에 실패했습니다."
+          "CSV 파일 생성에 실패했습니다."
         );
       }
+
 
       const blob =
         await response.blob();
 
-      const url =
+
+      const objectUrl =
         URL.createObjectURL(
           blob
         );
+
+
+      const date =
+        new Date()
+          .toISOString()
+          .slice(
+            0,
+            10
+          );
+
 
       const link =
         document.createElement(
           "a"
         );
 
-      link.href = url;
+
+      link.href =
+        objectUrl;
+
 
       link.download =
-        `opening-profile-${new Date()
-          .toISOString()
-          .slice(
-            0,
-            10
-          )}.csv`;
+        `opening-profile-${date}.csv`;
 
-      document.body.appendChild(
-        link
-      );
+
+      document.body
+        .appendChild(
+          link
+        );
+
 
       link.click();
 
+
       link.remove();
 
+
       URL.revokeObjectURL(
-        url
+        objectUrl
       );
+
     } catch (error) {
-      alert(
-        error.message
+      console.error(
+        error
       );
+
+
+      alert(
+        error.message ||
+        "다운로드 중 오류가 발생했습니다."
+      );
+
     } finally {
-      setExporting(false);
+      setExporting(
+        false
+      );
     }
   }
 
+
+  /* =======================================================
+     행 + 분석 정보
+  ======================================================= */
+
+  const enrichedRows =
+    useMemo(
+      () => {
+        return rows.map(
+          (item) => ({
+            ...item,
+
+            meta:
+              getResultMeta(
+                item
+              ),
+          })
+        );
+      },
+      [
+        rows,
+      ]
+    );
+
+
+  /* =======================================================
+     검색/필터
+  ======================================================= */
+
+  const filteredRows =
+    useMemo(
+      () => {
+        const keyword =
+          search
+            .trim()
+            .toLowerCase();
+
+
+        return enrichedRows.filter(
+          (item) => {
+
+            const meta =
+              item.meta;
+
+
+            if (keyword) {
+              const searchable =
+                [
+                  item.name,
+                  item.phone,
+                  item.license_number,
+                  item.result_type,
+                  item.secondary_type,
+                  meta.combination
+                    ?.name,
+                ]
+                  .filter(
+                    Boolean
+                  )
+                  .join(" ")
+                  .toLowerCase();
+
+
+              if (
+                !searchable.includes(
+                  keyword
+                )
+              ) {
+                return false;
+              }
+            }
+
+
+            if (
+              typeFilter !==
+              "all"
+            ) {
+              if (
+                meta.primaryType !==
+                typeFilter
+              ) {
+                return false;
+              }
+            }
+
+
+            if (
+              statusFilter ===
+              "completed" &&
+              !item.completed
+            ) {
+              return false;
+            }
+
+
+            if (
+              statusFilter ===
+              "incomplete" &&
+              item.completed
+            ) {
+              return false;
+            }
+
+
+            if (
+              versionFilter ===
+              "new" &&
+              !meta.version
+                .isNew
+            ) {
+              return false;
+            }
+
+
+            if (
+              versionFilter ===
+              "old" &&
+              (
+                meta.version
+                  .isNew ||
+                getQuestionCount(
+                  item.answers
+                ) === 0
+              )
+            ) {
+              return false;
+            }
+
+
+            return true;
+          }
+        );
+      },
+      [
+        enrichedRows,
+        search,
+        typeFilter,
+        statusFilter,
+        versionFilter,
+      ]
+    );
+
+
+  /* =======================================================
+     통계
+  ======================================================= */
+
+  const stats =
+    useMemo(
+      () => {
+        const total =
+          enrichedRows.length;
+
+
+        const completed =
+          enrichedRows.filter(
+            (item) =>
+              item.completed
+          );
+
+
+        const newVersion =
+          completed.filter(
+            (item) =>
+              item.meta
+                .version
+                .isNew
+          );
+
+
+        const typeCounts = {
+          stable:
+            0,
+
+          aggressive:
+            0,
+
+          analytical:
+            0,
+
+          pioneer:
+            0,
+        };
+
+
+        completed.forEach(
+          (item) => {
+            const type =
+              item.meta
+                .primaryType;
+
+
+            if (
+              type &&
+              typeCounts[type] !==
+                undefined
+            ) {
+              typeCounts[
+                type
+              ] += 1;
+            }
+          }
+        );
+
+
+        /*
+          복합성향 TOP은
+          신규 12문항 진단만 집계
+
+          이전 8문항과 신규 12문항의
+          점수 체계가 다르기 때문
+        */
+
+        const combinationCounts =
+          {};
+
+
+        newVersion.forEach(
+          (item) => {
+            const name =
+              item.meta
+                .combination
+                ?.name;
+
+
+            if (!name) {
+              return;
+            }
+
+
+            combinationCounts[
+              name
+            ] =
+              (
+                combinationCounts[
+                  name
+                ] || 0
+              ) + 1;
+          }
+        );
+
+
+        const topCombination =
+          Object.entries(
+            combinationCounts
+          )
+            .sort(
+              (a, b) =>
+                b[1] -
+                a[1]
+            )[0] ||
+          null;
+
+
+        return {
+          total,
+
+          completed:
+            completed.length,
+
+          newVersion:
+            newVersion.length,
+
+          typeCounts,
+
+          topCombination,
+        };
+      },
+      [
+        enrichedRows,
+      ]
+    );
+
+
+  /* =======================================================
+     Loading
+  ======================================================= */
 
   if (loading) {
     return (
       <main
         className={
-          styles.dashboardPage
+          styles.loadingPage
         }
       >
         <div
           className={
-            styles.dashboardLoading
+            styles.loadingCard
           }
         >
-          관리자 데이터를 불러오고 있습니다.
+          <div
+            className={
+              styles.spinner
+            }
+          />
+
+          <strong>
+            관리자 데이터를
+            불러오고 있습니다.
+          </strong>
         </div>
       </main>
     );
   }
 
 
+  /* =======================================================
+     UI
+  ======================================================= */
+
   return (
     <main
       className={
-        styles.dashboardPage
+        styles.page
       }
     >
-      {/* ==============================
-          상단
-      ============================== */}
 
-      <header
+      <div
         className={
-          styles.dashboardHeader
+          styles.container
         }
       >
-        <div>
-          <p
-            className={
-              styles.dashboardEyebrow
-            }
-          >
-            OPENING PROFILE
-          </p>
 
-          <h1>
-            개원성향진단 관리자
-          </h1>
+        {/* ===============================================
+            HEADER
+        =============================================== */}
 
-          <p
-            className={
-              styles.dashboardSub
-            }
-          >
-            {adminEmail}
-          </p>
-        </div>
-
-
-        <div
+        <header
           className={
-            styles.headerActions
+            styles.header
           }
         >
-          <button
-            type="button"
 
-            className={
-              styles.lightButton
-            }
+          <div>
 
-            onClick={() =>
-              loadData(true)
-            }
-
-            disabled={
-              refreshing
-            }
-          >
-            {refreshing
-              ? "새로고침 중"
-              : "새로고침"}
-          </button>
-
-          <button
-            type="button"
-
-            className={
-              styles.logoutButton
-            }
-
-            onClick={
-              handleLogout
-            }
-          >
-            로그아웃
-          </button>
-        </div>
-      </header>
-
-
-      {/* ==============================
-          통계
-      ============================== */}
-
-      <section
-        className={
-          styles.statsGrid
-        }
-      >
-        <div
-          className={
-            styles.statCard
-          }
-        >
-          <span>
-            총 참여자
-          </span>
-
-          <strong>
-            {rows.length}
-          </strong>
-
-          <small>
-            명
-          </small>
-        </div>
-
-
-        <div
-          className={
-            styles.statCard
-          }
-        >
-          <span>
-            진단 완료
-          </span>
-
-          <strong>
-            {completedCount}
-          </strong>
-
-          <small>
-            명
-          </small>
-        </div>
-
-
-        <div
-          className={
-            styles.statCard
-          }
-        >
-          <span>
-            미완료
-          </span>
-
-          <strong>
-            {incompleteCount}
-          </strong>
-
-          <small>
-            명
-          </small>
-        </div>
-
-
-        <div
-          className={
-            styles.statCard
-          }
-        >
-          <span>
-            완료율
-          </span>
-
-          <strong>
-            {rows.length
-              ? Math.round(
-                  (
-                    completedCount /
-                    rows.length
-                  ) *
-                    100
-                )
-              : 0}
-          </strong>
-
-          <small>
-            %
-          </small>
-        </div>
-      </section>
-
-
-      {/* ==============================
-          유형 통계
-      ============================== */}
-
-      <section
-        className={
-          styles.typeSummary
-        }
-      >
-        {[
-          "안정정착형",
-          "집중공격형",
-          "데이터분석형",
-          "선점개척형",
-        ].map(
-          (type) => (
-            <div
-              key={type}
-
+            <p
               className={
-                styles.typeSummaryItem
+                styles.eyebrow
               }
             >
-              <span>
-                {type}
-              </span>
+              OSSTEM IMPLANT
+            </p>
 
-              <strong>
-                {typeCounts[
-                  type
-                ] || 0}
-              </strong>
-            </div>
-          )
+            <h1>
+              개원성향진단
+              관리자
+            </h1>
+
+            <p
+              className={
+                styles.headerDescription
+              }
+            >
+              참여자 정보와
+              기본성향·복합성향 및
+              문항별 응답을 확인합니다.
+            </p>
+
+          </div>
+
+
+          <div
+            className={
+              styles.headerActions
+            }
+          >
+
+            <button
+              type="button"
+
+              className={
+                styles.exportButton
+              }
+
+              onClick={
+                downloadCsv
+              }
+
+              disabled={
+                exporting
+              }
+            >
+
+              {exporting
+                ? "파일 생성 중..."
+                : "↓ CSV 다운로드"}
+
+            </button>
+
+
+            <button
+              type="button"
+
+              className={
+                styles.logoutButton
+              }
+
+              onClick={
+                handleLogout
+              }
+            >
+              로그아웃
+            </button>
+
+          </div>
+
+        </header>
+
+
+        {/* ===============================================
+            ERROR
+        =============================================== */}
+
+        {errorMessage && (
+
+          <div
+            className={
+              styles.errorBox
+            }
+          >
+
+            <span>
+              {errorMessage}
+            </span>
+
+            <button
+              type="button"
+
+              onClick={
+                loadResponses
+              }
+            >
+              다시 불러오기
+            </button>
+
+          </div>
+
         )}
-      </section>
 
 
-      {/* ==============================
-          검색
-      ============================== */}
+        {/* ===============================================
+            MAIN STATS
+        =============================================== */}
 
-      <section
-        className={
-          styles.toolbar
-        }
-      >
-        <div
+        <section
           className={
-            styles.searchBox
+            styles.statsGrid
           }
         >
-          <input
-            type="search"
 
-            placeholder="이름, 휴대폰번호, 면허번호 검색"
+          <article
+            className={
+              styles.statCard
+            }
+          >
 
-            value={search}
+            <span>
+              전체 등록
+            </span>
+
+            <strong>
+              {stats.total}
+            </strong>
+
+            <small>
+              명
+            </small>
+
+          </article>
+
+
+          <article
+            className={
+              styles.statCard
+            }
+          >
+
+            <span>
+              진단 완료
+            </span>
+
+            <strong>
+              {stats.completed}
+            </strong>
+
+            <small>
+              명
+            </small>
+
+          </article>
+
+
+          <article
+            className={
+              styles.statCard
+            }
+          >
+
+            <span>
+              신규 12문항
+            </span>
+
+            <strong>
+              {stats.newVersion}
+            </strong>
+
+            <small>
+              명
+            </small>
+
+          </article>
+
+
+          <article
+            className={`${styles.statCard} ${styles.comboStatCard}`}
+          >
+
+            <span>
+              신규 복합성향 TOP
+            </span>
+
+            {stats.topCombination ? (
+              <>
+
+                <strong
+                  className={
+                    styles.comboStatName
+                  }
+                >
+                  {
+                    stats
+                      .topCombination[0]
+                  }
+                </strong>
+
+                <small>
+                  {
+                    stats
+                      .topCombination[1]
+                  }
+                  명
+                </small>
+
+              </>
+            ) : (
+
+              <strong
+                className={
+                  styles.comboStatEmpty
+                }
+              >
+                -
+              </strong>
+
+            )}
+
+          </article>
+
+        </section>
+
+
+        {/* ===============================================
+            기본성향 통계
+        =============================================== */}
+
+        <section
+          className={
+            styles.typeSection
+          }
+        >
+
+          <div
+            className={
+              styles.sectionHeading
+            }
+          >
+
+            <div>
+
+              <span>
+                PROFILE SUMMARY
+              </span>
+
+              <h2>
+                기본성향 현황
+              </h2>
+
+            </div>
+
+            <p>
+              진단 완료자를 기준으로
+              집계합니다.
+            </p>
+
+          </div>
+
+
+          <div
+            className={
+              styles.typeGrid
+            }
+          >
+
+            {Object.entries(
+              TYPE_INFO
+            ).map(
+              ([
+                type,
+                info,
+              ]) => (
+
+                <article
+                  className={
+                    styles.typeCard
+                  }
+
+                  key={
+                    type
+                  }
+                >
+
+                  <span
+                    className={
+                      styles.typeEmoji
+                    }
+                  >
+                    {
+                      info.emoji
+                    }
+                  </span>
+
+
+                  <div>
+
+                    <span
+                      className={
+                        styles.typeName
+                      }
+                    >
+                      {
+                        info.label
+                      }
+                    </span>
+
+                    <strong>
+                      {
+                        stats
+                          .typeCounts[
+                          type
+                        ]
+                      }
+                      명
+                    </strong>
+
+                  </div>
+
+                </article>
+
+              )
+            )}
+
+          </div>
+
+        </section>
+
+
+        {/* ===============================================
+            FILTER
+        =============================================== */}
+
+        <section
+          className={
+            styles.filterSection
+          }
+        >
+
+          <div
+            className={
+              styles.searchBox
+            }
+          >
+
+            <span>
+              ⌕
+            </span>
+
+            <input
+              type="search"
+
+              placeholder="이름 · 휴대폰 · 면허번호 · 복합성향 검색"
+
+              value={
+                search
+              }
+
+              onChange={(
+                event
+              ) =>
+                setSearch(
+                  event.target
+                    .value
+                )
+              }
+            />
+
+          </div>
+
+
+          <select
+            value={
+              typeFilter
+            }
 
             onChange={(
               event
             ) =>
-              setSearch(
-                event.target.value
+              setTypeFilter(
+                event.target
+                  .value
               )
             }
-          />
-        </div>
+          >
+
+            <option value="all">
+              전체 주성향
+            </option>
+
+            <option value="stable">
+              🏠 안정정착형
+            </option>
+
+            <option value="aggressive">
+              🚀 집중공격형
+            </option>
+
+            <option value="analytical">
+              📊 데이터분석형
+            </option>
+
+            <option value="pioneer">
+              🌱 선점개척형
+            </option>
+
+          </select>
 
 
-        <select
-          value={
-            statusFilter
-          }
+          <select
+            value={
+              versionFilter
+            }
 
-          onChange={(
-            event
-          ) =>
-            setStatusFilter(
-              event.target.value
-            )
-          }
-        >
-          <option value="all">
-            전체 상태
-          </option>
+            onChange={(
+              event
+            ) =>
+              setVersionFilter(
+                event.target
+                  .value
+              )
+            }
+          >
 
-          <option value="completed">
-            완료
-          </option>
+            <option value="all">
+              전체 버전
+            </option>
 
-          <option value="incomplete">
-            미완료
-          </option>
-        </select>
+            <option value="new">
+              신규 12문항
+            </option>
 
+            <option value="old">
+              이전 버전
+            </option>
 
-        <select
-          value={
-            typeFilter
-          }
-
-          onChange={(
-            event
-          ) =>
-            setTypeFilter(
-              event.target.value
-            )
-          }
-        >
-          <option value="all">
-            전체 유형
-          </option>
-
-          <option value="안정정착형">
-            안정정착형
-          </option>
-
-          <option value="집중공격형">
-            집중공격형
-          </option>
-
-          <option value="데이터분석형">
-            데이터분석형
-          </option>
-
-          <option value="선점개척형">
-            선점개척형
-          </option>
-        </select>
+          </select>
 
 
-        <button
-          type="button"
+          <select
+            value={
+              statusFilter
+            }
 
-          className={
-            styles.exportButton
-          }
+            onChange={(
+              event
+            ) =>
+              setStatusFilter(
+                event.target
+                  .value
+              )
+            }
+          >
 
-          onClick={
-            downloadCsv
-          }
+            <option value="all">
+              전체 상태
+            </option>
 
-          disabled={
-            exporting
-          }
-        >
-          {exporting
-            ? "파일 생성 중..."
-            : "CSV 다운로드"}
-        </button>
-      </section>
+            <option value="completed">
+              진단 완료
+            </option>
+
+            <option value="incomplete">
+              미완료
+            </option>
+
+          </select>
+
+        </section>
 
 
-      {errorMessage && (
+        {/* ===============================================
+            LIST HEADER
+        =============================================== */}
+
         <div
           className={
-            styles.dashboardError
+            styles.listHeading
           }
         >
-          {errorMessage}
-        </div>
-      )}
+
+          <div>
+
+            <span>
+              RESPONSE DATA
+            </span>
+
+            <h2>
+              진단 참여자
+            </h2>
+
+          </div>
 
 
-      {/* ==============================
-          테이블
-      ============================== */}
-
-      <section
-        className={
-          styles.tableCard
-        }
-      >
-        <div
-          className={
-            styles.tableMeta
-          }
-        >
-          검색 결과{" "}
           <strong>
             {
               filteredRows.length
             }
+            건
           </strong>
-          명
+
         </div>
 
 
+        {/* ===============================================
+            TABLE
+        =============================================== */}
+
         <div
           className={
-            styles.tableScroll
+            styles.tableWrap
           }
         >
+
           <table
             className={
-              styles.dataTable
+              styles.table
             }
           >
+
             <thead>
+
               <tr>
+
                 <th>
-                  이름
+                  참여자
                 </th>
 
                 <th>
-                  휴대폰번호
+                  연락처
                 </th>
 
                 <th>
-                  면허번호
+                  진단 버전
                 </th>
 
                 <th>
-                  상태
+                  주성향
                 </th>
 
                 <th>
-                  최종 유형
+                  보조성향
                 </th>
 
                 <th>
-                  보조 유형
+                  복합성향
                 </th>
 
                 <th>
-                  참여일
+                  진단일
                 </th>
 
-                <th />
+                <th>
+                  상세
+                </th>
+
               </tr>
+
             </thead>
 
 
             <tbody>
-              {pageRows.length ===
-              0 ? (
-                <tr>
-                  <td
-                    colSpan="8"
 
-                    className={
-                      styles.emptyRow
+              {filteredRows.length ===
+              0 ? (
+
+                <tr>
+
+                  <td
+                    colSpan={
+                      8
                     }
                   >
-                    조건에 맞는 참여자가 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                pageRows.map(
-                  (row) => (
-                    <tr
-                      key={
-                        row.id
-                      }
-                    >
-                      <td
-                        className={
-                          styles.nameCell
-                        }
-                      >
-                        {row.name ||
-                          "-"}
-                      </td>
 
-                      <td>
-                        {row.phone ||
-                          "-"}
-                      </td>
-
-                      <td>
-                        {row.license_number ||
-                          "-"}
-                      </td>
-
-                      <td>
-                        <span
-                          className={
-                            row.completed
-                              ? styles.completedBadge
-                              : styles.incompleteBadge
-                          }
-                        >
-                          {row.completed
-                            ? "완료"
-                            : "미완료"}
-                        </span>
-                      </td>
-
-                      <td>
-                        {row.result_type ||
-                          "-"}
-                      </td>
-
-                      <td>
-                        {row.secondary_type ||
-                          "-"}
-                      </td>
-
-                      <td>
-                        {formatDate(
-                          row.created_at
-                        )}
-                      </td>
-
-                      <td>
-                        <button
-                          type="button"
-
-                          className={
-                            styles.detailButton
-                          }
-
-                          onClick={() =>
-                            setSelectedRow(
-                              row
-                            )
-                          }
-                        >
-                          상세
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                )
-              )}
-            </tbody>
-          </table>
-        </div>
-
-
-        {/* 페이지 */}
-
-        <div
-          className={
-            styles.pagination
-          }
-        >
-          <button
-            type="button"
-
-            disabled={
-              page <= 1
-            }
-
-            onClick={() =>
-              setPage(
-                (
-                  current
-                ) =>
-                  Math.max(
-                    1,
-                    current -
-                      1
-                  )
-              )
-            }
-          >
-            이전
-          </button>
-
-
-          <span>
-            {page} /{" "}
-            {totalPages}
-          </span>
-
-
-          <button
-            type="button"
-
-            disabled={
-              page >=
-              totalPages
-            }
-
-            onClick={() =>
-              setPage(
-                (
-                  current
-                ) =>
-                  Math.min(
-                    totalPages,
-                    current +
-                      1
-                  )
-              )
-            }
-          >
-            다음
-          </button>
-        </div>
-      </section>
-
-
-      {/* ==============================
-          상세보기
-      ============================== */}
-
-      {selectedRow && (
-        <div
-          className={
-            styles.modalBackdrop
-          }
-
-          onMouseDown={(
-            event
-          ) => {
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
-              setSelectedRow(
-                null
-              );
-            }
-          }}
-        >
-          <div
-            className={
-              styles.modal
-            }
-          >
-            <div
-              className={
-                styles.modalHeader
-              }
-            >
-              <div>
-                <p>
-                  진단 상세
-                </p>
-
-                <h2>
-                  {selectedRow.name}
-                </h2>
-              </div>
-
-              <button
-                type="button"
-
-                onClick={() =>
-                  setSelectedRow(
-                    null
-                  )
-                }
-              >
-                ×
-              </button>
-            </div>
-
-
-            <div
-              className={
-                styles.detailGrid
-              }
-            >
-              <div>
-                <span>
-                  휴대폰번호
-                </span>
-
-                <strong>
-                  {selectedRow.phone ||
-                    "-"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  면허번호
-                </span>
-
-                <strong>
-                  {selectedRow.license_number ||
-                    "-"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  최종 유형
-                </span>
-
-                <strong>
-                  {selectedRow.result_type ||
-                    "-"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  최종 점수
-                </span>
-
-                <strong>
-                  {selectedRow.result_score ??
-                    "-"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  보조 유형
-                </span>
-
-                <strong>
-                  {selectedRow.secondary_type ||
-                    "-"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  보조 점수
-                </span>
-
-                <strong>
-                  {selectedRow.secondary_score ??
-                    "-"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  참여일
-                </span>
-
-                <strong>
-                  {formatDate(
-                    selectedRow.created_at
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  완료일
-                </span>
-
-                <strong>
-                  {formatDate(
-                    selectedRow.completed_at
-                  )}
-                </strong>
-              </div>
-            </div>
-
-
-            {/* 유형별 점수 */}
-
-            <div
-              className={
-                styles.modalSection
-              }
-            >
-              <h3>
-                유형별 점수
-              </h3>
-
-              <div
-                className={
-                  styles.scoreDetails
-                }
-              >
-                {Object.entries(
-                  TYPE_LABELS
-                ).map(
-                  ([
-                    key,
-                    label,
-                  ]) => (
                     <div
-                      key={
-                        key
+                      className={
+                        styles.emptyState
                       }
                     >
+
                       <span>
-                        {label}
+                        🔎
                       </span>
 
                       <strong>
-                        {selectedRow
-                          .type_scores?.[
-                          key
-                        ] ?? 0}
-                        점
+                        검색 결과가 없습니다.
                       </strong>
+
+                      <p>
+                        검색어 또는 필터를
+                        변경해주세요.
+                      </p>
+
                     </div>
-                  )
-                )}
-              </div>
-            </div>
+
+                  </td>
+
+                </tr>
+
+              ) : (
+
+                filteredRows.map(
+                  (
+                    item
+                  ) => {
+
+                    const meta =
+                      item.meta;
 
 
-            {/* 답변 */}
+                    const primary =
+                      meta.primaryType
+                        ? TYPE_INFO[
+                            meta
+                              .primaryType
+                          ]
+                        : null;
 
-            <div
-              className={
-                styles.modalSection
-              }
-            >
-              <h3>
-                설문 응답
-              </h3>
 
-              <div
-                className={
-                  styles.answerList
-                }
-              >
-                {Object.entries(
-                  selectedRow.answers ||
-                    {}
-                ).map(
-                  ([
-                    key,
-                    answer,
-                  ]) => (
-                    <div
-                      key={
-                        key
-                      }
+                    const secondary =
+                      meta.secondaryType
+                        ? TYPE_INFO[
+                            meta
+                              .secondaryType
+                          ]
+                        : null;
 
-                      className={
-                        styles.answerItem
-                      }
-                    >
-                      <span
-                        className={
-                          styles.answerQuestion
-                        }
-                      >
-                        {key ===
-                        "tiebreaker"
-                          ? "FINAL"
-                          : key.toUpperCase()}
-                      </span>
 
-                      <div>
-                        <strong>
-                          {answer.question ||
-                            ""}
-                        </strong>
+                    const isExpanded =
+                      expandedId ===
+                      item.id;
 
-                        <p>
-                          {answer.answer ||
-                            ""}
-                        </p>
 
-                        {answer.typeLabel && (
-                          <small>
+                    const scores =
+                      item.type_scores &&
+                      typeof item.type_scores ===
+                        "object"
+                        ? item.type_scores
+                        : {};
+
+
+                    return (
+
+                      <>
+                        <tr
+                          key={
+                            item.id
+                          }
+                          className={
+                            isExpanded
+                              ? styles.activeRow
+                              : ""
+                          }
+                        >
+
+                          <td>
+
+                            <div
+                              className={
+                                styles.personCell
+                              }
+                            >
+
+                              <strong>
+                                {
+                                  safeText(
+                                    item.name
+                                  )
+                                }
+                              </strong>
+
+                              <span>
+                                면허번호{" "}
+                                {
+                                  safeText(
+                                    item.license_number
+                                  )
+                                }
+                              </span>
+
+                            </div>
+
+                          </td>
+
+
+                          <td>
                             {
-                              answer.typeLabel
-                            }{" "}
-                            ·{" "}
-                            {
-                              answer.score
+                              safeText(
+                                item.phone
+                              )
                             }
-                            점
-                          </small>
-                        )}
-                      </div>
-                    </div>
-                  )
-                )}
+                          </td>
 
-                {Object.keys(
-                  selectedRow.answers ||
-                    {}
-                ).length ===
-                  0 && (
-                  <p
-                    className={
-                      styles.noAnswers
-                    }
-                  >
-                    아직 설문 응답이 없습니다.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+
+                          <td>
+
+                            <span
+                              className={
+                                meta.version
+                                  .isNew
+                                  ? styles.newVersionBadge
+                                  : styles.oldVersionBadge
+                              }
+                            >
+
+                              {
+                                meta.version
+                                  .label
+                              }
+
+                            </span>
+
+                          </td>
+
+
+                          <td>
+
+                            {primary ? (
+
+                              <div
+                                className={
+                                  styles.profileCell
+                                }
+                              >
+
+                                <strong>
+                                  {
+                                    primary.emoji
+                                  }
+                                  {" "}
+                                  {
+                                    primary.label
+                                  }
+                                </strong>
+
+                                <span>
+                                  {
+                                    item.result_score ??
+                                    "-"
+                                  }
+                                  점
+                                </span>
+
+                              </div>
+
+                            ) : (
+                              <span
+                                className={
+                                  styles.pending
+                                }
+                              >
+                                미완료
+                              </span>
+                            )}
+
+                          </td>
+
+
+                          <td>
+
+                            {secondary ? (
+
+                              <div
+                                className={
+                                  styles.profileCell
+                                }
+                              >
+
+                                <strong>
+                                  {
+                                    secondary.emoji
+                                  }
+                                  {" "}
+                                  {
+                                    secondary.label
+                                  }
+                                </strong>
+
+                                <span>
+                                  {
+                                    item.secondary_score ??
+                                    "-"
+                                  }
+                                  점
+                                </span>
+
+                              </div>
+
+                            ) : (
+                              "-"
+                            )}
+
+                          </td>
+
+
+                          <td>
+
+                            {meta.combination ? (
+
+                              <div
+                                className={
+                                  styles.combinationCell
+                                }
+                              >
+
+                                <strong>
+                                  {
+                                    meta.combination
+                                      .name
+                                  }
+                                </strong>
+
+                                <span>
+                                  {
+                                    meta.strength
+                                      ?.label
+                                  }
+                                </span>
+
+                              </div>
+
+                            ) : (
+                              "-"
+                            )}
+
+                          </td>
+
+
+                          <td>
+
+                            <div
+                              className={
+                                styles.dateCell
+                              }
+                            >
+
+                              {
+                                formatDate(
+                                  item.completed_at ||
+                                  item.created_at
+                                )
+                              }
+
+                            </div>
+
+                          </td>
+
+
+                          <td>
+
+                            <button
+                              type="button"
+
+                              className={
+                                styles.detailButton
+                              }
+
+                              onClick={() =>
+                                setExpandedId(
+                                  isExpanded
+                                    ? null
+                                    : item.id
+                                )
+                              }
+                            >
+
+                              {isExpanded
+                                ? "접기"
+                                : "상세보기"}
+
+                            </button>
+
+                          </td>
+
+                        </tr>
+
+
+                        {isExpanded && (
+
+                          <tr
+                            key={`${item.id}-detail`}
+                          >
+
+                            <td
+                              colSpan={
+                                8
+                              }
+
+                              className={
+                                styles.expandedCell
+                              }
+                            >
+
+                              <div
+                                className={
+                                  styles.detailPanel
+                                }
+                              >
+
+                                {/* ===================================
+                                    개인 정보
+                                =================================== */}
+
+                                <section
+                                  className={
+                                    styles.detailBlock
+                                  }
+                                >
+
+                                  <div
+                                    className={
+                                      styles.detailTitle
+                                    }
+                                  >
+
+                                    <span>
+                                      PARTICIPANT
+                                    </span>
+
+                                    <h3>
+                                      참여자 정보
+                                    </h3>
+
+                                  </div>
+
+
+                                  <div
+                                    className={
+                                      styles.infoGrid
+                                    }
+                                  >
+
+                                    <div>
+                                      <span>
+                                        이름
+                                      </span>
+
+                                      <strong>
+                                        {
+                                          safeText(
+                                            item.name
+                                          )
+                                        }
+                                      </strong>
+                                    </div>
+
+
+                                    <div>
+                                      <span>
+                                        휴대폰
+                                      </span>
+
+                                      <strong>
+                                        {
+                                          safeText(
+                                            item.phone
+                                          )
+                                        }
+                                      </strong>
+                                    </div>
+
+
+                                    <div>
+                                      <span>
+                                        면허번호
+                                      </span>
+
+                                      <strong>
+                                        {
+                                          safeText(
+                                            item.license_number
+                                          )
+                                        }
+                                      </strong>
+                                    </div>
+
+
+                                    <div>
+                                      <span>
+                                        진단버전
+                                      </span>
+
+                                      <strong>
+                                        {
+                                          meta.version
+                                            .label
+                                        }
+                                      </strong>
+                                    </div>
+
+
+                                    <div>
+                                      <span>
+                                        등록일
+                                      </span>
+
+                                      <strong>
+                                        {
+                                          formatDate(
+                                            item.created_at
+                                          )
+                                        }
+                                      </strong>
+                                    </div>
+
+
+                                    <div>
+                                      <span>
+                                        완료일
+                                      </span>
+
+                                      <strong>
+                                        {
+                                          formatDate(
+                                            item.completed_at
+                                          )
+                                        }
+                                      </strong>
+                                    </div>
+
+                                  </div>
+
+                                </section>
+
+
+                                {/* ===================================
+                                    결과
+                                =================================== */}
+
+                                {item.completed &&
+                                  primary && (
+
+                                  <section
+                                    className={
+                                      styles.detailBlock
+                                    }
+                                  >
+
+                                    <div
+                                      className={
+                                        styles.detailTitle
+                                      }
+                                    >
+
+                                      <span>
+                                        DIAGNOSIS RESULT
+                                      </span>
+
+                                      <h3>
+                                        진단 결과
+                                      </h3>
+
+                                    </div>
+
+
+                                    <div
+                                      className={
+                                        styles.resultSummary
+                                      }
+                                    >
+
+                                      <div
+                                        className={
+                                          styles.primaryResult
+                                        }
+                                      >
+
+                                        <span>
+                                          주성향
+                                        </span>
+
+                                        <strong>
+                                          {
+                                            primary.emoji
+                                          }
+                                          {" "}
+                                          {
+                                            primary.label
+                                          }
+                                        </strong>
+
+                                        <b>
+                                          {
+                                            item.result_score
+                                          }
+                                          점
+                                        </b>
+
+                                      </div>
+
+
+                                      {secondary && (
+
+                                        <div
+                                          className={
+                                            styles.secondaryResult
+                                          }
+                                        >
+
+                                          <span>
+                                            보조성향
+                                          </span>
+
+                                          <strong>
+                                            {
+                                              secondary.emoji
+                                            }
+                                            {" "}
+                                            {
+                                              secondary.label
+                                            }
+                                          </strong>
+
+                                          <b>
+                                            {
+                                              item.secondary_score
+                                            }
+                                            점
+                                          </b>
+
+                                        </div>
+
+                                      )}
+
+                                    </div>
+
+
+                                    {meta.combination && (
+
+                                      <div
+                                        className={
+                                          styles.comboDetail
+                                        }
+                                      >
+
+                                        <span
+                                          className={
+                                            styles.comboKicker
+                                          }
+                                        >
+                                          YOUR COMBINATION
+                                        </span>
+
+
+                                        <div
+                                          className={
+                                            styles.comboTypes
+                                          }
+                                        >
+
+                                          {
+                                            primary.emoji
+                                          }
+                                          {" "}
+                                          {
+                                            primary.label
+                                          }
+
+                                          <b>
+                                            ×
+                                          </b>
+
+                                          {
+                                            secondary?.emoji
+                                          }
+                                          {" "}
+                                          {
+                                            secondary?.label
+                                          }
+
+                                        </div>
+
+
+                                        <h3>
+                                          {
+                                            meta.combination
+                                              .name
+                                          }
+                                        </h3>
+
+
+                                        <span
+                                          className={
+                                            styles.strengthBadge
+                                          }
+                                        >
+                                          {
+                                            meta.strength
+                                              ?.label
+                                          }
+                                        </span>
+
+
+                                        <p
+                                          className={
+                                            styles.comboTagline
+                                          }
+                                        >
+                                          “{
+                                            meta.combination
+                                              .tagline
+                                          }”
+                                        </p>
+
+
+                                        <p
+                                          className={
+                                            styles.comboDescription
+                                          }
+                                        >
+                                          {
+                                            meta.combination
+                                              .description
+                                          }
+                                        </p>
+
+                                      </div>
+
+                                    )}
+
+
+                                    {/* 점수 */}
+
+                                    <div
+                                      className={
+                                        styles.scoreGrid
+                                      }
+                                    >
+
+                                      {Object.entries(
+                                        TYPE_INFO
+                                      ).map(
+                                        ([
+                                          type,
+                                          info,
+                                        ]) => (
+
+                                          <div
+                                            key={
+                                              type
+                                            }
+                                            className={
+                                              styles.scoreBox
+                                            }
+                                          >
+
+                                            <span>
+                                              {
+                                                info.emoji
+                                              }
+                                              {" "}
+                                              {
+                                                info.label
+                                              }
+                                            </span>
+
+                                            <strong>
+                                              {
+                                                scores[
+                                                  type
+                                                ] ??
+                                                0
+                                              }
+                                              점
+                                            </strong>
+
+                                          </div>
+
+                                        )
+                                      )}
+
+                                    </div>
+
+                                  </section>
+
+                                )}
+
+
+                                {/* ===================================
+                                    문항 응답
+                                =================================== */}
+
+                                <section
+                                  className={
+                                    styles.detailBlock
+                                  }
+                                >
+
+                                  <div
+                                    className={
+                                      styles.detailTitle
+                                    }
+                                  >
+
+                                    <span>
+                                      ANSWERS
+                                    </span>
+
+                                    <h3>
+                                      문항별 응답
+                                    </h3>
+
+                                  </div>
+
+
+                                  <div
+                                    className={
+                                      styles.answersList
+                                    }
+                                  >
+
+                                    {Array.from(
+                                      {
+                                        length:
+                                          12,
+                                      },
+                                      (
+                                        _,
+                                        index
+                                      ) => {
+
+                                        const questionNumber =
+                                          index +
+                                          1;
+
+
+                                        const answer =
+                                          getAnswerEntry(
+                                            item.answers,
+                                            questionNumber
+                                          );
+
+
+                                        const storedQuestion =
+                                          (
+                                            answer &&
+                                            typeof answer ===
+                                              "object"
+                                          )
+                                            ? answer.question
+                                            : null;
+
+
+                                        return (
+
+                                          <article
+                                            key={
+                                              questionNumber
+                                            }
+                                            className={
+                                              answer
+                                                ? styles.answerCard
+                                                : styles.answerCardEmpty
+                                            }
+                                          >
+
+                                            <div
+                                              className={
+                                                styles.answerNumber
+                                              }
+                                            >
+                                              Q
+                                              {
+                                                String(
+                                                  questionNumber
+                                                ).padStart(
+                                                  2,
+                                                  "0"
+                                                )
+                                              }
+                                            </div>
+
+
+                                            <div
+                                              className={
+                                                styles.answerContent
+                                              }
+                                            >
+
+                                              <h4>
+
+                                                {
+                                                  storedQuestion ||
+                                                  (
+                                                    meta.version
+                                                      .isNew
+                                                      ? QUESTIONS[
+                                                          index
+                                                        ]?.question
+                                                      : "이전 버전에서 사용하지 않은 문항"
+                                                  )
+                                                }
+
+                                              </h4>
+
+
+                                              {answer ? (
+                                                <>
+
+                                                  <p>
+                                                    {
+                                                      getAnswerText(
+                                                        answer
+                                                      )
+                                                    }
+                                                  </p>
+
+
+                                                  {getAnswerTypeLabel(
+                                                    answer
+                                                  ) && (
+
+                                                    <span
+                                                      className={
+                                                        styles.answerType
+                                                      }
+                                                    >
+                                                      {
+                                                        getAnswerTypeLabel(
+                                                          answer
+                                                        )
+                                                      }
+
+                                                      {
+                                                        typeof answer ===
+                                                          "object" &&
+                                                        answer.score !==
+                                                          undefined
+                                                          ? ` · ${answer.score}점`
+                                                          : ""
+                                                      }
+
+                                                    </span>
+
+                                                  )}
+
+                                                </>
+                                              ) : (
+
+                                                <p
+                                                  className={
+                                                    styles.noAnswer
+                                                  }
+                                                >
+                                                  응답 없음
+                                                </p>
+
+                                              )}
+
+                                            </div>
+
+                                          </article>
+
+                                        );
+                                      }
+                                    )}
+
+
+                                    {item.answers
+                                      ?.tiebreaker && (
+
+                                      <article
+                                        className={`${styles.answerCard} ${styles.tieAnswerCard}`}
+                                      >
+
+                                        <div
+                                          className={
+                                            styles.answerNumber
+                                          }
+                                        >
+                                          FINAL
+                                        </div>
+
+
+                                        <div
+                                          className={
+                                            styles.answerContent
+                                          }
+                                        >
+
+                                          <h4>
+                                            {
+                                              item.answers
+                                                .tiebreaker
+                                                .question
+                                            }
+                                          </h4>
+
+                                          <p>
+                                            {
+                                              item.answers
+                                                .tiebreaker
+                                                .answer
+                                            }
+                                          </p>
+
+                                          <span
+                                            className={
+                                              styles.answerType
+                                            }
+                                          >
+                                            {
+                                              item.answers
+                                                .tiebreaker
+                                                .typeLabel
+                                            }
+                                          </span>
+
+                                        </div>
+
+                                      </article>
+
+                                    )}
+
+                                  </div>
+
+                                </section>
+
+                              </div>
+
+                            </td>
+
+                          </tr>
+
+                        )}
+
+                      </>
+
+                    );
+                  }
+                )
+
+              )}
+
+            </tbody>
+
+          </table>
+
         </div>
-      )}
+
+
+        <footer
+          className={
+            styles.footer
+          }
+        >
+          OSSTEM IMPLANT · OPENING PROFILE ADMIN
+        </footer>
+
+      </div>
+
     </main>
   );
 }
