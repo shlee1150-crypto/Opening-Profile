@@ -1,1591 +1,449 @@
-.page {
-  width: 100%;
-  min-height: 100dvh;
+import {
+  NextResponse,
+} from "next/server";
 
-  padding:
-    36px
-    18px
-    60px;
-
-  background:
-    #f2efea;
-
-  color:
-    #302b27;
-}
+import {
+  createClient,
+} from "@supabase/supabase-js";
 
 
-.container {
-  width: 100%;
-  max-width: 720px;
-
-  margin:
-    0 auto;
-}
+export const runtime =
+  "nodejs";
 
 
 /* =========================================================
-   HEADER
+   SUPABASE ADMIN
 ========================================================= */
 
-.header {
-  margin-bottom:
-    18px;
+function getSupabaseAdmin() {
+  const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  padding:
-    32px
-    29px;
 
-  border:
-    1px solid #e2dbd4;
+  const supabaseSecretKey =
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  border-radius:
-    21px;
 
-  background:
-    #ffffff;
-
-  box-shadow:
-    0 9px 30px
-    rgba(
-      70,
-      50,
-      35,
-      0.06
+  if (
+    !supabaseUrl ||
+    !supabaseSecretKey
+  ) {
+    throw new Error(
+      "Supabase 환경변수가 설정되어 있지 않습니다."
     );
-}
-
-
-.brand {
-  margin:
-    0 0 17px;
-
-  color:
-    #f26a21;
-
-  font-size:
-    11px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    1.5px;
-}
-
-
-.kicker {
-  margin:
-    0 0 5px;
-
-  color:
-    #aaa29b;
-
-  font-size:
-    9px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    1.7px;
-}
-
-
-.header h1 {
-  margin:
-    0 0 9px;
-
-  color:
-    #2c2723;
-
-  font-size:
-    31px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    -1.3px;
-}
-
-
-.header > p:last-child {
-  margin:
-    0;
-
-  color:
-    #7d756e;
-
-  font-size:
-    14px;
-
-  line-height:
-    1.7;
-
-  word-break:
-    keep-all;
-}
-
-
-/* =========================================================
-   기존 영업담당자
-========================================================= */
-
-.salesManagerCard {
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 15px;
-
-  margin-bottom:
-    18px;
-
-  padding:
-    20px 23px;
-
-  border:
-    1px solid #f2cfba;
-
-  border-radius:
-    17px;
-
-  background:
-    #fff8f3;
-
-  box-shadow:
-    0 6px 20px
-    rgba(
-      70,
-      50,
-      35,
-      0.04
-    );
-}
-
-
-.salesManagerCard p {
-  margin:
-    0 0 5px;
-
-  color:
-    #f26a21;
-
-  font-size:
-    9px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    1.4px;
-}
-
-
-.salesManagerCard span {
-  display:
-    block;
-
-  margin-bottom:
-    4px;
-
-  color:
-    #817971;
-
-  font-size:
-    12px;
-
-  font-weight:
-    700;
-}
-
-
-.salesManagerCard strong {
-  display:
-    block;
-
-  color:
-    #332e29;
-
-  font-size:
-    20px;
-
-  font-weight:
-    900;
-}
-
-
-.salesManagerIcon {
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  width:
-    46px;
-
-  height:
-    46px;
-
-  flex:
-    0 0 46px;
-
-  border-radius:
-    13px;
-
-  background:
-    #ffffff;
-
-  font-size:
-    22px;
-}
-
-
-/* =========================================================
-   SECTION
-========================================================= */
-
-.section {
-  margin-bottom:
-    18px;
-
-  padding:
-    28px;
-
-  border:
-    1px solid #e2dbd4;
-
-  border-radius:
-    20px;
-
-  background:
-    #ffffff;
-
-  box-shadow:
-    0 7px 24px
-    rgba(
-      60,
-      45,
-      35,
-      0.045
-    );
-}
-
-
-.sectionTitle {
-  display: flex;
-
-  align-items:
-    flex-start;
-
-  gap:
-    13px;
-
-  margin-bottom:
-    21px;
-}
-
-
-.sectionTitle > span {
-  display: flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  width:
-    38px;
-
-  height:
-    38px;
-
-  flex:
-    0 0 38px;
-
-  border-radius:
-    11px;
-
-  background:
-    #fff0e6;
-
-  color:
-    #f26a21;
-
-  font-size:
-    11px;
-
-  font-weight:
-    900;
-}
-
-
-.sectionTitle small {
-  display:
-    block;
-
-  margin-bottom:
-    2px;
-
-  color:
-    #aaa29a;
-
-  font-size:
-    8px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    1.4px;
-}
-
-
-.sectionTitle h2 {
-  margin:
-    0;
-
-  color:
-    #332e29;
-
-  font-size:
-    19px;
-
-  line-height:
-    1.4;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    -0.5px;
-}
-
-
-.multiSelectNotice {
-  margin:
-    5px 0 0;
-
-  color:
-    #99918a;
-
-  font-size:
-    11px;
-
-  line-height:
-    1.5;
-}
-
-
-/* =========================================================
-   CATEGORY
-========================================================= */
-
-.categoryList,
-.matchingList {
-  display: flex;
-
-  flex-direction:
-    column;
-
-  gap:
-    10px;
-}
-
-
-.categoryButton,
-.matchButton {
-  display: flex;
-
-  align-items:
-    center;
-
-  width:
-    100%;
-
-  min-height:
-    76px;
-
-  padding:
-    15px
-    16px;
-
-  border:
-    1.5px solid #ded7d0;
-
-  border-radius:
-    14px;
-
-  background:
-    #ffffff;
-
-  text-align:
-    left;
-
-  cursor:
-    pointer;
-
-  transition:
-    border-color .2s ease,
-    background .2s ease,
-    transform .2s ease,
-    box-shadow .2s ease;
-}
-
-
-.categoryButton:hover,
-.matchButton:hover {
-  border-color:
-    #f2a272;
-
-  transform:
-    translateY(-1px);
-}
-
-
-.categoryButton.selected,
-.matchButton.selected {
-  border-color:
-    #f26a21;
-
-  background:
-    #fff8f3;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(
-      242,
-      106,
-      33,
-      0.08
-    );
-}
-
-
-.categoryButton:disabled,
-.matchButton:disabled {
-  cursor:
-    default;
-
-  opacity:
-    0.65;
-}
-
-
-.categoryEmoji {
-  display: flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  width:
-    45px;
-
-  height:
-    45px;
-
-  flex:
-    0 0 45px;
-
-  margin-right:
-    13px;
-
-  border-radius:
-    13px;
-
-  background:
-    #f7f4f0;
-
-  font-size:
-    22px;
-}
-
-
-.categoryText {
-  flex:
-    1;
-
-  min-width:
-    0;
-}
-
-
-.categoryButton strong,
-.matchButton strong {
-  display:
-    block;
-
-  margin-bottom:
-    4px;
-
-  color:
-    #37322d;
-
-  font-size:
-    15px;
-
-  font-weight:
-    900;
-}
-
-
-.categoryButton p,
-.matchButton p {
-  margin:
-    0;
-
-  color:
-    #8c847d;
-
-  font-size:
-    12px;
-
-  line-height:
-    1.5;
-
-  word-break:
-    keep-all;
-}
-
-
-/* =========================================================
-   복수선택 체크박스
-========================================================= */
-
-.checkBox {
-  display: flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  width:
-    24px;
-
-  height:
-    24px;
-
-  flex:
-    0 0 24px;
-
-  margin-left:
-    12px;
-
-  border:
-    2px solid #d0c8c1;
-
-  border-radius:
-    7px;
-
-  background:
-    #ffffff;
-
-  color:
-    #ffffff;
-
-  font-size:
-    14px;
-
-  font-weight:
-    900;
-
-  transition:
-    all .2s ease;
-}
-
-
-.checkBoxSelected {
-  border-color:
-    #f26a21;
-
-  background:
-    #f26a21;
-}
-
-
-/* =========================================================
-   RADIO
-========================================================= */
-
-.radio {
-  position:
-    relative;
-
-  width:
-    21px;
-
-  height:
-    21px;
-
-  flex:
-    0 0 21px;
-
-  margin:
-    0 13px 0 0;
-
-  border:
-    2px solid #d0c8c1;
-
-  border-radius:
-    50%;
-
-  background:
-    #ffffff;
-}
-
-
-.selected .radio {
-  border-color:
-    #f26a21;
-}
-
-
-.selected .radio::after {
-  content:
-    "";
-
-  position:
-    absolute;
-
-  top:
-    4px;
-
-  left:
-    4px;
-
-  width:
-    9px;
-
-  height:
-    9px;
-
-  border-radius:
-    50%;
-
-  background:
-    #f26a21;
-}
-
-
-/* =========================================================
-   CONDITIONAL REVEAL
-========================================================= */
-
-.reveal {
-  max-height:
-    0;
-
-  overflow:
-    hidden;
-
-  opacity:
-    0;
-
-  transform:
-    translateY(-12px);
-
-  transition:
-    max-height .75s
-      cubic-bezier(
-        .22,
-        1,
-        .36,
-        1
-      ),
-    opacity .35s ease,
-    transform .45s ease;
-}
-
-
-.revealOpen {
-  max-height:
-    1200px;
-
-  opacity:
-    1;
-
-  transform:
-    translateY(0);
-}
-
-
-.managerReveal {
-  max-height:
-    0;
-
-  opacity:
-    0;
-
-  overflow:
-    hidden;
-
-  transform:
-    translateY(-10px);
-
-  transition:
-    max-height .55s ease,
-    opacity .35s ease,
-    transform .35s ease;
-}
-
-
-.managerRevealOpen {
-  max-height:
-    240px;
-
-  opacity:
-    1;
-
-  transform:
-    translateY(0);
-}
-
-
-/* =========================================================
-   담당자 이름
-========================================================= */
-
-.managerBox {
-  margin-top:
-    18px;
-
-  padding-top:
-    19px;
-
-  border-top:
-    1px solid #eee8e2;
-}
-
-
-.managerBox label {
-  display:
-    block;
-
-  margin-bottom:
-    8px;
-
-  color:
-    #4c4640;
-
-  font-size:
-    13px;
-
-  font-weight:
-    900;
-}
-
-
-.managerBox input {
-  width:
-    100%;
-
-  height:
-    56px;
-
-  padding:
-    0 15px;
-
-  border:
-    1px solid #d8d0c9;
-
-  border-radius:
-    12px;
-
-  outline:
-    0;
-
-  background:
-    #ffffff;
-
-  color:
-    #332e29;
-
-  font-size:
-    15px;
-
-  font-weight:
-    700;
-}
-
-
-.managerBox input:focus {
-  border-color:
-    #f26a21;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(
-      242,
-      106,
-      33,
-      0.08
-    );
-}
-
-
-/* =========================================================
-   선택 요약
-========================================================= */
-
-.selectionSummary {
-  margin-bottom:
-    12px;
-
-  padding:
-    17px 18px;
-
-  border:
-    1px solid #e6ddd5;
-
-  border-radius:
-    14px;
-
-  background:
-    #ffffff;
-}
-
-
-.selectionSummary > span {
-  display:
-    block;
-
-  margin-bottom:
-    10px;
-
-  color:
-    #99918a;
-
-  font-size:
-    9px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    .7px;
-}
-
-
-.selectionSummary > div {
-  display: flex;
-
-  flex-wrap:
-    wrap;
-
-  gap:
-    7px;
-}
-
-
-.selectionSummary strong {
-  display:
-    inline-flex;
-
-  align-items:
-    center;
-
-  min-height:
-    30px;
-
-  padding:
-    6px 10px;
-
-  border-radius:
-    999px;
-
-  background:
-    #fff0e6;
-
-  color:
-    #c65d25;
-
-  font-size:
-    10px;
-
-  font-weight:
-    900;
-}
-
-
-/* =========================================================
-   FINAL SUBMIT
-========================================================= */
-
-.finalSubmitButton {
-  width:
-    100%;
-
-  height:
-    60px;
-
-  border:
-    0;
-
-  border-radius:
-    14px;
-
-  background:
-    #f26a21;
-
-  color:
-    #ffffff;
-
-  font-size:
-    16px;
-
-  font-weight:
-    900;
-
-  cursor:
-    pointer;
-
-  box-shadow:
-    0 8px 20px
-    rgba(
-      242,
-      106,
-      33,
-      0.2
-    );
-
-  transition:
-    transform .2s ease,
-    box-shadow .2s ease,
-    background .2s ease;
-}
-
-
-.finalSubmitButton:hover:not(:disabled) {
-  transform:
-    translateY(-1px);
-
-  box-shadow:
-    0 10px 25px
-    rgba(
-      242,
-      106,
-      33,
-      0.24
-    );
-}
-
-
-.finalSubmitButton:disabled {
-  background:
-    #cbc4be;
-
-  cursor:
-    default;
-
-  box-shadow:
-    none;
-}
-
-
-/* =========================================================
-   ERROR / SUBMITTING
-========================================================= */
-
-.errorMessage {
-  margin-bottom:
-    12px;
-
-  padding:
-    13px 15px;
-
-  border-radius:
-    11px;
-
-  background:
-    #fff0eb;
-
-  color:
-    #c75232;
-
-  font-size:
-    12px;
-
-  font-weight:
-    800;
-
-  line-height:
-    1.55;
-}
-
-
-.submittingBox {
-  display: flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    10px;
-
-  margin-top:
-    12px;
-
-  padding:
-    14px;
-
-  border-radius:
-    12px;
-
-  background:
-    #fff8f3;
-
-  color:
-    #a25528;
-
-  font-size:
-    12px;
-
-  font-weight:
-    800;
-}
-
-
-.smallSpinner {
-  width:
-    17px;
-
-  height:
-    17px;
-
-  border:
-    2px solid #f5ceb6;
-
-  border-top-color:
-    #f26a21;
-
-  border-radius:
-    50%;
-
-  animation:
-    spin .7s linear
-    infinite;
-}
-
-
-.privacyNote {
-  max-width:
-    530px;
-
-  margin:
-    15px auto 0;
-
-  color:
-    #aaa29b;
-
-  text-align:
-    center;
-
-  font-size:
-    10px;
-
-  line-height:
-    1.6;
-
-  word-break:
-    keep-all;
-}
-
-
-/* =========================================================
-   COMPLETE
-========================================================= */
-
-.completedCard,
-.errorCard {
-  width:
-    calc(100% - 28px);
-
-  max-width:
-    570px;
-
-  margin:
-    50px auto;
-
-  padding:
-    39px 31px;
-
-  border:
-    1px solid #e1d9d2;
-
-  border-radius:
-    22px;
-
-  background:
-    #ffffff;
-
-  text-align:
-    center;
-
-  box-shadow:
-    0 12px 35px
-    rgba(
-      63,
-      47,
-      36,
-      0.07
-    );
-}
-
-
-.checkIcon {
-  display: flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  width:
-    64px;
-
-  height:
-    64px;
-
-  margin:
-    0 auto 20px;
-
-  border-radius:
-    50%;
-
-  background:
-    #f26a21;
-
-  color:
-    #ffffff;
-
-  font-size:
-    30px;
-
-  font-weight:
-    900;
-}
-
-
-.completedCard .brand,
-.errorCard .brand {
-  margin-bottom:
-    8px;
-}
-
-
-.completedCard h1,
-.errorCard h1 {
-  margin:
-    0 0 11px;
-
-  color:
-    #302b27;
-
-  font-size:
-    27px;
-
-  line-height:
-    1.4;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    -1px;
-
-  word-break:
-    keep-all;
-}
-
-
-.completedDescription,
-.errorCard > p:not(.brand) {
-  margin:
-    0;
-
-  color:
-    #807871;
-
-  font-size:
-    13px;
-
-  line-height:
-    1.7;
-
-  word-break:
-    keep-all;
-}
-
-
-.completedSummary {
-  margin-top:
-    25px;
-
-  padding:
-    6px 17px;
-
-  border-radius:
-    14px;
-
-  background:
-    #f8f5f1;
-
-  text-align:
-    left;
-}
-
-
-.completedSummary > div {
-  display: flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  gap:
-    15px;
-
-  padding:
-    13px 0;
-
-  border-bottom:
-    1px solid #e8e1da;
-}
-
-
-.completedSummary > div:last-child {
-  border-bottom:
-    0;
-}
-
-
-.completedSummary span {
-  color:
-    #918981;
-
-  font-size:
-    11px;
-
-  font-weight:
-    700;
-}
-
-
-.completedSummary strong {
-  color:
-    #3c3732;
-
-  text-align:
-    right;
-
-  font-size:
-    12px;
-
-  font-weight:
-    900;
-}
-
-
-.completedCategoriesRow {
-  align-items:
-    flex-start !important;
-}
-
-
-.completedCategoryList {
-  display: flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    flex-end;
-
-  gap:
-    5px;
-}
-
-
-.completedCategoryList strong {
-  display:
-    block;
-}
-
-
-.returnButton,
-.errorCard button {
-  width:
-    100%;
-
-  height:
-    56px;
-
-  margin-top:
-    19px;
-
-  border:
-    0;
-
-  border-radius:
-    13px;
-
-  background:
-    #f26a21;
-
-  color:
-    #ffffff;
-
-  font-size:
-    15px;
-
-  font-weight:
-    900;
-
-  cursor:
-    pointer;
-
-  box-shadow:
-    0 7px 18px
-    rgba(
-      242,
-      106,
-      33,
-      0.18
-    );
-}
-
-
-.errorIcon {
-  margin-bottom:
-    14px;
-
-  font-size:
-    39px;
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-.loading {
-  display: flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    center;
-
-  gap:
-    15px;
-
-  margin-top:
-    100px;
-
-  color:
-    #787069;
-
-  font-size:
-    12px;
-
-  font-weight:
-    800;
-}
-
-
-.spinner {
-  width:
-    38px;
-
-  height:
-    38px;
-
-  border:
-    4px solid #dfd8d1;
-
-  border-top-color:
-    #f26a21;
-
-  border-radius:
-    50%;
-
-  animation:
-    spin .75s linear
-    infinite;
-}
-
-
-@keyframes spin {
-  to {
-    transform:
-      rotate(360deg);
   }
+
+
+  return createClient(
+    supabaseUrl,
+    supabaseSecretKey,
+    {
+      auth: {
+        persistSession:
+          false,
+
+        autoRefreshToken:
+          false,
+      },
+    }
+  );
 }
 
 
 /* =========================================================
-   TABLET
+   관리자 인증
 ========================================================= */
 
-@media (
-  min-width: 601px
-)
-and (
-  max-width: 1100px
+async function verifyAdmin(
+  request
 ) {
+  const authorization =
+    request.headers.get(
+      "authorization"
+    ) || "";
 
-  .container {
-    max-width:
-      760px;
+
+  const token =
+    authorization.startsWith(
+      "Bearer "
+    )
+      ? authorization.slice(
+          7
+        )
+      : null;
+
+
+  if (!token) {
+    return {
+      success:
+        false,
+
+      status:
+        401,
+    };
   }
 
 
-  .header {
-    padding:
-      38px
-      35px;
+  const adminEmail =
+    String(
+      process.env.ADMIN_EMAIL ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (!adminEmail) {
+    return {
+      success:
+        false,
+
+      status:
+        500,
+    };
   }
 
 
-  .header h1 {
-    font-size:
-      37px;
+  const supabase =
+    getSupabaseAdmin();
+
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.auth.getUser(
+      token
+    );
+
+
+  if (
+    error ||
+    !data?.user
+  ) {
+    return {
+      success:
+        false,
+
+      status:
+        401,
+    };
   }
 
 
-  .section {
-    padding:
-      34px;
+  const userEmail =
+    String(
+      data.user.email ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    userEmail !==
+    adminEmail
+  ) {
+    return {
+      success:
+        false,
+
+      status:
+        403,
+    };
   }
 
 
-  .categoryButton,
-  .matchButton {
-    min-height:
-      86px;
+  return {
+    success:
+      true,
 
-    padding:
-      18px;
-  }
-
-
-  .categoryButton strong,
-  .matchButton strong {
-    font-size:
-      17px;
-  }
-
-
-  .categoryButton p,
-  .matchButton p {
-    font-size:
-      13px;
-  }
-
-
-  .finalSubmitButton {
-    height:
-      64px;
-
-    font-size:
-      17px;
-  }
-
+    supabase,
+  };
 }
 
 
 /* =========================================================
-   MOBILE
+   GET
 ========================================================= */
 
-@media (
-  max-width: 600px
+export async function GET(
+  request
 ) {
+  try {
 
-  .page {
-    padding:
-      19px
-      12px
-      45px;
+    /* =====================================================
+       관리자 인증
+    ===================================================== */
+
+    const auth =
+      await verifyAdmin(
+        request
+      );
+
+
+    if (
+      !auth.success
+    ) {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          message:
+            "관리자 권한이 없습니다.",
+        },
+        {
+          status:
+            auth.status,
+        }
+      );
+    }
+
+
+    /* =====================================================
+       진단 데이터
+    ===================================================== */
+
+    const {
+      data:
+        responses,
+
+      error:
+        responseError,
+    } =
+      await auth.supabase
+        .from(
+          "diagnosis_responses"
+        )
+        .select(`
+          id,
+          name,
+          phone,
+          license_number,
+
+          has_sales_manager,
+          sales_manager_name,
+
+          privacy_consent,
+
+          answers,
+          type_scores,
+
+          result_type,
+          result_score,
+
+          secondary_type,
+          secondary_score,
+
+          completed,
+
+          created_at,
+          completed_at
+        `)
+        .order(
+          "created_at",
+          {
+            ascending:
+              false,
+          }
+        )
+        .limit(
+          5000
+        );
+
+
+    if (
+      responseError
+    ) {
+      console.error(
+        "Diagnosis responses error:",
+        responseError
+      );
+
+
+      throw responseError;
+    }
+
+
+    /* =====================================================
+       상담 데이터
+
+       category
+       = 기존 단일 상담 호환
+
+       categories
+       = 새 복수 상담
+    ===================================================== */
+
+    const {
+      data:
+        consultations,
+
+      error:
+        consultationError,
+    } =
+      await auth.supabase
+        .from(
+          "consultation_requests"
+        )
+        .select(`
+          id,
+
+          diagnosis_response_id,
+
+          category,
+          categories,
+
+          needs_manager_matching,
+
+          manager_name,
+
+          status,
+
+          created_at,
+          updated_at
+        `)
+        .order(
+          "created_at",
+          {
+            ascending:
+              false,
+          }
+        )
+        .limit(
+          5000
+        );
+
+
+    if (
+      consultationError
+    ) {
+      console.error(
+        "Consultations error:",
+        consultationError
+      );
+
+
+      throw consultationError;
+    }
+
+
+    /* =====================================================
+       상담 데이터 MAP
+    ===================================================== */
+
+    const consultationMap =
+      new Map();
+
+
+    (
+      consultations ||
+      []
+    ).forEach(
+      (consultation) => {
+
+        /*
+          새 복수선택 데이터가 있으면
+          categories 사용
+
+          기존 데이터는
+          category → 배열 형태로 자동 변환
+        */
+
+        const normalizedCategories =
+          Array.isArray(
+            consultation.categories
+          ) &&
+          consultation.categories.length >
+            0
+            ? consultation.categories
+
+            : consultation.category
+              ? [
+                  consultation.category,
+                ]
+
+              : [];
+
+
+        consultationMap.set(
+          consultation.diagnosis_response_id,
+          {
+            ...consultation,
+
+            categories:
+              normalizedCategories,
+          }
+        );
+      }
+    );
+
+
+    /* =====================================================
+       진단 + 상담 합치기
+    ===================================================== */
+
+    const items =
+      (
+        responses ||
+        []
+      ).map(
+        (response) => ({
+          ...response,
+
+          consultation:
+            consultationMap.get(
+              response.id
+            ) ||
+            null,
+        })
+      );
+
+
+    /* =====================================================
+       응답
+    ===================================================== */
+
+    return NextResponse.json(
+      {
+        success:
+          true,
+
+        items,
+      },
+      {
+        status:
+          200,
+
+        headers: {
+          "Cache-Control":
+            "no-store",
+        },
+      }
+    );
+
+  } catch (error) {
+    console.error(
+      "Admin responses API error:",
+      error
+    );
+
+
+    return NextResponse.json(
+      {
+        success:
+          false,
+
+        message:
+          "관리자 데이터를 불러오지 못했습니다.",
+      },
+      {
+        status:
+          500,
+      }
+    );
   }
-
-
-  .header {
-    padding:
-      25px
-      21px;
-  }
-
-
-  .header h1 {
-    font-size:
-      27px;
-  }
-
-
-  .section {
-    padding:
-      21px;
-  }
-
-
-  .categoryEmoji {
-    width:
-      40px;
-
-    height:
-      40px;
-
-    flex-basis:
-      40px;
-
-    margin-right:
-      10px;
-
-    font-size:
-      19px;
-  }
-
-
-  .checkBox {
-    width:
-      22px;
-
-    height:
-      22px;
-
-    flex-basis:
-      22px;
-
-    margin-left:
-      8px;
-  }
-
-
-  .salesManagerCard {
-    padding:
-      18px;
-  }
-
-
-  .selectionSummary {
-    padding:
-      15px;
-  }
-
 }
