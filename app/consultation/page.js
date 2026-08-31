@@ -13,10 +13,6 @@ import {
 import styles from "./consultation.module.css";
 
 
-/* =========================================================
-   상담 항목
-========================================================= */
-
 const CATEGORY_INFO = {
   location: {
     emoji: "📍",
@@ -56,10 +52,6 @@ const CATEGORY_ORDER = [
 ];
 
 
-/* =========================================================
-   MAIN
-========================================================= */
-
 export default function ConsultationPage() {
   const router =
     useRouter();
@@ -72,173 +64,192 @@ export default function ConsultationPage() {
   const [
     responseId,
     setResponseId,
-  ] = useState(null);
+  ] =
+    useState(null);
 
 
   /* =======================================================
-     영업담당자
+     기존 영업담당자
   ======================================================= */
 
   const [
     hasSalesManager,
     setHasSalesManager,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   const [
     salesManagerName,
     setSalesManagerName,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   /* =======================================================
-     ★ 복수 상담 선택
+     복수 상담 선택
   ======================================================= */
 
   const [
     selectedCategories,
     setSelectedCategories,
-  ] = useState([]);
+  ] =
+    useState([]);
 
 
   /* =======================================================
-     담당자 매칭
+     영업담당자 매칭
   ======================================================= */
 
   const [
     needsMatching,
     setNeedsMatching,
-  ] = useState(null);
+  ] =
+    useState(null);
 
 
   const [
     managerName,
     setManagerName,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   /* =======================================================
-     화면 상태
+     기타 상태
   ======================================================= */
 
   const [
     loadingSession,
     setLoadingSession,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     submitting,
     setSubmitting,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   const [
     errorMessage,
     setErrorMessage,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   const [
     completed,
     setCompleted,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   const [
     completedData,
     setCompletedData,
-  ] = useState(null);
+  ] =
+    useState(null);
 
 
   /* =======================================================
      SESSION
   ======================================================= */
 
-  useEffect(() => {
-    try {
-      const stored =
-        sessionStorage.getItem(
-          "openingProfileResultState"
-        );
+  useEffect(
+    () => {
+      try {
+        const stored =
+          sessionStorage.getItem(
+            "openingProfileResultState"
+          );
 
 
-      if (!stored) {
-        return;
-      }
+        if (!stored) {
+          return;
+        }
 
 
-      const parsed =
-        JSON.parse(stored);
+        const parsed =
+          JSON.parse(
+            stored
+          );
 
 
-      if (parsed?.responseId) {
-        setResponseId(
-          parsed.responseId
-        );
-      }
+        if (
+          parsed?.responseId
+        ) {
+          setResponseId(
+            parsed.responseId
+          );
+        }
 
 
-      if (
-        parsed?.hasSalesManager ===
-        true
-      ) {
-        setHasSalesManager(
+        if (
+          parsed?.hasSalesManager ===
           true
+        ) {
+          setHasSalesManager(
+            true
+          );
+
+
+          setSalesManagerName(
+            parsed.salesManagerName ||
+            ""
+          );
+        } else {
+          setHasSalesManager(
+            false
+          );
+
+
+          setSalesManagerName(
+            ""
+          );
+        }
+
+      } catch (error) {
+        console.error(
+          "Consultation session error:",
+          error
         );
 
-        setSalesManagerName(
-          parsed.salesManagerName ||
-          ""
-        );
-      } else {
-        setHasSalesManager(
+      } finally {
+        setLoadingSession(
           false
         );
-
-        setSalesManagerName(
-          ""
-        );
       }
-
-    } catch (error) {
-      console.error(
-        "Consultation session error:",
-        error
-      );
-
-    } finally {
-      setLoadingSession(
-        false
-      );
-    }
-  }, []);
+    },
+    []
+  );
 
 
   /* =======================================================
      입지 외 상담 포함 여부
-
-     process
-     major_equipment
-     supplies
   ======================================================= */
 
   const hasNonLocationCategory =
-    useMemo(() => {
-      return selectedCategories.some(
-        (category) =>
-          category !== "location"
-      );
-    }, [
-      selectedCategories,
-    ]);
+    useMemo(
+      () =>
+        selectedCategories.some(
+          (category) =>
+            category !==
+            "location"
+        ),
+      [
+        selectedCategories,
+      ]
+    );
 
 
   /* =======================================================
-     매칭 질문 표시 조건
+     영업담당자 매칭 질문 표시 조건
 
-     기존 영업담당자가 없으며
-     입지 이외 상담이 하나라도 있을 때
+     기존 영업담당자가 없고
+     입지 외 상담이 하나 이상 선택된 경우
   ======================================================= */
 
   const shouldShowMatchingStep =
@@ -247,12 +258,14 @@ export default function ConsultationPage() {
 
 
   /* =======================================================
-     ★ 상담 선택 / 선택 해제
+     상담 항목 복수 선택
   ======================================================= */
 
   const toggleCategory =
     (category) => {
-      if (submitting) {
+      if (
+        submitting
+      ) {
         return;
       }
 
@@ -273,21 +286,16 @@ export default function ConsultationPage() {
           let next;
 
 
-          if (exists) {
-            /*
-              이미 선택 → 선택 해제
-            */
-
+          if (
+            exists
+          ) {
             next =
               previous.filter(
                 (item) =>
-                  item !== category
+                  item !==
+                  category
               );
           } else {
-            /*
-              새 선택 → 기존 선택 유지하면서 추가
-            */
-
             next = [
               ...previous,
               category,
@@ -295,13 +303,11 @@ export default function ConsultationPage() {
           }
 
 
-          /*
-            항상 정해진 순서로 정렬
-          */
-
           return CATEGORY_ORDER.filter(
             (item) =>
-              next.includes(item)
+              next.includes(
+                item
+              )
           );
         }
       );
@@ -309,37 +315,43 @@ export default function ConsultationPage() {
 
 
   /* =======================================================
-     입지 외 상담이 모두 해제되면
-     담당자 매칭값도 자동 초기화
+     영업담당자 매칭 질문이
+     필요 없어졌을 때 초기화
   ======================================================= */
 
-  useEffect(() => {
-    if (
-      shouldShowMatchingStep
-    ) {
-      return;
-    }
+  useEffect(
+    () => {
+      if (
+        shouldShowMatchingStep
+      ) {
+        return;
+      }
 
 
-    setNeedsMatching(
-      null
-    );
+      setNeedsMatching(
+        null
+      );
 
-    setManagerName(
-      ""
-    );
-  }, [
-    shouldShowMatchingStep,
-  ]);
+
+      setManagerName(
+        ""
+      );
+    },
+    [
+      shouldShowMatchingStep,
+    ]
+  );
 
 
   /* =======================================================
-     담당자 매칭 선택
+     영업담당자 매칭 선택
   ======================================================= */
 
   const chooseMatching =
     (value) => {
-      if (submitting) {
+      if (
+        submitting
+      ) {
         return;
       }
 
@@ -354,7 +366,9 @@ export default function ConsultationPage() {
       );
 
 
-      if (value === true) {
+      if (
+        value === true
+      ) {
         setManagerName(
           ""
         );
@@ -363,14 +377,14 @@ export default function ConsultationPage() {
 
 
   /* =======================================================
-     ★ 최종 상담 신청
-
-     여기서만 DB 저장
+     최종 상담 신청
   ======================================================= */
 
   const submitConsultation =
     async () => {
-      if (submitting) {
+      if (
+        submitting
+      ) {
         return;
       }
 
@@ -380,9 +394,7 @@ export default function ConsultationPage() {
       );
 
 
-      /* ===============================================
-         1개 이상 선택 필수
-      =============================================== */
+      /* 상담 1개 이상 선택 */
 
       if (
         selectedCategories.length ===
@@ -392,15 +404,12 @@ export default function ConsultationPage() {
           "원하는 상담을 하나 이상 선택해주세요."
         );
 
+
         return;
       }
 
 
-      /* ===============================================
-         담당자가 없고
-         입지 외 상담이 있으면
-         매칭 여부 선택 필수
-      =============================================== */
+      /* 영업담당자가 없고 입지 외 상담 포함 */
 
       if (
         shouldShowMatchingStep &&
@@ -408,36 +417,39 @@ export default function ConsultationPage() {
           "boolean"
       ) {
         setErrorMessage(
-          "지역 담당자 매칭 여부를 선택해주세요."
+          "영업담당자 매칭 여부를 선택해주세요."
         );
+
 
         return;
       }
 
 
-      /* ===============================================
-         매칭 필요하지 않음 선택
-         → 담당자 이름 필수
-      =============================================== */
+      /* 매칭 불필요 → 현재 담당자 입력 */
 
       if (
         shouldShowMatchingStep &&
-        needsMatching === false &&
+        needsMatching ===
+          false &&
         managerName.trim().length <
           2
       ) {
         setErrorMessage(
-          "현재 오스템 담당자 이름을 입력해주세요."
+          "현재 오스템 영업담당자 이름을 입력해주세요."
         );
+
 
         return;
       }
 
 
-      if (!responseId) {
+      if (
+        !responseId
+      ) {
         setErrorMessage(
           "완료된 진단 정보를 확인할 수 없습니다."
         );
+
 
         return;
       }
@@ -453,7 +465,8 @@ export default function ConsultationPage() {
           await fetch(
             "/api/consultation",
             {
-              method: "POST",
+              method:
+                "POST",
 
               headers: {
                 "Content-Type":
@@ -463,10 +476,6 @@ export default function ConsultationPage() {
               body:
                 JSON.stringify({
                   responseId,
-
-                  /*
-                    ★ 배열 그대로 전송
-                  */
 
                   categories:
                     selectedCategories,
@@ -478,7 +487,8 @@ export default function ConsultationPage() {
 
                   managerName:
                     shouldShowMatchingStep &&
-                    needsMatching === false
+                    needsMatching ===
+                      false
                       ? managerName.trim()
                       : null,
                 }),
@@ -486,14 +496,16 @@ export default function ConsultationPage() {
           );
 
 
-        let result = null;
+        let result =
+          null;
 
 
         try {
           result =
             await response.json();
         } catch {
-          result = null;
+          result =
+            null;
         }
 
 
@@ -503,7 +515,7 @@ export default function ConsultationPage() {
         ) {
           throw new Error(
             result?.message ||
-              "상담 신청에 실패했습니다."
+            "상담 신청에 실패했습니다."
           );
         }
 
@@ -532,7 +544,7 @@ export default function ConsultationPage() {
 
         setErrorMessage(
           error.message ||
-            "상담 신청 중 오류가 발생했습니다."
+          "상담 신청 중 오류가 발생했습니다."
         );
 
       } finally {
@@ -544,7 +556,7 @@ export default function ConsultationPage() {
 
 
   /* =======================================================
-     진단 결과로
+     진단결과로 복귀
   ======================================================= */
 
   const returnToResult =
@@ -565,7 +577,9 @@ export default function ConsultationPage() {
      LOADING
   ======================================================= */
 
-  if (loadingSession) {
+  if (
+    loadingSession
+  ) {
     return (
       <main className={styles.page}>
 
@@ -573,8 +587,10 @@ export default function ConsultationPage() {
 
           <div className={styles.spinner} />
 
+
           <p>
-            상담 신청 정보를 준비하고 있습니다.
+            상담 신청 정보를
+            준비하고 있습니다.
           </p>
 
         </div>
@@ -585,10 +601,12 @@ export default function ConsultationPage() {
 
 
   /* =======================================================
-     진단 정보 없음
+     진단정보 없음
   ======================================================= */
 
-  if (!responseId) {
+  if (
+    !responseId
+  ) {
     return (
       <main className={styles.page}>
 
@@ -618,8 +636,11 @@ export default function ConsultationPage() {
 
           <button
             type="button"
+
             onClick={() =>
-              router.push("/")
+              router.push(
+                "/"
+              )
             }
           >
             개원성향진단으로 이동
@@ -633,10 +654,12 @@ export default function ConsultationPage() {
 
 
   /* =======================================================
-     완료
+     신청 완료
   ======================================================= */
 
-  if (completed) {
+  if (
+    completed
+  ) {
     const savedCategories =
       Array.isArray(
         completedData?.categories
@@ -686,7 +709,7 @@ export default function ConsultationPage() {
           <div className={styles.completedSummary}>
 
 
-            {/* 선택 상담 */}
+            {/* 희망 상담 */}
 
             <div className={styles.completedCategoriesRow}>
 
@@ -705,14 +728,18 @@ export default function ConsultationPage() {
                       ];
 
 
-                    if (!info) {
+                    if (
+                      !info
+                    ) {
                       return null;
                     }
 
 
                     return (
                       <strong
-                        key={category}
+                        key={
+                          category
+                        }
                       >
                         {info.emoji}{" "}
                         {info.title}
@@ -747,7 +774,7 @@ export default function ConsultationPage() {
             )}
 
 
-            {/* 담당자 없는 경우 */}
+            {/* 영업담당자 매칭 결과 */}
 
             {!hasSalesManager &&
               completedHasNonLocation && (
@@ -755,7 +782,7 @@ export default function ConsultationPage() {
               <div>
 
                 <span>
-                  지역 담당자 매칭
+                  영업담당자 매칭
                 </span>
 
 
@@ -771,7 +798,7 @@ export default function ConsultationPage() {
             )}
 
 
-            {/* 직접 입력한 담당자 */}
+            {/* 직접 입력 담당자 */}
 
             {completedData
               ?.manager_name && (
@@ -779,7 +806,7 @@ export default function ConsultationPage() {
               <div>
 
                 <span>
-                  입력 담당자
+                  입력 영업담당자
                 </span>
 
 
@@ -799,8 +826,14 @@ export default function ConsultationPage() {
 
           <button
             type="button"
-            className={styles.returnButton}
-            onClick={returnToResult}
+
+            className={
+              styles.returnButton
+            }
+
+            onClick={
+              returnToResult
+            }
           >
             진단 결과로 돌아가기
           </button>
@@ -813,7 +846,7 @@ export default function ConsultationPage() {
 
 
   /* =======================================================
-     신청 화면
+     상담신청 화면
   ======================================================= */
 
   return (
@@ -822,9 +855,7 @@ export default function ConsultationPage() {
       <div className={styles.container}>
 
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+        {/* HEADER */}
 
         <header className={styles.header}>
 
@@ -851,9 +882,7 @@ export default function ConsultationPage() {
         </header>
 
 
-        {/* =================================================
-            기존 영업담당자
-        ================================================= */}
+        {/* 기존 영업담당자 */}
 
         {hasSalesManager &&
           salesManagerName && (
@@ -888,9 +917,7 @@ export default function ConsultationPage() {
         )}
 
 
-        {/* =================================================
-            STEP 01
-        ================================================= */}
+        {/* STEP 01 */}
 
         <section className={styles.section}>
 
@@ -927,7 +954,9 @@ export default function ConsultationPage() {
             {CATEGORY_ORDER.map(
               (key) => {
                 const item =
-                  CATEGORY_INFO[key];
+                  CATEGORY_INFO[
+                    key
+                  ];
 
 
                 const selected =
@@ -978,10 +1007,6 @@ export default function ConsultationPage() {
                     </div>
 
 
-                    {/* =====================================
-                        ★ 라디오가 아니라 체크박스
-                    ===================================== */}
-
                     <span
                       className={`${styles.checkBox} ${
                         selected
@@ -1006,8 +1031,7 @@ export default function ConsultationPage() {
 
         {/* =================================================
             STEP 02
-
-            담당자 없는 경우에만
+            ★ 명칭을 영업담당자 매칭으로 변경
         ================================================= */}
 
         <div
@@ -1032,12 +1056,12 @@ export default function ConsultationPage() {
                 <div>
 
                   <small>
-                    MANAGER MATCHING
+                    SALES MANAGER MATCHING
                   </small>
 
 
                   <h2>
-                    지역 담당자 매칭이
+                    영업담당자 매칭이
                     필요하신가요?
                   </h2>
 
@@ -1048,8 +1072,6 @@ export default function ConsultationPage() {
 
               <div className={styles.matchingList}>
 
-
-                {/* 필요 */}
 
                 <button
                   type="button"
@@ -1083,15 +1105,13 @@ export default function ConsultationPage() {
 
 
                     <p>
-                      지역 담당자 매칭을 요청합니다.
+                      영업담당자 매칭을 요청합니다.
                     </p>
 
                   </div>
 
                 </button>
 
-
-                {/* 불필요 */}
 
                 <button
                   type="button"
@@ -1125,7 +1145,8 @@ export default function ConsultationPage() {
 
 
                     <p>
-                      현재 상담 중인 오스템 담당자가 있습니다.
+                      현재 상담 중인
+                      오스템 영업담당자가 있습니다.
                     </p>
 
                   </div>
@@ -1135,7 +1156,7 @@ export default function ConsultationPage() {
               </div>
 
 
-              {/* 담당자 이름 */}
+              {/* 현재 영업담당자 이름 */}
 
               <div
                 className={`${styles.managerReveal} ${
@@ -1152,7 +1173,7 @@ export default function ConsultationPage() {
                   <div className={styles.managerBox}>
 
                     <label htmlFor="managerName">
-                      현재 오스템 담당자 이름
+                      현재 오스템 영업담당자 이름
                     </label>
 
 
@@ -1161,11 +1182,13 @@ export default function ConsultationPage() {
 
                       type="text"
 
-                      maxLength={50}
+                      maxLength={
+                        50
+                      }
 
                       autoComplete="off"
 
-                      placeholder="담당자 이름을 입력해주세요"
+                      placeholder="영업담당자 이름을 입력해주세요"
 
                       value={
                         managerName
@@ -1181,6 +1204,7 @@ export default function ConsultationPage() {
                         setManagerName(
                           event.target.value
                         );
+
 
                         setErrorMessage(
                           ""
@@ -1201,9 +1225,7 @@ export default function ConsultationPage() {
         </div>
 
 
-        {/* =================================================
-            선택 요약
-        ================================================= */}
+        {/* 선택 요약 */}
 
         {selectedCategories.length >
           0 && (
@@ -1245,9 +1267,7 @@ export default function ConsultationPage() {
         )}
 
 
-        {/* =================================================
-            ERROR
-        ================================================= */}
+        {/* ERROR */}
 
         {errorMessage && (
 
@@ -1258,14 +1278,14 @@ export default function ConsultationPage() {
         )}
 
 
-        {/* =================================================
-            ★ 반드시 화면에 표시되는 최종 버튼
-        ================================================= */}
+        {/* 최종 상담신청 */}
 
         <button
           type="button"
 
-          className={styles.finalSubmitButton}
+          className={
+            styles.finalSubmitButton
+          }
 
           disabled={
             submitting ||
@@ -1293,6 +1313,7 @@ export default function ConsultationPage() {
           <div className={styles.submittingBox}>
 
             <div className={styles.smallSpinner} />
+
 
             상담 신청을 저장하고 있습니다.
 
