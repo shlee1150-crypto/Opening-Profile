@@ -32,18 +32,38 @@ import {
 
 const CATEGORY = {
   location: {
-    emoji: "📍",
-    label: "입지",
+    emoji:
+      "📍",
+
+    label:
+      "입지",
   },
+
+
+  process: {
+    emoji:
+      "📋",
+
+    label:
+      "프로세스 상담",
+  },
+
 
   major_equipment: {
-    emoji: "🦷",
-    label: "대장비",
+    emoji:
+      "🦷",
+
+    label:
+      "대장비",
   },
 
+
   supplies: {
-    emoji: "🧰",
-    label: "소장비·기구·재료",
+    emoji:
+      "🧰",
+
+    label:
+      "소장비·기구·재료",
   },
 };
 
@@ -53,10 +73,17 @@ const CATEGORY = {
 ========================================================= */
 
 const STATUS = {
-  new: "신규",
-  reviewing: "확인중",
-  assigned: "담당자 배정",
-  completed: "상담 완료",
+  new:
+    "신규",
+
+  reviewing:
+    "확인중",
+
+  assigned:
+    "담당자 배정",
+
+  completed:
+    "상담 완료",
 };
 
 
@@ -84,9 +111,14 @@ const supabase =
         supabasePublicKey,
         {
           auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
+            persistSession:
+              true,
+
+            autoRefreshToken:
+              true,
+
+            detectSessionInUrl:
+              true,
           },
         }
       )
@@ -97,10 +129,13 @@ const supabase =
    날짜
 ========================================================= */
 
-function formatDate(value) {
+function formatDate(
+  value
+) {
   if (!value) {
     return "-";
   }
+
 
   try {
     return new Intl.DateTimeFormat(
@@ -128,8 +163,11 @@ function formatDate(value) {
           false,
       }
     ).format(
-      new Date(value)
+      new Date(
+        value
+      )
     );
+
   } catch {
     return "-";
   }
@@ -151,6 +189,7 @@ function questionCount(
     return 0;
   }
 
+
   return Object.keys(
     answers
   ).filter(
@@ -166,7 +205,9 @@ function questionCount(
    진단 META
 ========================================================= */
 
-function getMeta(item) {
+function getMeta(
+  item
+) {
   const primaryType =
     item.result_type
       ? getTypeKeyFromLabel(
@@ -210,8 +251,11 @@ function getMeta(item) {
 
   return {
     primaryType,
+
     secondaryType,
+
     combination,
+
     strength,
 
     version:
@@ -265,14 +309,18 @@ export default function AdminPage() {
     consultationFilter,
     setConsultationFilter,
   ] =
-    useState("all");
+    useState(
+      "all"
+    );
 
 
   const [
     managerFilter,
     setManagerFilter,
   ] =
-    useState("all");
+    useState(
+      "all"
+    );
 
 
   const [
@@ -297,13 +345,14 @@ export default function AdminPage() {
 
 
   /* =======================================================
-     TOKEN
+     Access Token
   ======================================================= */
 
   async function getAccessToken() {
     if (!supabase) {
       return null;
     }
+
 
     const {
       data,
@@ -330,6 +379,7 @@ export default function AdminPage() {
         true
       );
 
+
       setErrorMessage(
         ""
       );
@@ -350,6 +400,7 @@ export default function AdminPage() {
         router.replace(
           "/admin/login"
         );
+
 
         return;
       }
@@ -383,9 +434,11 @@ export default function AdminPage() {
         await supabase.auth
           .signOut();
 
+
         router.replace(
           "/admin/login"
         );
+
 
         return;
       }
@@ -409,6 +462,7 @@ export default function AdminPage() {
 
     } catch (error) {
       console.error(
+        "Admin load error:",
         error
       );
 
@@ -451,15 +505,14 @@ export default function AdminPage() {
               ),
           })
         ),
-      [rows]
+      [
+        rows,
+      ]
     );
 
 
   /* =======================================================
      영업담당자 목록
-
-     대형 담당자별 통계에는 사용하지 않고
-     검색 필터에서만 사용
   ======================================================= */
 
   const salesManagerNames =
@@ -486,21 +539,24 @@ export default function AdminPage() {
             names
           ),
         ].sort(
-          (a, b) =>
+          (
+            a,
+            b
+          ) =>
             a.localeCompare(
               b,
               "ko"
             )
         );
       },
-      [enriched]
+      [
+        enriched,
+      ]
     );
 
 
   /* =======================================================
      상단 통계
-
-     ★ 담당자 매칭 필요 유지
   ======================================================= */
 
   const stats =
@@ -543,7 +599,9 @@ export default function AdminPage() {
             matching.length,
         };
       },
-      [enriched]
+      [
+        enriched,
+      ]
     );
 
 
@@ -563,16 +621,23 @@ export default function AdminPage() {
         return enriched.filter(
           (item) => {
 
-            /* 검색 */
+            /* =============================================
+               검색
+            ============================================= */
 
-            if (keyword) {
+            if (
+              keyword
+            ) {
               const searchable =
                 [
                   item.name,
+
                   item.phone,
+
                   item.license_number,
 
                   item.result_type,
+
                   item.secondary_type,
 
                   item.meta
@@ -587,7 +652,9 @@ export default function AdminPage() {
                   .filter(
                     Boolean
                   )
-                  .join(" ")
+                  .join(
+                    " "
+                  )
                   .toLowerCase();
 
 
@@ -601,7 +668,9 @@ export default function AdminPage() {
             }
 
 
-            /* 상담 신청 여부 */
+            /* =============================================
+               상담 신청
+            ============================================= */
 
             if (
               consultationFilter ===
@@ -621,7 +690,9 @@ export default function AdminPage() {
             }
 
 
-            /* ★ 담당자 매칭 필요 */
+            /* =============================================
+               담당자 매칭 필요
+            ============================================= */
 
             if (
               consultationFilter ===
@@ -634,11 +705,16 @@ export default function AdminPage() {
             }
 
 
-            /* 상담 분야 */
+            /* =============================================
+               상담 종류
+
+               ★ process 추가
+            ============================================= */
 
             if (
               [
                 "location",
+                "process",
                 "major_equipment",
                 "supplies",
               ].includes(
@@ -652,7 +728,9 @@ export default function AdminPage() {
             }
 
 
-            /* 영업담당자 없음 */
+            /* =============================================
+               영업담당자 없음
+            ============================================= */
 
             if (
               managerFilter ===
@@ -667,7 +745,9 @@ export default function AdminPage() {
             }
 
 
-            /* 특정 영업담당자 */
+            /* =============================================
+               특정 영업담당자
+            ============================================= */
 
             if (
               managerFilter !==
@@ -723,10 +803,13 @@ export default function AdminPage() {
         await getAccessToken();
 
 
-      if (!accessToken) {
+      if (
+        !accessToken
+      ) {
         router.replace(
           "/admin/login"
         );
+
 
         return;
       }
@@ -793,6 +876,12 @@ export default function AdminPage() {
       );
 
     } catch (error) {
+      console.error(
+        "Status update error:",
+        error
+      );
+
+
       alert(
         error.message ||
         "상담 상태를 변경하지 못했습니다."
@@ -821,10 +910,13 @@ export default function AdminPage() {
         await getAccessToken();
 
 
-      if (!accessToken) {
+      if (
+        !accessToken
+      ) {
         router.replace(
           "/admin/login"
         );
+
 
         return;
       }
@@ -842,7 +934,9 @@ export default function AdminPage() {
         );
 
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
         throw new Error(
           "CSV 파일 생성에 실패했습니다."
         );
@@ -886,6 +980,7 @@ export default function AdminPage() {
 
       link.click();
 
+
       link.remove();
 
 
@@ -894,6 +989,12 @@ export default function AdminPage() {
       );
 
     } catch (error) {
+      console.error(
+        "CSV error:",
+        error
+      );
+
+
       alert(
         error.message ||
         "CSV 다운로드 중 오류가 발생했습니다."
@@ -912,7 +1013,9 @@ export default function AdminPage() {
   ======================================================= */
 
   async function handleLogout() {
-    if (supabase) {
+    if (
+      supabase
+    ) {
       await supabase.auth
         .signOut();
     }
@@ -928,7 +1031,9 @@ export default function AdminPage() {
      LOADING
   ======================================================= */
 
-  if (loading) {
+  if (
+    loading
+  ) {
     return (
       <main
         className={
@@ -1036,7 +1141,12 @@ export default function AdminPage() {
         </header>
 
 
+        {/* ===============================================
+            ERROR
+        =============================================== */}
+
         {errorMessage && (
+
           <div
             className={
               styles.errorBox
@@ -1044,13 +1154,12 @@ export default function AdminPage() {
           >
             {errorMessage}
           </div>
+
         )}
 
 
         {/* ===============================================
             상단 통계
-
-            ★ 담당자 매칭 필요 유지
         =============================================== */}
 
         <section
@@ -1065,9 +1174,11 @@ export default function AdminPage() {
               전체 등록
             </span>
 
+
             <strong>
               {stats.total}
             </strong>
+
 
             <small>
               명
@@ -1082,9 +1193,11 @@ export default function AdminPage() {
               진단 완료
             </span>
 
+
             <strong>
               {stats.completed}
             </strong>
+
 
             <small>
               명
@@ -1099,9 +1212,11 @@ export default function AdminPage() {
               상담 신청
             </span>
 
+
             <strong>
               {stats.consultation}
             </strong>
+
 
             <small>
               건
@@ -1120,9 +1235,11 @@ export default function AdminPage() {
               담당자 매칭 필요
             </span>
 
+
             <strong>
               {stats.matching}
             </strong>
+
 
             <small>
               건
@@ -1134,7 +1251,7 @@ export default function AdminPage() {
 
 
         {/* ===============================================
-            검색/필터
+            검색 / 필터
         =============================================== */}
 
         <section
@@ -1175,6 +1292,8 @@ export default function AdminPage() {
           </div>
 
 
+          {/* 영업담당자 */}
+
           <select
             value={
               managerFilter
@@ -1193,13 +1312,17 @@ export default function AdminPage() {
               전체 영업담당자
             </option>
 
+
             <option value="none">
               영업담당자 없음
             </option>
 
 
             {salesManagerNames.map(
-              (managerName) => (
+              (
+                managerName
+              ) => (
+
                 <option
                   key={
                     managerName
@@ -1211,11 +1334,14 @@ export default function AdminPage() {
                 >
                   {managerName}
                 </option>
+
               )
             )}
 
           </select>
 
+
+          {/* 상담 */}
 
           <select
             value={
@@ -1235,25 +1361,36 @@ export default function AdminPage() {
               전체 상담
             </option>
 
+
             <option value="applied">
               상담 신청
             </option>
+
 
             <option value="not_applied">
               상담 미신청
             </option>
 
+
             <option value="matching">
               🔥 담당자 매칭 필요
             </option>
+
 
             <option value="location">
               📍 입지
             </option>
 
+
+            <option value="process">
+              📋 프로세스 상담
+            </option>
+
+
             <option value="major_equipment">
               🦷 대장비
             </option>
+
 
             <option value="supplies">
               🧰 소장비·기구·재료
@@ -1265,7 +1402,7 @@ export default function AdminPage() {
 
 
         {/* ===============================================
-            매칭 필요 빠른 필터
+            담당자 매칭 빠른 필터
         =============================================== */}
 
         <div
@@ -1298,7 +1435,9 @@ export default function AdminPage() {
               🔥
             </span>
 
+
             담당자 매칭 필요
+
 
             <strong>
               {stats.matching}건
@@ -1324,6 +1463,7 @@ export default function AdminPage() {
             <span>
               RESPONSE DATA
             </span>
+
 
             <h2>
               진단 참여자
@@ -1415,9 +1555,11 @@ export default function AdminPage() {
                         🔎
                       </span>
 
+
                       <strong>
                         조건에 맞는 데이터가 없습니다.
                       </strong>
+
 
                       <p>
                         검색어 또는 필터를
@@ -1448,6 +1590,14 @@ export default function AdminPage() {
                       item.consultation;
 
 
+                    const categoryInfo =
+                      consultation
+                        ? CATEGORY[
+                            consultation.category
+                          ]
+                        : null;
+
+
                     const isMatchingNeeded =
                       consultation
                         ?.needs_manager_matching ===
@@ -1462,6 +1612,10 @@ export default function AdminPage() {
                         }
                       >
 
+
+                        {/* ===================================
+                            MAIN ROW
+                        =================================== */}
 
                         <tr
                           className={
@@ -1478,6 +1632,7 @@ export default function AdminPage() {
                             <strong>
                               {item.name || "-"}
                             </strong>
+
 
                             <small>
                               {item.phone || "-"}
@@ -1511,6 +1666,7 @@ export default function AdminPage() {
                                     {item.sales_manager_name}
                                   </strong>
 
+
                                   <small>
                                     기존 담당자
                                   </small>
@@ -1534,7 +1690,7 @@ export default function AdminPage() {
                           </td>
 
 
-                          {/* 주성향 */}
+                          {/* 진단결과 */}
 
                           <td>
 
@@ -1551,8 +1707,10 @@ export default function AdminPage() {
                                   {primary.label}
                                 </strong>
 
+
                                 <small>
-                                  {item.result_score ?? "-"}점
+                                  {item.result_score ??
+                                    "-"}점
                                 </small>
 
                               </div>
@@ -1586,14 +1744,9 @@ export default function AdminPage() {
 
                           <td>
 
-                            {consultation
-                              ? `${CATEGORY[
-                                  consultation.category
-                                ]?.emoji || ""} ${
-                                  CATEGORY[
-                                    consultation.category
-                                  ]?.label || ""
-                                }`
+                            {consultation &&
+                            categoryInfo
+                              ? `${categoryInfo.emoji} ${categoryInfo.label}`
                               : "-"}
 
                           </td>
@@ -1614,6 +1767,17 @@ export default function AdminPage() {
                                 }
                               >
                                 해당없음
+                              </span>
+
+                            ) : item.has_sales_manager ===
+                              true ? (
+
+                              <span
+                                className={
+                                  styles.noMatchingBadge
+                                }
+                              >
+                                기존 담당자
                               </span>
 
                             ) : isMatchingNeeded ? (
@@ -1678,6 +1842,7 @@ export default function AdminPage() {
                                     value,
                                     label,
                                   ]) => (
+
                                     <option
                                       key={
                                         value
@@ -1689,6 +1854,7 @@ export default function AdminPage() {
                                     >
                                       {label}
                                     </option>
+
                                   )
                                 )}
 
@@ -1700,6 +1866,8 @@ export default function AdminPage() {
 
                           </td>
 
+
+                          {/* 상세 */}
 
                           <td>
 
@@ -1756,7 +1924,9 @@ export default function AdminPage() {
                               >
 
 
-                                {/* 참여자 */}
+                                {/* =================================
+                                    참여자 정보
+                                ================================= */}
 
                                 <section>
 
@@ -1769,6 +1939,7 @@ export default function AdminPage() {
                                     <span>
                                       PARTICIPANT
                                     </span>
+
 
                                     <h3>
                                       참여자 정보
@@ -1789,8 +1960,10 @@ export default function AdminPage() {
                                         이름
                                       </span>
 
+
                                       <strong>
-                                        {item.name || "-"}
+                                        {item.name ||
+                                          "-"}
                                       </strong>
 
                                     </div>
@@ -1802,8 +1975,10 @@ export default function AdminPage() {
                                         휴대폰
                                       </span>
 
+
                                       <strong>
-                                        {item.phone || "-"}
+                                        {item.phone ||
+                                          "-"}
                                       </strong>
 
                                     </div>
@@ -1815,8 +1990,10 @@ export default function AdminPage() {
                                         면허번호
                                       </span>
 
+
                                       <strong>
-                                        {item.license_number || "-"}
+                                        {item.license_number ||
+                                          "-"}
                                       </strong>
 
                                     </div>
@@ -1827,6 +2004,7 @@ export default function AdminPage() {
                                       <span>
                                         진단버전
                                       </span>
+
 
                                       <strong>
                                         {item.meta.version}
@@ -1846,6 +2024,7 @@ export default function AdminPage() {
                                       <span>
                                         영업담당자 유무
                                       </span>
+
 
                                       <strong>
                                         {item.has_sales_manager ===
@@ -1869,6 +2048,7 @@ export default function AdminPage() {
                                         오스템 영업담당자
                                       </span>
 
+
                                       <strong>
                                         {item.sales_manager_name ||
                                           "-"}
@@ -1881,7 +2061,9 @@ export default function AdminPage() {
                                 </section>
 
 
-                                {/* 진단 결과 */}
+                                {/* =================================
+                                    진단 결과
+                                ================================= */}
 
                                 {item.completed &&
                                   primary && (
@@ -1897,6 +2079,7 @@ export default function AdminPage() {
                                       <span>
                                         DIAGNOSIS
                                       </span>
+
 
                                       <h3>
                                         진단 결과
@@ -1917,13 +2100,16 @@ export default function AdminPage() {
                                           주성향
                                         </span>
 
+
                                         <strong>
                                           {primary.emoji}{" "}
                                           {primary.label}
                                         </strong>
 
+
                                         <b>
-                                          {item.result_score ?? "-"}점
+                                          {item.result_score ??
+                                            "-"}점
                                         </b>
 
                                       </div>
@@ -1935,10 +2121,12 @@ export default function AdminPage() {
                                           보조성향
                                         </span>
 
+
                                         <strong>
                                           {item.secondary_type ||
                                             "-"}
                                         </strong>
+
 
                                         <b>
                                           {item.secondary_score ??
@@ -1954,12 +2142,14 @@ export default function AdminPage() {
                                           복합성향
                                         </span>
 
+
                                         <strong>
                                           {item.meta
                                             .combination
                                             ?.name ||
                                             "-"}
                                         </strong>
+
 
                                         <b>
                                           {item.meta
@@ -1977,7 +2167,9 @@ export default function AdminPage() {
                                 )}
 
 
-                                {/* 상담 신청 */}
+                                {/* =================================
+                                    상담 신청
+                                ================================= */}
 
                                 {consultation && (
 
@@ -1998,6 +2190,7 @@ export default function AdminPage() {
                                       <span>
                                         CONSULTATION
                                       </span>
+
 
                                       <h3>
                                         상담 신청 내역
@@ -2031,18 +2224,11 @@ export default function AdminPage() {
                                           희망 상담
                                         </span>
 
+
                                         <strong>
-                                          {
-                                            CATEGORY[
-                                              consultation.category
-                                            ]?.emoji
-                                          }
-                                          {" "}
-                                          {
-                                            CATEGORY[
-                                              consultation.category
-                                            ]?.label
-                                          }
+                                          {categoryInfo
+                                            ? `${categoryInfo.emoji} ${categoryInfo.label}`
+                                            : "-"}
                                         </strong>
 
                                       </div>
@@ -2053,6 +2239,7 @@ export default function AdminPage() {
                                         <span>
                                           기존 영업담당자
                                         </span>
+
 
                                         <strong>
                                           {item.sales_manager_name ||
@@ -2068,13 +2255,22 @@ export default function AdminPage() {
                                           지역 담당자 매칭
                                         </span>
 
+
                                         <strong>
+
                                           {consultation.category ===
                                           "location"
                                             ? "해당없음"
-                                            : isMatchingNeeded
-                                              ? "필요"
-                                              : "불필요"}
+
+                                            : item.has_sales_manager ===
+                                              true
+                                              ? "기존 담당자 있음"
+
+                                              : isMatchingNeeded
+                                                ? "필요"
+
+                                                : "불필요"}
+
                                         </strong>
 
                                       </div>
@@ -2085,6 +2281,7 @@ export default function AdminPage() {
                                         <span>
                                           상담에서 입력한 담당자
                                         </span>
+
 
                                         <strong>
                                           {consultation.manager_name ||
@@ -2099,6 +2296,7 @@ export default function AdminPage() {
                                         <span>
                                           처리상태
                                         </span>
+
 
                                         <strong>
                                           {STATUS[
@@ -2116,6 +2314,7 @@ export default function AdminPage() {
                                           상담 신청일
                                         </span>
 
+
                                         <strong>
                                           {formatDate(
                                             consultation.created_at
@@ -2131,7 +2330,9 @@ export default function AdminPage() {
                                 )}
 
 
-                                {/* 질문 */}
+                                {/* =================================
+                                    문항별 응답
+                                ================================= */}
 
                                 <section>
 
@@ -2144,6 +2345,7 @@ export default function AdminPage() {
                                     <span>
                                       ANSWERS
                                     </span>
+
 
                                     <h3>
                                       문항별 응답
@@ -2167,6 +2369,7 @@ export default function AdminPage() {
                                         _,
                                         index
                                       ) => {
+
                                         const entry =
                                           item.answers?.[
                                             `q${index + 1}`
