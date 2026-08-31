@@ -1,3 +1,7 @@
+/* =========================================================
+   PAGE
+========================================================= */
+
 .page {
   min-height: 100vh;
 
@@ -112,6 +116,7 @@
 
 .headerButtons {
   display: flex;
+
   gap: 8px;
 }
 
@@ -145,6 +150,13 @@
 
   color:
     #ffffff;
+}
+
+
+.exportButton:disabled {
+  opacity: 0.6;
+
+  cursor: default;
 }
 
 
@@ -185,7 +197,7 @@
 
 
 /* =========================================================
-   MAIN STATS
+   TOP STATS
 ========================================================= */
 
 .stats {
@@ -221,6 +233,15 @@
 
   background:
     #ffffff;
+
+  box-shadow:
+    0 6px 20px
+    rgba(
+      50,
+      38,
+      29,
+      0.035
+    );
 }
 
 
@@ -248,6 +269,9 @@
   font-size:
     32px;
 
+  line-height:
+    1;
+
   font-weight:
     900;
 }
@@ -268,553 +292,22 @@
 }
 
 
-.stats .orange {
+/* 담당자 매칭 필요 강조 */
+
+.matchingCard {
   border-color:
-    #f26a21;
+    #f26a21 !important;
 
   background:
-    #f26a21;
+    #f26a21 !important;
 }
 
 
-.stats .orange span,
-.stats .orange strong,
-.stats .orange small {
+.matchingCard span,
+.matchingCard strong,
+.matchingCard small {
   color:
-    #ffffff;
-}
-
-
-/* =========================================================
-   담당자별 현황
-========================================================= */
-
-.managerSection {
-  margin-bottom:
-    21px;
-
-  padding:
-    24px;
-
-  border:
-    1px solid #dfd8d1;
-
-  border-radius:
-    18px;
-
-  background:
-    #ffffff;
-
-  box-shadow:
-    0 7px 24px
-    rgba(
-      55,
-      42,
-      32,
-      0.04
-    );
-}
-
-
-.sectionHeader {
-  display: flex;
-
-  align-items: flex-end;
-  justify-content: space-between;
-
-  gap: 20px;
-
-  margin-bottom:
-    19px;
-}
-
-
-.sectionHeader p {
-  margin:
-    0 0 4px;
-
-  color:
-    #f26a21;
-
-  font-size:
-    9px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    1.6px;
-}
-
-
-.sectionHeader h2 {
-  margin: 0;
-
-  color:
-    #332e29;
-
-  font-size:
-    20px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    -0.5px;
-}
-
-
-.sectionHeader > span {
-  color:
-    #99918a;
-
-  font-size:
-    10px;
-}
-
-
-.managerGrid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(
-        0,
-        1fr
-      )
-    );
-
-  gap: 12px;
-}
-
-
-.managerCard {
-  padding:
-    19px;
-
-  border:
-    1px solid #e1dad3;
-
-  border-radius:
-    15px;
-
-  background:
-    #fbfaf8;
-
-  transition:
-    transform .2s ease,
-    box-shadow .2s ease;
-}
-
-
-.managerCard:hover {
-  transform:
-    translateY(-2px);
-
-  box-shadow:
-    0 8px 22px
-    rgba(
-      50,
-      38,
-      29,
-      0.07
-    );
-}
-
-
-.managerHead {
-  display: flex;
-
-  align-items: center;
-
-  gap: 11px;
-
-  margin-bottom:
-    17px;
-}
-
-
-.managerAvatar {
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  width: 42px;
-  height: 42px;
-
-  flex: 0 0 42px;
-
-  border-radius:
-    12px;
-
-  background:
-    #fff0e6;
-
-  font-size:
-    20px;
-}
-
-
-.managerHead span {
-  display: block;
-
-  margin-bottom:
-    3px;
-
-  color:
-    #aaa29a;
-
-  font-size:
-    7px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    1.2px;
-}
-
-
-.managerHead h3 {
-  margin: 0;
-
-  color:
-    #332e29;
-
-  font-size:
-    18px;
-
-  font-weight:
-    900;
-}
-
-
-.managerMainNumbers {
-  display: grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
-  gap: 8px;
-
-  margin-bottom:
-    8px;
-}
-
-
-.managerMainNumbers > div {
-  padding:
-    13px;
-
-  border-radius:
-    11px;
-
-  background:
-    #ffffff;
-
-  border:
-    1px solid #ece5df;
-}
-
-
-.managerMainNumbers span {
-  display: block;
-
-  margin-bottom:
-    6px;
-
-  color:
-    #918981;
-
-  font-size:
-    9px;
-
-  font-weight:
-    800;
-}
-
-
-.managerMainNumbers strong {
-  color:
-    #332e29;
-
-  font-size:
-    23px;
-
-  font-weight:
-    900;
-}
-
-
-.managerMainNumbers small {
-  margin-left:
-    3px;
-
-  color:
-    #aaa29a;
-
-  font-size:
-    9px;
-}
-
-
-.managerCategoryGrid {
-  display: grid;
-
-  grid-template-columns:
-    1fr;
-
-  gap: 6px;
-
-  margin-bottom:
-    8px;
-}
-
-
-.managerCategoryGrid > div {
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  padding:
-    9px 11px;
-
-  border-radius:
-    9px;
-
-  background:
-    #f3f0ed;
-}
-
-
-.managerCategoryGrid span {
-  color:
-    #706961;
-
-  font-size:
-    9px;
-
-  font-weight:
-    700;
-}
-
-
-.managerCategoryGrid strong {
-  color:
-    #332e29;
-
-  font-size:
-    12px;
-
-  font-weight:
-    900;
-}
-
-
-.managerStatus {
-  display: grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
-  gap: 7px;
-
-  margin-bottom:
-    11px;
-}
-
-
-.managerStatus > div {
-  padding:
-    10px;
-
-  border-radius:
-    9px;
-
-  background:
-    #fff8f3;
-
-  text-align:
-    center;
-}
-
-
-.managerStatus span {
-  display: block;
-
-  margin-bottom:
-    4px;
-
-  color:
-    #9a7863;
-
-  font-size:
-    8px;
-
-  font-weight:
-    800;
-}
-
-
-.managerStatus strong {
-  color:
-    #f26a21;
-
-  font-size:
-    16px;
-
-  font-weight:
-    900;
-}
-
-
-.managerFilterButton {
-  width: 100%;
-  height: 37px;
-
-  border:
-    1px solid #f3c9af;
-
-  border-radius:
-    9px;
-
-  background:
-    #ffffff;
-
-  color:
-    #e9661f;
-
-  font-size:
-    10px;
-
-  font-weight:
-    900;
-
-  cursor:
-    pointer;
-}
-
-
-.managerFilterButton:hover {
-  background:
-    #fff7f1;
-}
-
-
-.noManagerData {
-  padding:
-    28px;
-
-  border-radius:
-    12px;
-
-  background:
-    #f8f6f3;
-
-  color:
-    #918981;
-
-  text-align:
-    center;
-
-  font-size:
-    11px;
-}
-
-
-.unassignedSummary {
-  display: grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      1fr
-    )
-    auto;
-
-  align-items: center;
-
-  gap: 9px;
-
-  margin-top:
-    14px;
-
-  padding:
-    14px;
-
-  border-radius:
-    13px;
-
-  background:
-    #342e29;
-}
-
-
-.unassignedSummary > div {
-  padding:
-    5px 9px;
-}
-
-
-.unassignedSummary span {
-  display: block;
-
-  margin-bottom:
-    3px;
-
-  color:
-    #c4bbb4;
-
-  font-size:
-    8px;
-
-  font-weight:
-    700;
-}
-
-
-.unassignedSummary strong {
-  color:
-    #ffffff;
-
-  font-size:
-    15px;
-
-  font-weight:
-    900;
-}
-
-
-.unassignedSummary button {
-  height:
-    36px;
-
-  padding:
-    0 12px;
-
-  border:
-    0;
-
-  border-radius:
-    8px;
-
-  background:
-    #f26a21;
-
-  color:
-    #ffffff;
-
-  font-size:
-    9px;
-
-  font-weight:
-    900;
-
-  cursor:
-    pointer;
+    #ffffff !important;
 }
 
 
@@ -827,25 +320,87 @@
 
   grid-template-columns:
     minmax(
-      320px,
+      340px,
       1fr
     )
-    200px
-    210px;
+    210px
+    220px;
 
   gap: 9px;
 
   margin-bottom:
-    20px;
+    10px;
 }
 
 
-.filters input,
-.filters select {
+.searchBox {
+  display: flex;
+
+  align-items: center;
+
   height: 48px;
 
   padding:
     0 14px;
+
+  border:
+    1px solid #dcd4cd;
+
+  border-radius:
+    11px;
+
+  background:
+    #ffffff;
+}
+
+
+.searchBox > span {
+  margin-right:
+    8px;
+
+  color:
+    #9d958e;
+
+  font-size:
+    18px;
+}
+
+
+.searchBox input {
+  width: 100%;
+
+  border: 0;
+
+  outline: 0;
+
+  background:
+    transparent;
+
+  color:
+    #554f49;
+
+  font-size:
+    11px;
+
+  font-weight:
+    700;
+}
+
+
+.searchBox input::placeholder {
+  color:
+    #aaa29b;
+
+  font-weight:
+    500;
+}
+
+
+.filters select {
+  height: 48px;
+
+  padding:
+    0 13px;
 
   border:
     1px solid #dcd4cd;
@@ -870,14 +425,129 @@
 }
 
 
-.listHeader {
+/* =========================================================
+   QUICK FILTER
+========================================================= */
+
+.quickFilterRow {
+  display: flex;
+
+  justify-content: flex-end;
+
+  margin-bottom:
+    22px;
+}
+
+
+.quickFilterButton,
+.quickFilterActive {
   display: flex;
 
   align-items: center;
+
+  gap: 7px;
+
+  height: 36px;
+
+  padding:
+    0 12px;
+
+  border-radius:
+    999px;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  cursor:
+    pointer;
+
+  transition:
+    all .2s ease;
+}
+
+
+.quickFilterButton {
+  border:
+    1px solid #e1d9d2;
+
+  background:
+    #ffffff;
+
+  color:
+    #726a63;
+}
+
+
+.quickFilterButton:hover {
+  border-color:
+    #f2a274;
+
+  color:
+    #f26a21;
+}
+
+
+.quickFilterActive {
+  border:
+    1px solid #f26a21;
+
+  background:
+    #f26a21;
+
+  color:
+    #ffffff;
+}
+
+
+.quickFilterButton strong {
+  color:
+    #f26a21;
+}
+
+
+.quickFilterActive strong {
+  color:
+    #ffffff;
+}
+
+
+/* =========================================================
+   LIST HEADER
+========================================================= */
+
+.listHeader {
+  display: flex;
+
+  align-items: flex-end;
   justify-content: space-between;
 
+  gap: 15px;
+
+  margin:
+    0 2px 10px;
+}
+
+
+.listHeader > div > span {
+  display: block;
+
   margin-bottom:
-    9px;
+    3px;
+
+  color:
+    #f26a21;
+
+  font-size:
+    8px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1.5px;
 }
 
 
@@ -895,7 +565,7 @@
 }
 
 
-.listHeader strong {
+.listHeader > strong {
   color:
     #f26a21;
 
@@ -920,6 +590,15 @@
 
   background:
     #ffffff;
+
+  box-shadow:
+    0 7px 25px
+    rgba(
+      55,
+      42,
+      32,
+      0.035
+    );
 }
 
 
@@ -976,9 +655,14 @@
 }
 
 
+.tableWrap tbody > tr:hover {
+  background:
+    #fffdfb;
+}
+
+
 .tableWrap td > strong:first-child {
-  display:
-    block;
+  display: block;
 
   margin-bottom:
     3px;
@@ -992,8 +676,7 @@
 
 
 .tableWrap td small {
-  display:
-    block;
+  display: block;
 
   color:
     #99918a;
@@ -1003,11 +686,23 @@
 }
 
 
-.combo {
-  color:
-    #f26a21 !important;
+/* 담당자 매칭 필요 행 */
+
+.matchingRow {
+  background:
+    #fffaf6;
 }
 
+
+.matchingRow:hover {
+  background:
+    #fff6ee !important;
+}
+
+
+/* =========================================================
+   SALES MANAGER
+========================================================= */
 
 .salesManagerCell {
   display: flex;
@@ -1027,6 +722,9 @@
   width: 28px;
   height: 28px;
 
+  flex:
+    0 0 28px;
+
   border-radius:
     8px;
 
@@ -1039,8 +737,7 @@
 
 
 .salesManagerCell strong {
-  display:
-    block;
+  display: block;
 
   color:
     #3b3530;
@@ -1063,8 +760,7 @@
 
 
 .noSalesManager {
-  display:
-    inline-block;
+  display: inline-block;
 
   padding:
     5px 8px;
@@ -1086,6 +782,105 @@
 }
 
 
+/* =========================================================
+   PROFILE
+========================================================= */
+
+.profileCell strong {
+  display: block;
+
+  color:
+    #403a35;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  white-space:
+    nowrap;
+}
+
+
+.profileCell small {
+  margin-top:
+    3px;
+}
+
+
+.combo {
+  color:
+    #f26a21 !important;
+
+  font-size:
+    11px !important;
+
+  white-space:
+    nowrap;
+}
+
+
+/* =========================================================
+   MATCHING BADGES
+========================================================= */
+
+.matchingBadge,
+.noMatchingBadge,
+.notApplicableBadge {
+  display: inline-block;
+
+  padding:
+    6px 8px;
+
+  border-radius:
+    999px;
+
+  font-size:
+    8px;
+
+  font-weight:
+    900;
+
+  white-space:
+    nowrap;
+}
+
+
+.matchingBadge {
+  background:
+    #fff0e6;
+
+  color:
+    #f26a21;
+
+  border:
+    1px solid #f4c6a9;
+}
+
+
+.noMatchingBadge {
+  background:
+    #edf6ee;
+
+  color:
+    #4b8052;
+}
+
+
+.notApplicableBadge {
+  background:
+    #f0eeeb;
+
+  color:
+    #898078;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
 .statusSelect {
   height: 34px;
 
@@ -1097,6 +892,9 @@
 
   border-radius:
     8px;
+
+  outline:
+    none;
 
   background:
     #ffffff;
@@ -1141,20 +939,66 @@
 }
 
 
-.empty {
-  padding:
-    50px;
+.detailButton:hover {
+  border-color:
+    #f26a21;
 
   color:
-    #99918a;
+    #f26a21;
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.empty {
+  padding:
+    55px 20px;
 
   text-align:
     center;
 }
 
 
+.empty > span {
+  display: block;
+
+  margin-bottom:
+    8px;
+
+  font-size:
+    26px;
+}
+
+
+.empty strong {
+  display: block;
+
+  margin-bottom:
+    5px;
+
+  color:
+    #5e5751;
+
+  font-size:
+    12px;
+}
+
+
+.empty p {
+  margin: 0;
+
+  color:
+    #9d958d;
+
+  font-size:
+    10px;
+}
+
+
 /* =========================================================
-   DETAIL
+   EXPANDED
 ========================================================= */
 
 .expanded {
@@ -1196,9 +1040,34 @@
 }
 
 
-.detailPanel h3 {
-  margin:
-    0 0 15px;
+.detailTitle {
+  margin-bottom:
+    15px;
+}
+
+
+.detailTitle > span {
+  display: block;
+
+  margin-bottom:
+    3px;
+
+  color:
+    #f26a21;
+
+  font-size:
+    8px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1.4px;
+}
+
+
+.detailTitle h3 {
+  margin: 0;
 
   color:
     #352f2a;
@@ -1210,6 +1079,10 @@
     900;
 }
 
+
+/* =========================================================
+   DETAIL INFO
+========================================================= */
 
 .infoGrid {
   display: grid;
@@ -1239,15 +1112,14 @@
 }
 
 
-.salesManagerInfo {
+.managerHighlight {
   background:
     #fff5ed !important;
 }
 
 
 .infoGrid span {
-  display:
-    block;
+  display: block;
 
   margin-bottom:
     5px;
@@ -1270,10 +1142,20 @@
   font-size:
     11px;
 
+  line-height:
+    1.45;
+
   font-weight:
     900;
+
+  word-break:
+    break-all;
 }
 
+
+/* =========================================================
+   RESULT
+========================================================= */
 
 .resultGrid {
   display: grid;
@@ -1301,8 +1183,7 @@
 
 
 .resultGrid span {
-  display:
-    block;
+  display: block;
 
   margin-bottom:
     6px;
@@ -1316,6 +1197,8 @@
 
 
 .resultGrid strong {
+  display: block;
+
   color:
     #37322d;
 
@@ -1325,8 +1208,7 @@
 
 
 .resultGrid b {
-  display:
-    block;
+  display: block;
 
   margin-top:
     4px;
@@ -1339,14 +1221,55 @@
 }
 
 
+/* =========================================================
+   CONSULTATION DETAIL
+========================================================= */
+
 .consultationDetail {
   border-color:
-    #f2c9b0 !important;
+    #f2d2bf !important;
 
   background:
     #fffaf6 !important;
 }
 
+
+.matchingConsultationDetail {
+  border:
+    1.5px solid #f26a21 !important;
+
+  background:
+    #fff8f2 !important;
+}
+
+
+.matchingAlert {
+  margin-bottom:
+    13px;
+
+  padding:
+    11px 13px;
+
+  border-radius:
+    9px;
+
+  background:
+    #f26a21;
+
+  color:
+    #ffffff;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+}
+
+
+/* =========================================================
+   ANSWERS
+========================================================= */
 
 .answers {
   display: grid;
@@ -1380,8 +1303,7 @@
 
 
 .answers b {
-  display:
-    inline-block;
+  display: inline-block;
 
   margin-bottom:
     7px;
@@ -1404,8 +1326,7 @@
 
 
 .answers strong {
-  display:
-    block;
+  display: block;
 
   margin-bottom:
     7px;
@@ -1443,16 +1364,15 @@
   max-width: 1100px
 ) {
 
-  .stats {
-    grid-template-columns:
-      repeat(
-        2,
-        1fr
-      );
+  .page {
+    padding:
+      28px
+      20px
+      60px;
   }
 
 
-  .managerGrid {
+  .stats {
     grid-template-columns:
       repeat(
         2,
@@ -1467,24 +1387,27 @@
   }
 
 
-  .filters input {
+  .searchBox {
     grid-column:
       1 / -1;
   }
 
 
-  .unassignedSummary {
+  .infoGrid {
     grid-template-columns:
       repeat(
-        3,
+        2,
         1fr
       );
   }
 
 
-  .unassignedSummary button {
-    grid-column:
-      1 / -1;
+  .resultGrid {
+    grid-template-columns:
+      repeat(
+        2,
+        1fr
+      );
   }
 
 }
@@ -1522,7 +1445,8 @@
 
 
   .headerButtons {
-    width: 100%;
+    width:
+      100%;
   }
 
 
@@ -1536,38 +1460,18 @@
   }
 
 
-  .managerSection {
+  .stats article {
+    min-height:
+      105px;
+
     padding:
       16px;
   }
 
 
-  .sectionHeader {
-    align-items:
-      flex-start;
-
-    flex-direction:
-      column;
-
-    gap: 5px;
-  }
-
-
-  .managerGrid {
-    grid-template-columns:
-      1fr;
-  }
-
-
-  .unassignedSummary {
-    grid-template-columns:
-      1fr 1fr;
-  }
-
-
-  .unassignedSummary button {
-    grid-column:
-      1 / -1;
+  .stats article > strong {
+    font-size:
+      28px;
   }
 
 
@@ -1577,9 +1481,25 @@
   }
 
 
-  .filters input {
+  .searchBox {
     grid-column:
       auto;
+  }
+
+
+  .quickFilterRow {
+    justify-content:
+      stretch;
+  }
+
+
+  .quickFilterButton,
+  .quickFilterActive {
+    width:
+      100%;
+
+    justify-content:
+      center;
   }
 
 
