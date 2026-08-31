@@ -1,10 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+import {
+  createClient,
+} from "@supabase/supabase-js";
 
 import {
   getTypeKeyFromLabel,
   getCombinationInfo,
   getCombinationStrength,
 } from "../../../lib/diagnosisData";
+
 
 export const runtime =
   "nodejs";
@@ -42,15 +45,21 @@ function getSupabaseAdmin() {
     process.env.SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL;
 
+
   const key =
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !key) {
+
+  if (
+    !url ||
+    !key
+  ) {
     throw new Error(
       "Supabase 환경변수가 없습니다."
     );
   }
+
 
   return createClient(
     url,
@@ -71,91 +80,114 @@ function getSupabaseAdmin() {
 async function verifyAdmin(
   request
 ) {
-  const auth =
+  const authorization =
     request.headers.get(
       "authorization"
     ) || "";
 
+
   const token =
-    auth.startsWith(
+    authorization.startsWith(
       "Bearer "
     )
-      ? auth.slice(7)
+      ? authorization.slice(7)
       : null;
+
 
   if (!token) {
     return null;
   }
 
+
   const supabase =
     getSupabaseAdmin();
 
+
   const {
     data,
+    error,
   } =
     await supabase.auth.getUser(
       token
     );
 
-  if (!data?.user) {
+
+  if (
+    error ||
+    !data?.user
+  ) {
     return null;
   }
+
+
+  const adminEmail =
+    String(
+      process.env.ADMIN_EMAIL ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
 
   if (
     String(
       data.user.email ||
-        ""
-    ).toLowerCase() !==
-    String(
-      process.env.ADMIN_EMAIL ||
-        ""
-    ).toLowerCase()
+      ""
+    )
+      .trim()
+      .toLowerCase() !==
+    adminEmail
   ) {
     return null;
   }
+
 
   return supabase;
 }
 
 
-function formatDate(
-  value
-) {
+function formatDate(value) {
   if (!value) {
     return "";
   }
 
-  return new Intl.DateTimeFormat(
-    "ko-KR",
-    {
-      timeZone:
-        "Asia/Seoul",
 
-      year:
-        "numeric",
+  try {
+    return new Intl.DateTimeFormat(
+      "ko-KR",
+      {
+        timeZone:
+          "Asia/Seoul",
 
-      month:
-        "2-digit",
+        year:
+          "numeric",
 
-      day:
-        "2-digit",
+        month:
+          "2-digit",
 
-      hour:
-        "2-digit",
+        day:
+          "2-digit",
 
-      minute:
-        "2-digit",
+        hour:
+          "2-digit",
 
-      hour12:
-        false,
-    }
-  ).format(
-    new Date(value)
-  );
+        minute:
+          "2-digit",
+
+        hour12:
+          false,
+      }
+    ).format(
+      new Date(value)
+    );
+
+  } catch {
+    return "";
+  }
 }
 
 
-function questionCount(
+function getQuestionCount(
   answers
 ) {
   if (
@@ -165,6 +197,7 @@ function questionCount(
   ) {
     return 0;
   }
+
 
   return Object.keys(
     answers
@@ -177,7 +210,7 @@ function questionCount(
 }
 
 
-function answerText(
+function getAnswerText(
   answers,
   number
 ) {
@@ -186,9 +219,11 @@ function answerText(
       `q${number}`
     ];
 
+
   if (!entry) {
     return "";
   }
+
 
   if (
     typeof entry ===
@@ -196,6 +231,7 @@ function answerText(
   ) {
     return entry;
   }
+
 
   return (
     entry.answer ||
@@ -225,6 +261,7 @@ export async function GET(
         request
       );
 
+
     if (!supabase) {
       return new Response(
         "Unauthorized",
@@ -234,6 +271,10 @@ export async function GET(
       );
     }
 
+
+    /* =====================================================
+       진단 데이터
+    ===================================================== */
 
     const {
       data: responses,
@@ -245,37 +286,51 @@ export async function GET(
         )
         .select(`
           id,
+
           name,
           phone,
           license_number,
+
+          has_sales_manager,
+          sales_manager_name,
+
           answers,
           type_scores,
+
           result_type,
           result_score,
+
           secondary_type,
           secondary_score,
+
           completed,
+
           created_at,
           completed_at
         `)
         .order(
           "created_at",
           {
-            ascending: false,
+            ascending:
+              false,
           }
         )
-        .limit(
-          5000
-        );
+        .limit(5000);
+
 
     if (error) {
       throw error;
     }
 
 
+    /* =====================================================
+       상담 데이터
+    ===================================================== */
+
     const {
       data:
         consultations,
+
       error:
         consultationError,
     } =
@@ -283,37 +338,54 @@ export async function GET(
         .from(
           "consultation_requests"
         )
-        .select(
-          "*"
-        )
-        .limit(
-          5000
-        );
+        .select(`
+          id,
+          diagnosis_response_id,
+          category,
+          needs_manager_matching,
+          manager_name,
+          status,
+          created_at,
+          updated_at
+        `)
+        .limit(5000);
 
-    if (consultationError) {
+
+    if (
+      consultationError
+    ) {
       throw consultationError;
     }
 
 
-    const map =
+    const consultationMap =
       new Map();
+
 
     (
       consultations ||
       []
     ).forEach(
-      (item) =>
-        map.set(
+      (item) => {
+        consultationMap.set(
           item.diagnosis_response_id,
           item
-        )
+        );
+      }
     );
 
+
+    /* =====================================================
+       HEADERS
+    ===================================================== */
 
     const headers = [
       "이름",
       "휴대폰번호",
       "면허번호",
+
+      "영업담당자유무",
+      "영업담당자이름",
 
       "진단일",
       "진단버전",
@@ -334,23 +406,31 @@ export async function GET(
 
       "상담신청여부",
       "희망상담",
+
       "지역담당자매칭",
-      "현재담당자",
+      "상담에서입력한담당자",
+
       "상담상태",
       "상담신청일",
 
-      ...Array.from(
-        {
-          length: 12,
-        },
-        (
-          _,
-          index
-        ) =>
-          `Q${index + 1}`
-      ),
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5",
+      "Q6",
+      "Q7",
+      "Q8",
+      "Q9",
+      "Q10",
+      "Q11",
+      "Q12",
     ];
 
+
+    /* =====================================================
+       ROWS
+    ===================================================== */
 
     const rows =
       (
@@ -358,24 +438,31 @@ export async function GET(
         []
       ).map(
         (item) => {
-          const primary =
-            getTypeKeyFromLabel(
-              item.result_type
-            );
-
-          const secondary =
-            getTypeKeyFromLabel(
-              item.secondary_type
-            );
-
-          const combination =
-            primary &&
-            secondary
-              ? getCombinationInfo(
-                  primary,
-                  secondary
+          const primaryType =
+            item.result_type
+              ? getTypeKeyFromLabel(
+                  item.result_type
                 )
               : null;
+
+
+          const secondaryType =
+            item.secondary_type
+              ? getTypeKeyFromLabel(
+                  item.secondary_type
+                )
+              : null;
+
+
+          const combination =
+            primaryType &&
+            secondaryType
+              ? getCombinationInfo(
+                  primaryType,
+                  secondaryType
+                )
+              : null;
+
 
           const strength =
             combination
@@ -385,18 +472,24 @@ export async function GET(
                 )
               : null;
 
+
           const scores =
-            item.type_scores ||
-            {};
+            item.type_scores &&
+            typeof item.type_scores ===
+              "object"
+              ? item.type_scores
+              : {};
+
 
           const consultation =
-            map.get(
+            consultationMap.get(
               item.id
             );
 
 
           let matching =
             "";
+
 
           if (consultation) {
             if (
@@ -407,11 +500,18 @@ export async function GET(
                 "해당없음";
             } else {
               matching =
-                consultation.needs_manager_matching
+                consultation
+                  .needs_manager_matching
                   ? "필요"
                   : "불필요";
             }
           }
+
+
+          const count =
+            getQuestionCount(
+              item.answers
+            );
 
 
           return [
@@ -419,42 +519,57 @@ export async function GET(
             item.phone,
             item.license_number,
 
+            item.has_sales_manager ===
+            true
+              ? "있음"
+              : item.has_sales_manager ===
+                false
+                ? "없음"
+                : "",
+
+            item.sales_manager_name ||
+            "",
+
             formatDate(
               item.completed_at ||
               item.created_at
             ),
 
-            questionCount(
-              item.answers
-            ) >= 12
+            count >= 12
               ? "12문항"
-              : `${questionCount(
-                  item.answers
-                )}문항 이전버전`,
+              : count > 0
+                ? `${count}문항 이전`
+                : "",
 
-            item.result_type,
-            item.result_score,
+            item.result_type ||
+            "",
 
-            item.secondary_type,
-            item.secondary_score,
+            item.result_score ??
+            "",
+
+            item.secondary_type ||
+            "",
+
+            item.secondary_score ??
+            "",
 
             combination?.name ||
-              "",
+            "",
 
             strength?.label ||
-              "",
+            "",
 
             scores.stable ??
-              "",
+            "",
 
             scores.aggressive ??
-              "",
+            "",
 
             scores.analytical ??
-              "",
+            "",
 
             scores.pioneer ??
-              "",
+            "",
 
             consultation
               ? "신청"
@@ -463,7 +578,8 @@ export async function GET(
             consultation
               ? CATEGORY_LABEL[
                   consultation.category
-                ]
+                ] ||
+                ""
               : "",
 
             matching,
@@ -475,7 +591,8 @@ export async function GET(
             consultation
               ? STATUS_LABEL[
                   consultation.status
-                ]
+                ] ||
+                ""
               : "",
 
             consultation
@@ -486,14 +603,13 @@ export async function GET(
 
             ...Array.from(
               {
-                length:
-                  12,
+                length: 12,
               },
               (
                 _,
                 index
               ) =>
-                answerText(
+                getAnswerText(
                   item.answers,
                   index + 1
                 )
@@ -540,10 +656,13 @@ export async function GET(
         },
       }
     );
+
   } catch (error) {
     console.error(
+      "Admin export error:",
       error
     );
+
 
     return new Response(
       "Export failed",
