@@ -15,7 +15,7 @@ function getSupabaseAdmin() {
 
   if (!supabaseUrl || !supabaseSecretKey) {
     throw new Error(
-      "Supabase 환경변수가 없습니다."
+      "Supabase 환경변수가 설정되어 있지 않습니다."
     );
   }
 
@@ -32,19 +32,17 @@ function getSupabaseAdmin() {
 }
 
 
-async function verifyAdmin(
-  request
-) {
-  const auth =
+async function verifyAdmin(request) {
+  const authorization =
     request.headers.get(
       "authorization"
     ) || "";
 
   const token =
-    auth.startsWith(
+    authorization.startsWith(
       "Bearer "
     )
-      ? auth.slice(7)
+      ? authorization.slice(7)
       : null;
 
   if (!token) {
@@ -57,10 +55,17 @@ async function verifyAdmin(
   const adminEmail =
     String(
       process.env.ADMIN_EMAIL ||
-        ""
+      ""
     )
       .trim()
       .toLowerCase();
+
+  if (!adminEmail) {
+    return {
+      success: false,
+      status: 500,
+    };
+  }
 
   const supabase =
     getSupabaseAdmin();
@@ -83,10 +88,16 @@ async function verifyAdmin(
     };
   }
 
-  if (
+  const userEmail =
     String(
-      data.user.email || ""
-    ).toLowerCase() !==
+      data.user.email ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    userEmail !==
     adminEmail
   ) {
     return {
@@ -102,9 +113,7 @@ async function verifyAdmin(
 }
 
 
-export async function GET(
-  request
-) {
+export async function GET(request) {
   try {
     const auth =
       await verifyAdmin(
@@ -115,6 +124,8 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
+          message:
+            "관리자 권한이 없습니다.",
         },
         {
           status:
@@ -122,6 +133,12 @@ export async function GET(
         }
       );
     }
+
+    /*
+      진단 데이터
+
+      ★ 영업담당자 컬럼 추가
+    */
 
     const {
       data: responses,
@@ -136,14 +153,23 @@ export async function GET(
           name,
           phone,
           license_number,
+
+          has_sales_manager,
+          sales_manager_name,
+
           privacy_consent,
+
           answers,
           type_scores,
+
           result_type,
           result_score,
+
           secondary_type,
           secondary_score,
+
           completed,
+
           created_at,
           completed_at
         `)
@@ -153,14 +179,21 @@ export async function GET(
             ascending: false,
           }
         )
-        .limit(
-          5000
-        );
+        .limit(5000);
 
     if (responseError) {
+      console.error(
+        "Diagnosis response error:",
+        responseError
+      );
+
       throw responseError;
     }
 
+
+    /*
+      상담 신청
+    */
 
     const {
       data: consultations,
@@ -187,14 +220,23 @@ export async function GET(
             ascending: false,
           }
         )
-        .limit(
-          5000
-        );
+        .limit(5000);
 
-    if (consultationError) {
+    if (
+      consultationError
+    ) {
+      console.error(
+        "Consultation error:",
+        consultationError
+      );
+
       throw consultationError;
     }
 
+
+    /*
+      진단 ID → 상담 신청
+    */
 
     const consultationMap =
       new Map();
@@ -223,8 +265,7 @@ export async function GET(
           consultation:
             consultationMap.get(
               item.id
-            ) ||
-            null,
+            ) || null,
         })
       );
 
@@ -233,15 +274,17 @@ export async function GET(
       success: true,
       items,
     });
+
   } catch (error) {
     console.error(
-      "Admin responses:",
+      "Admin responses API:",
       error
     );
 
     return NextResponse.json(
       {
         success: false,
+
         message:
           "관리자 데이터를 불러오지 못했습니다.",
       },
