@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useEffect,
   useMemo,
   useState,
@@ -14,7 +15,7 @@ import {
   createClient,
 } from "@supabase/supabase-js";
 
-import styles from "./admin.module.css";
+import styles from "./dashboard.module.css";
 
 import {
   TYPE_INFO,
@@ -26,9 +27,48 @@ import {
 
 
 /* =========================================================
-   Supabase Browser Client
+   상담 종류
+========================================================= */
 
-   기존 로그인 세션과 같은 Supabase 프로젝트 사용
+const CATEGORY = {
+  location: {
+    emoji: "📍",
+    label: "입지",
+  },
+
+  major_equipment: {
+    emoji: "🦷",
+    label: "대장비",
+  },
+
+  supplies: {
+    emoji: "🧰",
+    label: "소장비·기구·재료",
+  },
+};
+
+
+/* =========================================================
+   상담 상태
+========================================================= */
+
+const STATUS = {
+  new:
+    "신규",
+
+  reviewing:
+    "확인중",
+
+  assigned:
+    "담당자 배정",
+
+  completed:
+    "상담 완료",
+};
+
+
+/* =========================================================
+   Supabase
 ========================================================= */
 
 const supabaseUrl =
@@ -51,14 +91,9 @@ const supabase =
         supabasePublicKey,
         {
           auth: {
-            persistSession:
-              true,
-
-            autoRefreshToken:
-              true,
-
-            detectSessionInUrl:
-              true,
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
           },
         }
       )
@@ -69,13 +104,10 @@ const supabase =
    날짜
 ========================================================= */
 
-function formatDate(
-  value
-) {
+function formatDate(value) {
   if (!value) {
     return "-";
   }
-
 
   try {
     return new Intl.DateTimeFormat(
@@ -105,7 +137,6 @@ function formatDate(
     ).format(
       new Date(value)
     );
-
   } catch {
     return "-";
   }
@@ -113,32 +144,10 @@ function formatDate(
 
 
 /* =========================================================
-   전화번호 마스킹용
-
-   관리자 화면에서는 전체 번호를 보여주되
-   아래 함수는 추후 마스킹 필요 시 사용 가능
-========================================================= */
-
-function safeText(
-  value
-) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return "-";
-  }
-
-  return String(value);
-}
-
-
-/* =========================================================
    질문 개수
 ========================================================= */
 
-function getQuestionCount(
+function questionCount(
   answers
 ) {
   if (
@@ -148,7 +157,6 @@ function getQuestionCount(
   ) {
     return 0;
   }
-
 
   return Object.keys(
     answers
@@ -162,61 +170,10 @@ function getQuestionCount(
 
 
 /* =========================================================
-   진단 버전
+   진단 Meta
 ========================================================= */
 
-function getSurveyVersion(
-  answers
-) {
-  const count =
-    getQuestionCount(
-      answers
-    );
-
-
-  if (
-    count >= 12
-  ) {
-    return {
-      label:
-        "12문항",
-
-      isNew:
-        true,
-    };
-  }
-
-
-  if (
-    count > 0
-  ) {
-    return {
-      label:
-        `${count}문항 이전버전`,
-
-      isNew:
-        false,
-    };
-  }
-
-
-  return {
-    label:
-      "미완료",
-
-    isNew:
-      false,
-  };
-}
-
-
-/* =========================================================
-   결과 분석
-========================================================= */
-
-function getResultMeta(
-  item
-) {
+function getMeta(item) {
   const primaryType =
     item.result_type
       ? getTypeKeyFromLabel(
@@ -252,8 +209,8 @@ function getResultMeta(
       : null;
 
 
-  const version =
-    getSurveyVersion(
+  const count =
+    questionCount(
       item.answers
     );
 
@@ -263,92 +220,31 @@ function getResultMeta(
     secondaryType,
     combination,
     strength,
-    version,
+
+    version:
+      count >= 12
+        ? "12문항"
+        : count > 0
+          ? `${count}문항 이전`
+          : "미완료",
   };
 }
 
 
 /* =========================================================
-   답변 정보
-========================================================= */
-
-function getAnswerEntry(
-  answers,
-  questionNumber
-) {
-  if (
-    !answers ||
-    typeof answers !==
-      "object"
-  ) {
-    return null;
-  }
-
-
-  return (
-    answers[
-      `q${questionNumber}`
-    ] || null
-  );
-}
-
-
-function getAnswerText(
-  entry
-) {
-  if (!entry) {
-    return "-";
-  }
-
-
-  if (
-    typeof entry ===
-    "string"
-  ) {
-    return entry;
-  }
-
-
-  return (
-    entry.answer ||
-    entry.text ||
-    "-"
-  );
-}
-
-
-function getAnswerTypeLabel(
-  entry
-) {
-  if (
-    !entry ||
-    typeof entry ===
-      "string"
-  ) {
-    return "";
-  }
-
-
-  return (
-    entry.typeLabel ||
-    (
-      entry.type &&
-      TYPE_INFO[
-        entry.type
-      ]?.label
-    ) ||
-    ""
-  );
-}
-
-
-/* =========================================================
-   Admin
+   ADMIN
 ========================================================= */
 
 export default function AdminPage() {
   const router =
     useRouter();
+
+
+  const [
+    rows,
+    setRows,
+  ] =
+    useState([]);
 
 
   const [
@@ -366,13 +262,6 @@ export default function AdminPage() {
 
 
   const [
-    rows,
-    setRows,
-  ] =
-    useState([]);
-
-
-  const [
     search,
     setSearch,
   ] =
@@ -380,29 +269,33 @@ export default function AdminPage() {
 
 
   const [
-    typeFilter,
-    setTypeFilter,
+    consultationFilter,
+    setConsultationFilter,
   ] =
-    useState("all");
+    useState(
+      "all"
+    );
 
 
   const [
-    statusFilter,
-    setStatusFilter,
+    managerFilter,
+    setManagerFilter,
   ] =
-    useState("all");
+    useState(
+      "all"
+    );
 
 
   const [
-    versionFilter,
-    setVersionFilter,
+    expanded,
+    setExpanded,
   ] =
-    useState("all");
+    useState(null);
 
 
   const [
-    expandedId,
-    setExpandedId,
+    updating,
+    setUpdating,
   ] =
     useState(null);
 
@@ -415,7 +308,7 @@ export default function AdminPage() {
 
 
   /* =======================================================
-     Access Token
+     TOKEN
   ======================================================= */
 
   async function getAccessToken() {
@@ -423,13 +316,11 @@ export default function AdminPage() {
       return null;
     }
 
-
     const {
       data,
     } =
       await supabase.auth
         .getSession();
-
 
     return (
       data?.session
@@ -440,32 +331,24 @@ export default function AdminPage() {
 
 
   /* =======================================================
-     데이터 로드
+     LOAD
   ======================================================= */
 
-  async function loadResponses() {
+  async function loadData() {
     try {
-      setLoading(
-        true
-      );
-
-      setErrorMessage(
-        ""
-      );
-
+      setLoading(true);
+      setErrorMessage("");
 
       if (!supabase) {
         throw new Error(
-          "Supabase 연결 설정을 확인해주세요."
+          "Supabase 연결 정보를 확인해주세요."
         );
       }
 
-
-      const token =
+      const accessToken =
         await getAccessToken();
 
-
-      if (!token) {
+      if (!accessToken) {
         router.replace(
           "/admin/login"
         );
@@ -473,14 +356,13 @@ export default function AdminPage() {
         return;
       }
 
-
       const response =
         await fetch(
           "/api/admin/responses",
           {
             headers: {
               Authorization:
-                `Bearer ${token}`,
+                `Bearer ${accessToken}`,
             },
 
             cache:
@@ -495,9 +377,9 @@ export default function AdminPage() {
 
       if (
         response.status ===
-        401 ||
+          401 ||
         response.status ===
-        403
+          403
       ) {
         await supabase.auth
           .signOut();
@@ -526,207 +408,390 @@ export default function AdminPage() {
         []
       );
 
-  } catch (error) {
+    } catch (error) {
       console.error(
         error
       );
 
-
       setErrorMessage(
         error.message ||
-        "관리자 데이터를 불러오는 중 오류가 발생했습니다."
+        "관리자 데이터를 불러오지 못했습니다."
       );
 
     } finally {
-      setLoading(
-        false
-      );
+      setLoading(false);
     }
   }
 
 
   useEffect(
     () => {
-      loadResponses();
+      loadData();
     },
     []
   );
 
 
   /* =======================================================
-     로그아웃
+     ENRICHED
   ======================================================= */
 
-  async function handleLogout() {
-    if (supabase) {
-      await supabase.auth
-        .signOut();
-    }
-
-
-    router.replace(
-      "/admin/login"
-    );
-  }
-
-
-  /* =======================================================
-     CSV
-  ======================================================= */
-
-  async function downloadCsv() {
-    try {
-      setExporting(
-        true
-      );
-
-
-      const token =
-        await getAccessToken();
-
-
-      if (!token) {
-        router.replace(
-          "/admin/login"
-        );
-
-        return;
-      }
-
-
-      const response =
-        await fetch(
-          "/api/admin/export",
-          {
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-          }
-        );
-
-
-      if (
-        response.status ===
-        401 ||
-        response.status ===
-        403
-      ) {
-        await supabase.auth
-          .signOut();
-
-        router.replace(
-          "/admin/login"
-        );
-
-        return;
-      }
-
-
-      if (!response.ok) {
-        throw new Error(
-          "CSV 파일 생성에 실패했습니다."
-        );
-      }
-
-
-      const blob =
-        await response.blob();
-
-
-      const objectUrl =
-        URL.createObjectURL(
-          blob
-        );
-
-
-      const date =
-        new Date()
-          .toISOString()
-          .slice(
-            0,
-            10
-          );
-
-
-      const link =
-        document.createElement(
-          "a"
-        );
-
-
-      link.href =
-        objectUrl;
-
-
-      link.download =
-        `opening-profile-${date}.csv`;
-
-
-      document.body
-        .appendChild(
-          link
-        );
-
-
-      link.click();
-
-
-      link.remove();
-
-
-      URL.revokeObjectURL(
-        objectUrl
-      );
-
-    } catch (error) {
-      console.error(
-        error
-      );
-
-
-      alert(
-        error.message ||
-        "다운로드 중 오류가 발생했습니다."
-      );
-
-    } finally {
-      setExporting(
-        false
-      );
-    }
-  }
-
-
-  /* =======================================================
-     행 + 분석 정보
-  ======================================================= */
-
-  const enrichedRows =
+  const enriched =
     useMemo(
-      () => {
-        return rows.map(
+      () =>
+        rows.map(
           (item) => ({
             ...item,
 
             meta:
-              getResultMeta(
+              getMeta(
                 item
               ),
           })
-        );
-      },
-      [
-        rows,
-      ]
+        ),
+      [rows]
     );
 
 
   /* =======================================================
-     검색/필터
+     영업담당자 목록
   ======================================================= */
 
-  const filteredRows =
+  const salesManagerNames =
+    useMemo(
+      () => {
+        const names =
+          enriched
+            .filter(
+              (item) =>
+                item.has_sales_manager ===
+                  true &&
+                item.sales_manager_name
+                  ?.trim()
+            )
+            .map(
+              (item) =>
+                item.sales_manager_name
+                  .trim()
+            );
+
+
+        return [
+          ...new Set(
+            names
+          ),
+        ].sort(
+          (a, b) =>
+            a.localeCompare(
+              b,
+              "ko"
+            )
+        );
+      },
+      [enriched]
+    );
+
+
+  /* =======================================================
+     전체 통계
+  ======================================================= */
+
+  const stats =
+    useMemo(
+      () => {
+        const completed =
+          enriched.filter(
+            (item) =>
+              item.completed
+          );
+
+
+        const consultation =
+          enriched.filter(
+            (item) =>
+              item.consultation
+          );
+
+
+        const matching =
+          consultation.filter(
+            (item) =>
+              item.consultation
+                ?.needs_manager_matching ===
+              true
+          );
+
+
+        return {
+          total:
+            enriched.length,
+
+          completed:
+            completed.length,
+
+          consultation:
+            consultation.length,
+
+          matching:
+            matching.length,
+        };
+      },
+      [enriched]
+    );
+
+
+  /* =======================================================
+     ★ 담당자별 상담 현황
+  ======================================================= */
+
+  const managerStats =
+    useMemo(
+      () => {
+        const managerMap =
+          new Map();
+
+
+        enriched.forEach(
+          (item) => {
+            /*
+              기존 영업담당자가 있는 사람만
+              담당자별 통계에 포함
+            */
+
+            if (
+              item.has_sales_manager !==
+                true ||
+              !item.sales_manager_name
+                ?.trim()
+            ) {
+              return;
+            }
+
+
+            const managerName =
+              item.sales_manager_name
+                .trim();
+
+
+            if (
+              !managerMap.has(
+                managerName
+              )
+            ) {
+              managerMap.set(
+                managerName,
+                {
+                  name:
+                    managerName,
+
+                  totalCustomers:
+                    0,
+
+                  consultationCount:
+                    0,
+
+                  location:
+                    0,
+
+                  majorEquipment:
+                    0,
+
+                  supplies:
+                    0,
+
+                  newCount:
+                    0,
+
+                  reviewing:
+                    0,
+
+                  assigned:
+                    0,
+
+                  completed:
+                    0,
+                }
+              );
+            }
+
+
+            const stat =
+              managerMap.get(
+                managerName
+              );
+
+
+            stat.totalCustomers +=
+              1;
+
+
+            if (
+              !item.consultation
+            ) {
+              return;
+            }
+
+
+            stat.consultationCount +=
+              1;
+
+
+            if (
+              item.consultation
+                .category ===
+              "location"
+            ) {
+              stat.location +=
+                1;
+            }
+
+
+            if (
+              item.consultation
+                .category ===
+              "major_equipment"
+            ) {
+              stat.majorEquipment +=
+                1;
+            }
+
+
+            if (
+              item.consultation
+                .category ===
+              "supplies"
+            ) {
+              stat.supplies +=
+                1;
+            }
+
+
+            if (
+              item.consultation
+                .status ===
+              "new"
+            ) {
+              stat.newCount +=
+                1;
+            }
+
+
+            if (
+              item.consultation
+                .status ===
+              "reviewing"
+            ) {
+              stat.reviewing +=
+                1;
+            }
+
+
+            if (
+              item.consultation
+                .status ===
+              "assigned"
+            ) {
+              stat.assigned +=
+                1;
+            }
+
+
+            if (
+              item.consultation
+                .status ===
+              "completed"
+            ) {
+              stat.completed +=
+                1;
+            }
+          }
+        );
+
+
+        return Array.from(
+          managerMap.values()
+        ).sort(
+          (
+            a,
+            b
+          ) => {
+            /*
+              상담 신청 많은 담당자 순
+            */
+
+            if (
+              b.consultationCount !==
+              a.consultationCount
+            ) {
+              return (
+                b.consultationCount -
+                a.consultationCount
+              );
+            }
+
+
+            return a.name.localeCompare(
+              b.name,
+              "ko"
+            );
+          }
+        );
+      },
+      [enriched]
+    );
+
+
+  /* =======================================================
+     미담당자 / 매칭 필요 통계
+  ======================================================= */
+
+  const noManagerStats =
+    useMemo(
+      () => {
+        const noManager =
+          enriched.filter(
+            (item) =>
+              item.has_sales_manager ===
+              false
+          );
+
+
+        const consultation =
+          noManager.filter(
+            (item) =>
+              item.consultation
+          );
+
+
+        const matching =
+          consultation.filter(
+            (item) =>
+              item.consultation
+                ?.needs_manager_matching ===
+              true
+          );
+
+
+        return {
+          customers:
+            noManager.length,
+
+          consultation:
+            consultation.length,
+
+          matching:
+            matching.length,
+        };
+      },
+      [enriched]
+    );
+
+
+  /* =======================================================
+     FILTER
+  ======================================================= */
+
+  const filtered =
     useMemo(
       () => {
         const keyword =
@@ -735,12 +800,11 @@ export default function AdminPage() {
             .toLowerCase();
 
 
-        return enrichedRows.filter(
+        return enriched.filter(
           (item) => {
-
-            const meta =
-              item.meta;
-
+            /*
+              검색
+            */
 
             if (keyword) {
               const searchable =
@@ -748,14 +812,20 @@ export default function AdminPage() {
                   item.name,
                   item.phone,
                   item.license_number,
+
                   item.result_type,
                   item.secondary_type,
-                  meta.combination
+
+                  item.meta
+                    .combination
                     ?.name,
+
+                  item.sales_manager_name,
+
+                  item.consultation
+                    ?.manager_name,
                 ]
-                  .filter(
-                    Boolean
-                  )
+                  .filter(Boolean)
                   .join(" ")
                   .toLowerCase();
 
@@ -770,13 +840,66 @@ export default function AdminPage() {
             }
 
 
+            /*
+              상담 필터
+            */
+
             if (
-              typeFilter !==
-              "all"
+              consultationFilter ===
+                "applied" &&
+              !item.consultation
+            ) {
+              return false;
+            }
+
+
+            if (
+              consultationFilter ===
+                "not_applied" &&
+              item.consultation
+            ) {
+              return false;
+            }
+
+
+            if (
+              consultationFilter ===
+                "matching" &&
+              item.consultation
+                ?.needs_manager_matching !==
+                true
+            ) {
+              return false;
+            }
+
+
+            if (
+              [
+                "location",
+                "major_equipment",
+                "supplies",
+              ].includes(
+                consultationFilter
+              ) &&
+              item.consultation
+                ?.category !==
+                consultationFilter
+            ) {
+              return false;
+            }
+
+
+            /*
+              영업담당자 필터
+            */
+
+            if (
+              managerFilter ===
+              "none"
             ) {
               if (
-                meta.primaryType !==
-                typeFilter
+                item.has_sales_manager !==
+                false
               ) {
                 return false;
               }
@@ -784,45 +907,18 @@ export default function AdminPage() {
 
 
             if (
-              statusFilter ===
-              "completed" &&
-              !item.completed
+              managerFilter !==
+                "all" &&
+              managerFilter !==
+                "none"
             ) {
-              return false;
-            }
-
-
-            if (
-              statusFilter ===
-              "incomplete" &&
-              item.completed
-            ) {
-              return false;
-            }
-
-
-            if (
-              versionFilter ===
-              "new" &&
-              !meta.version
-                .isNew
-            ) {
-              return false;
-            }
-
-
-            if (
-              versionFilter ===
-              "old" &&
-              (
-                meta.version
-                  .isNew ||
-                getQuestionCount(
-                  item.answers
-                ) === 0
-              )
-            ) {
-              return false;
+              if (
+                item.sales_manager_name
+                  ?.trim() !==
+                managerFilter
+              ) {
+                return false;
+              }
             }
 
 
@@ -831,173 +927,234 @@ export default function AdminPage() {
         );
       },
       [
-        enrichedRows,
+        enriched,
         search,
-        typeFilter,
-        statusFilter,
-        versionFilter,
+        consultationFilter,
+        managerFilter,
       ]
     );
 
 
   /* =======================================================
-     통계
+     상담 상태 변경
   ======================================================= */
 
-  const stats =
-    useMemo(
-      () => {
-        const total =
-          enrichedRows.length;
+  async function updateStatus(
+    item,
+    status
+  ) {
+    if (
+      !item.consultation
+    ) {
+      return;
+    }
 
 
-        const completed =
-          enrichedRows.filter(
-            (item) =>
-              item.completed
-          );
+    try {
+      setUpdating(
+        item.consultation.id
+      );
 
 
-        const newVersion =
-          completed.filter(
-            (item) =>
-              item.meta
-                .version
-                .isNew
-          );
+      const accessToken =
+        await getAccessToken();
 
 
-        const typeCounts = {
-          stable:
-            0,
+      const response =
+        await fetch(
+          "/api/admin/consultations/status",
+          {
+            method:
+              "PATCH",
 
-          aggressive:
-            0,
+            headers: {
+              "Content-Type":
+                "application/json",
 
-          analytical:
-            0,
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
 
-          pioneer:
-            0,
-        };
+            body:
+              JSON.stringify({
+                consultationId:
+                  item.consultation.id,
 
-
-        completed.forEach(
-          (item) => {
-            const type =
-              item.meta
-                .primaryType;
-
-
-            if (
-              type &&
-              typeCounts[type] !==
-                undefined
-            ) {
-              typeCounts[
-                type
-              ] += 1;
-            }
+                status,
+              }),
           }
         );
 
 
-        /*
-          복합성향 TOP은
-          신규 12문항 진단만 집계
-
-          이전 8문항과 신규 12문항의
-          점수 체계가 다르기 때문
-        */
-
-        const combinationCounts =
-          {};
+      const result =
+        await response.json();
 
 
-        newVersion.forEach(
-          (item) => {
-            const name =
-              item.meta
-                .combination
-                ?.name;
-
-
-            if (!name) {
-              return;
-            }
-
-
-            combinationCounts[
-              name
-            ] =
-              (
-                combinationCounts[
-                  name
-                ] || 0
-              ) + 1;
-          }
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+          "상태 변경에 실패했습니다."
         );
+      }
 
 
-        const topCombination =
-          Object.entries(
-            combinationCounts
+      setRows(
+        (previous) =>
+          previous.map(
+            (row) =>
+              row.id ===
+              item.id
+                ? {
+                    ...row,
+
+                    consultation: {
+                      ...row.consultation,
+
+                      status,
+                    },
+                  }
+                : row
           )
-            .sort(
-              (a, b) =>
-                b[1] -
-                a[1]
-            )[0] ||
-          null;
+      );
 
+    } catch (error) {
+      alert(
+        error.message ||
+        "상담 상태를 변경하지 못했습니다."
+      );
 
-        return {
-          total,
-
-          completed:
-            completed.length,
-
-          newVersion:
-            newVersion.length,
-
-          typeCounts,
-
-          topCombination,
-        };
-      },
-      [
-        enrichedRows,
-      ]
-    );
+    } finally {
+      setUpdating(
+        null
+      );
+    }
+  }
 
 
   /* =======================================================
-     Loading
+     CSV
+  ======================================================= */
+
+  async function downloadCsv() {
+    try {
+      setExporting(true);
+
+
+      const accessToken =
+        await getAccessToken();
+
+
+      if (!accessToken) {
+        router.replace(
+          "/admin/login"
+        );
+
+        return;
+      }
+
+
+      const response =
+        await fetch(
+          "/api/admin/export",
+          {
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+
+      if (!response.ok) {
+        throw new Error(
+          "CSV 파일 생성에 실패했습니다."
+        );
+      }
+
+
+      const blob =
+        await response.blob();
+
+
+      const url =
+        URL.createObjectURL(
+          blob
+        );
+
+
+      const link =
+        document.createElement(
+          "a"
+        );
+
+
+      link.href =
+        url;
+
+
+      link.download =
+        `opening-profile-${new Date()
+          .toISOString()
+          .slice(
+            0,
+            10
+          )}.csv`;
+
+
+      document.body
+        .appendChild(
+          link
+        );
+
+
+      link.click();
+      link.remove();
+
+
+      URL.revokeObjectURL(
+        url
+      );
+
+    } catch (error) {
+      alert(
+        error.message ||
+        "CSV 다운로드 중 오류가 발생했습니다."
+      );
+
+    } finally {
+      setExporting(false);
+    }
+  }
+
+
+  /* =======================================================
+     로그아웃
+  ======================================================= */
+
+  async function handleLogout() {
+    if (supabase) {
+      await supabase.auth
+        .signOut();
+    }
+
+    router.replace(
+      "/admin/login"
+    );
+  }
+
+
+  /* =======================================================
+     LOADING
   ======================================================= */
 
   if (loading) {
     return (
-      <main
-        className={
-          styles.loadingPage
-        }
-      >
-        <div
-          className={
-            styles.loadingCard
-          }
-        >
-          <div
-            className={
-              styles.spinner
-            }
-          />
-
-          <strong>
-            관리자 데이터를
-            불러오고 있습니다.
-          </strong>
-        </div>
+      <main className={styles.loading}>
+        관리자 데이터를
+        불러오고 있습니다.
       </main>
     );
   }
@@ -1008,92 +1165,54 @@ export default function AdminPage() {
   ======================================================= */
 
   return (
-    <main
-      className={
-        styles.page
-      }
-    >
+    <main className={styles.page}>
 
-      <div
-        className={
-          styles.container
-        }
-      >
+      <div className={styles.container}>
+
 
         {/* ===============================================
             HEADER
         =============================================== */}
 
-        <header
-          className={
-            styles.header
-          }
-        >
+        <header className={styles.header}>
 
           <div>
 
-            <p
-              className={
-                styles.eyebrow
-              }
-            >
+            <p>
               OSSTEM IMPLANT
             </p>
 
             <h1>
-              개원성향진단
-              관리자
+              개원성향진단 관리자
             </h1>
 
-            <p
-              className={
-                styles.headerDescription
-              }
-            >
-              참여자 정보와
-              기본성향·복합성향 및
-              문항별 응답을 확인합니다.
-            </p>
+            <span>
+              진단 결과와 상담 신청,
+              영업담당자별 현황을 관리합니다.
+            </span>
 
           </div>
 
 
-          <div
-            className={
-              styles.headerActions
-            }
-          >
+          <div className={styles.headerButtons}>
 
             <button
               type="button"
-
-              className={
-                styles.exportButton
-              }
-
+              className={styles.exportButton}
+              disabled={exporting}
               onClick={
                 downloadCsv
               }
-
-              disabled={
-                exporting
-              }
             >
-
               {exporting
                 ? "파일 생성 중..."
                 : "↓ CSV 다운로드"}
-
             </button>
 
 
             <button
               type="button"
-
-              className={
-                styles.logoutButton
-              }
-
+              className={styles.logoutButton}
               onClick={
                 handleLogout
               }
@@ -1106,52 +1225,22 @@ export default function AdminPage() {
         </header>
 
 
-        {/* ===============================================
-            ERROR
-        =============================================== */}
-
         {errorMessage && (
 
-          <div
-            className={
-              styles.errorBox
-            }
-          >
-
-            <span>
-              {errorMessage}
-            </span>
-
-            <button
-              type="button"
-
-              onClick={
-                loadResponses
-              }
-            >
-              다시 불러오기
-            </button>
-
+          <div className={styles.errorBox}>
+            {errorMessage}
           </div>
 
         )}
 
 
         {/* ===============================================
-            MAIN STATS
+            전체 통계
         =============================================== */}
 
-        <section
-          className={
-            styles.statsGrid
-          }
-        >
+        <div className={styles.stats}>
 
-          <article
-            className={
-              styles.statCard
-            }
-          >
+          <article>
 
             <span>
               전체 등록
@@ -1168,11 +1257,7 @@ export default function AdminPage() {
           </article>
 
 
-          <article
-            className={
-              styles.statCard
-            }
-          >
+          <article>
 
             <span>
               진단 완료
@@ -1189,174 +1274,319 @@ export default function AdminPage() {
           </article>
 
 
-          <article
-            className={
-              styles.statCard
-            }
-          >
+          <article>
 
             <span>
-              신규 12문항
+              상담 신청
             </span>
 
             <strong>
-              {stats.newVersion}
+              {stats.consultation}
             </strong>
 
             <small>
-              명
+              건
             </small>
 
           </article>
 
 
-          <article
-            className={`${styles.statCard} ${styles.comboStatCard}`}
-          >
+          <article className={styles.orange}>
 
             <span>
-              신규 복합성향 TOP
+              담당자 매칭 필요
             </span>
 
-            {stats.topCombination ? (
-              <>
+            <strong>
+              {stats.matching}
+            </strong>
 
-                <strong
-                  className={
-                    styles.comboStatName
-                  }
-                >
-                  {
-                    stats
-                      .topCombination[0]
-                  }
-                </strong>
-
-                <small>
-                  {
-                    stats
-                      .topCombination[1]
-                  }
-                  명
-                </small>
-
-              </>
-            ) : (
-
-              <strong
-                className={
-                  styles.comboStatEmpty
-                }
-              >
-                -
-              </strong>
-
-            )}
+            <small>
+              건
+            </small>
 
           </article>
 
-        </section>
+        </div>
 
 
         {/* ===============================================
-            기본성향 통계
+            ★ 담당자별 상담 신청 현황
         =============================================== */}
 
-        <section
-          className={
-            styles.typeSection
-          }
-        >
+        <section className={styles.managerSection}>
 
-          <div
-            className={
-              styles.sectionHeading
-            }
-          >
+          <div className={styles.sectionHeader}>
 
             <div>
 
-              <span>
-                PROFILE SUMMARY
-              </span>
+              <p>
+                SALES MANAGER
+              </p>
 
               <h2>
-                기본성향 현황
+                영업담당자별 상담 신청 현황
               </h2>
 
             </div>
 
-            <p>
-              진단 완료자를 기준으로
-              집계합니다.
-            </p>
+
+            <span>
+              담당자 이름을 기준으로 자동 집계합니다.
+            </span>
 
           </div>
 
 
-          <div
-            className={
-              styles.typeGrid
-            }
-          >
+          {managerStats.length ===
+          0 ? (
 
-            {Object.entries(
-              TYPE_INFO
-            ).map(
-              ([
-                type,
-                info,
-              ]) => (
+            <div className={styles.noManagerData}>
+              아직 등록된 영업담당자 데이터가 없습니다.
+            </div>
 
-                <article
-                  className={
-                    styles.typeCard
-                  }
+          ) : (
 
-                  key={
-                    type
-                  }
-                >
+            <div className={styles.managerGrid}>
 
-                  <span
+              {managerStats.map(
+                (manager) => (
+
+                  <article
+                    key={
+                      manager.name
+                    }
                     className={
-                      styles.typeEmoji
+                      styles.managerCard
                     }
                   >
-                    {
-                      info.emoji
-                    }
-                  </span>
+
+                    <div className={styles.managerHead}>
+
+                      <div className={styles.managerAvatar}>
+                        👤
+                      </div>
 
 
-                  <div>
+                      <div>
 
-                    <span
+                        <span>
+                          OSSTEM SALES MANAGER
+                        </span>
+
+                        <h3>
+                          {manager.name}
+                        </h3>
+
+                      </div>
+
+                    </div>
+
+
+                    <div className={styles.managerMainNumbers}>
+
+                      <div>
+
+                        <span>
+                          담당 진단
+                        </span>
+
+                        <strong>
+                          {manager.totalCustomers}
+                        </strong>
+
+                        <small>
+                          명
+                        </small>
+
+                      </div>
+
+
+                      <div>
+
+                        <span>
+                          상담 신청
+                        </span>
+
+                        <strong>
+                          {manager.consultationCount}
+                        </strong>
+
+                        <small>
+                          건
+                        </small>
+
+                      </div>
+
+                    </div>
+
+
+                    <div className={styles.managerCategoryGrid}>
+
+                      <div>
+
+                        <span>
+                          📍 입지
+                        </span>
+
+                        <strong>
+                          {manager.location}
+                        </strong>
+
+                      </div>
+
+
+                      <div>
+
+                        <span>
+                          🦷 대장비
+                        </span>
+
+                        <strong>
+                          {manager.majorEquipment}
+                        </strong>
+
+                      </div>
+
+
+                      <div>
+
+                        <span>
+                          🧰 소장비·기구·재료
+                        </span>
+
+                        <strong>
+                          {manager.supplies}
+                        </strong>
+
+                      </div>
+
+                    </div>
+
+
+                    <div className={styles.managerStatus}>
+
+                      <div>
+
+                        <span>
+                          처리 전
+                        </span>
+
+                        <strong>
+                          {
+                            manager.newCount +
+                            manager.reviewing +
+                            manager.assigned
+                          }
+                        </strong>
+
+                      </div>
+
+
+                      <div>
+
+                        <span>
+                          상담 완료
+                        </span>
+
+                        <strong>
+                          {manager.completed}
+                        </strong>
+
+                      </div>
+
+                    </div>
+
+
+                    <button
+                      type="button"
+
                       className={
-                        styles.typeName
+                        styles.managerFilterButton
                       }
+
+                      onClick={() => {
+                        setManagerFilter(
+                          manager.name
+                        );
+
+                        window.scrollTo({
+                          top:
+                            document.body
+                              .scrollHeight,
+
+                          behavior:
+                            "smooth",
+                        });
+                      }}
                     >
-                      {
-                        info.label
-                      }
-                    </span>
+                      {manager.name} 담당 고객 보기
+                    </button>
 
-                    <strong>
-                      {
-                        stats
-                          .typeCounts[
-                          type
-                        ]
-                      }
-                      명
-                    </strong>
+                  </article>
 
-                  </div>
+                )
+              )}
 
-                </article>
+            </div>
 
-              )
-            )}
+          )}
+
+
+          {/* 담당자 없음 */}
+
+          <div className={styles.unassignedSummary}>
+
+            <div>
+
+              <span>
+                영업담당자 없음
+              </span>
+
+              <strong>
+                {noManagerStats.customers}명
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                상담 신청
+              </span>
+
+              <strong>
+                {noManagerStats.consultation}건
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                지역 담당자 매칭 필요
+              </span>
+
+              <strong>
+                {noManagerStats.matching}건
+              </strong>
+
+            </div>
+
+
+            <button
+              type="button"
+
+              onClick={() =>
+                setManagerFilter(
+                  "none"
+                )
+              }
+            >
+              담당자 없는 고객 보기
+            </button>
 
           </div>
 
@@ -1367,172 +1597,118 @@ export default function AdminPage() {
             FILTER
         =============================================== */}
 
-        <section
-          className={
-            styles.filterSection
-          }
-        >
+        <div className={styles.filters}>
 
-          <div
-            className={
-              styles.searchBox
+          <input
+            type="search"
+
+            placeholder="이름 · 연락처 · 면허번호 · 영업담당자 · 복합성향 검색"
+
+            value={search}
+
+            onChange={(
+              event
+            ) =>
+              setSearch(
+                event.target.value
+              )
             }
-          >
-
-            <span>
-              ⌕
-            </span>
-
-            <input
-              type="search"
-
-              placeholder="이름 · 휴대폰 · 면허번호 · 복합성향 검색"
-
-              value={
-                search
-              }
-
-              onChange={(
-                event
-              ) =>
-                setSearch(
-                  event.target
-                    .value
-                )
-              }
-            />
-
-          </div>
+          />
 
 
           <select
             value={
-              typeFilter
+              managerFilter
             }
 
             onChange={(
               event
             ) =>
-              setTypeFilter(
-                event.target
-                  .value
+              setManagerFilter(
+                event.target.value
               )
             }
           >
 
             <option value="all">
-              전체 주성향
+              전체 영업담당자
             </option>
 
-            <option value="stable">
-              🏠 안정정착형
+
+            <option value="none">
+              담당자 없음
             </option>
 
-            <option value="aggressive">
-              🚀 집중공격형
-            </option>
 
-            <option value="analytical">
-              📊 데이터분석형
-            </option>
-
-            <option value="pioneer">
-              🌱 선점개척형
-            </option>
+            {salesManagerNames.map(
+              (name) => (
+                <option
+                  value={name}
+                  key={name}
+                >
+                  {name}
+                </option>
+              )
+            )}
 
           </select>
 
 
           <select
             value={
-              versionFilter
+              consultationFilter
             }
 
             onChange={(
               event
             ) =>
-              setVersionFilter(
-                event.target
-                  .value
+              setConsultationFilter(
+                event.target.value
               )
             }
           >
 
             <option value="all">
-              전체 버전
+              전체 상담
             </option>
 
-            <option value="new">
-              신규 12문항
+            <option value="applied">
+              상담 신청자
             </option>
 
-            <option value="old">
-              이전 버전
+            <option value="not_applied">
+              상담 미신청
             </option>
 
-          </select>
-
-
-          <select
-            value={
-              statusFilter
-            }
-
-            onChange={(
-              event
-            ) =>
-              setStatusFilter(
-                event.target
-                  .value
-              )
-            }
-          >
-
-            <option value="all">
-              전체 상태
+            <option value="matching">
+              담당자 매칭 필요
             </option>
 
-            <option value="completed">
-              진단 완료
+            <option value="location">
+              입지
             </option>
 
-            <option value="incomplete">
-              미완료
+            <option value="major_equipment">
+              대장비
+            </option>
+
+            <option value="supplies">
+              소장비·기구·재료
             </option>
 
           </select>
 
-        </section>
+        </div>
 
 
-        {/* ===============================================
-            LIST HEADER
-        =============================================== */}
+        <div className={styles.listHeader}>
 
-        <div
-          className={
-            styles.listHeading
-          }
-        >
-
-          <div>
-
-            <span>
-              RESPONSE DATA
-            </span>
-
-            <h2>
-              진단 참여자
-            </h2>
-
-          </div>
-
+          <h2>
+            진단 참여자
+          </h2>
 
           <strong>
-            {
-              filteredRows.length
-            }
-            건
+            {filtered.length}건
           </strong>
 
         </div>
@@ -1542,17 +1718,9 @@ export default function AdminPage() {
             TABLE
         =============================================== */}
 
-        <div
-          className={
-            styles.tableWrap
-          }
-        >
+        <div className={styles.tableWrap}>
 
-          <table
-            className={
-              styles.table
-            }
-          >
+          <table>
 
             <thead>
 
@@ -1563,19 +1731,11 @@ export default function AdminPage() {
                 </th>
 
                 <th>
-                  연락처
+                  영업담당자
                 </th>
 
                 <th>
-                  진단 버전
-                </th>
-
-                <th>
-                  주성향
-                </th>
-
-                <th>
-                  보조성향
+                  진단결과
                 </th>
 
                 <th>
@@ -1583,7 +1743,15 @@ export default function AdminPage() {
                 </th>
 
                 <th>
-                  진단일
+                  상담
+                </th>
+
+                <th>
+                  담당자 매칭
+                </th>
+
+                <th>
+                  상담 상태
                 </th>
 
                 <th>
@@ -1597,36 +1765,15 @@ export default function AdminPage() {
 
             <tbody>
 
-              {filteredRows.length ===
+              {filtered.length ===
               0 ? (
 
                 <tr>
 
-                  <td
-                    colSpan={
-                      8
-                    }
-                  >
+                  <td colSpan={8}>
 
-                    <div
-                      className={
-                        styles.emptyState
-                      }
-                    >
-
-                      <span>
-                        🔎
-                      </span>
-
-                      <strong>
-                        검색 결과가 없습니다.
-                      </strong>
-
-                      <p>
-                        검색어 또는 필터를
-                        변경해주세요.
-                      </p>
-
+                    <div className={styles.empty}>
+                      조건에 맞는 데이터가 없습니다.
                     </div>
 
                   </td>
@@ -1635,158 +1782,75 @@ export default function AdminPage() {
 
               ) : (
 
-                filteredRows.map(
-                  (
-                    item
-                  ) => {
-
-                    const meta =
-                      item.meta;
-
-
+                filtered.map(
+                  (item) => {
                     const primary =
-                      meta.primaryType
+                      item.meta
+                        .primaryType
                         ? TYPE_INFO[
-                            meta
-                              .primaryType
+                            item.meta.primaryType
                           ]
                         : null;
 
 
-                    const secondary =
-                      meta.secondaryType
-                        ? TYPE_INFO[
-                            meta
-                              .secondaryType
-                          ]
-                        : null;
-
-
-                    const isExpanded =
-                      expandedId ===
-                      item.id;
-
-
-                    const scores =
-                      item.type_scores &&
-                      typeof item.type_scores ===
-                        "object"
-                        ? item.type_scores
-                        : {};
+                    const consultation =
+                      item.consultation;
 
 
                     return (
 
-                      <>
-                        <tr
-                          key={
-                            item.id
-                          }
-                          className={
-                            isExpanded
-                              ? styles.activeRow
-                              : ""
-                          }
-                        >
+                      <Fragment key={item.id}>
+
+
+                        <tr>
 
                           <td>
 
-                            <div
-                              className={
-                                styles.personCell
-                              }
-                            >
+                            <strong>
+                              {item.name || "-"}
+                            </strong>
 
-                              <strong>
-                                {
-                                  safeText(
-                                    item.name
-                                  )
-                                }
-                              </strong>
-
-                              <span>
-                                면허번호{" "}
-                                {
-                                  safeText(
-                                    item.license_number
-                                  )
-                                }
-                              </span>
-
-                            </div>
+                            <small>
+                              {item.phone || "-"}
+                            </small>
 
                           </td>
 
 
-                          <td>
-                            {
-                              safeText(
-                                item.phone
-                              )
-                            }
-                          </td>
-
+                          {/* 영업담당자 */}
 
                           <td>
 
-                            <span
-                              className={
-                                meta.version
-                                  .isNew
-                                  ? styles.newVersionBadge
-                                  : styles.oldVersionBadge
-                              }
-                            >
+                            {item.has_sales_manager ===
+                              true &&
+                            item.sales_manager_name ? (
 
-                              {
-                                meta.version
-                                  .label
-                              }
-
-                            </span>
-
-                          </td>
-
-
-                          <td>
-
-                            {primary ? (
-
-                              <div
-                                className={
-                                  styles.profileCell
-                                }
-                              >
-
-                                <strong>
-                                  {
-                                    primary.emoji
-                                  }
-                                  {" "}
-                                  {
-                                    primary.label
-                                  }
-                                </strong>
+                              <div className={styles.salesManagerCell}>
 
                                 <span>
-                                  {
-                                    item.result_score ??
-                                    "-"
-                                  }
-                                  점
+                                  👤
                                 </span>
+
+                                <div>
+
+                                  <strong>
+                                    {item.sales_manager_name}
+                                  </strong>
+
+                                  <small>
+                                    기존 담당자
+                                  </small>
+
+                                </div>
 
                               </div>
 
                             ) : (
-                              <span
-                                className={
-                                  styles.pending
-                                }
-                              >
-                                미완료
+
+                              <span className={styles.noSalesManager}>
+                                담당자 없음
                               </span>
+
                             )}
 
                           </td>
@@ -1794,90 +1858,104 @@ export default function AdminPage() {
 
                           <td>
 
-                            {secondary ? (
+                            {primary
+                              ? `${primary.emoji} ${primary.label}`
+                              : "-"}
 
-                              <div
+                          </td>
+
+
+                          <td>
+
+                            <strong className={styles.combo}>
+                              {item.meta
+                                .combination
+                                ?.name ||
+                                "-"}
+                            </strong>
+
+                          </td>
+
+
+                          <td>
+
+                            {consultation
+                              ? `${CATEGORY[
+                                  consultation.category
+                                ]?.emoji || ""} ${
+                                  CATEGORY[
+                                    consultation.category
+                                  ]?.label || ""
+                                }`
+                              : "-"}
+
+                          </td>
+
+
+                          <td>
+
+                            {!consultation
+                              ? "-"
+                              : consultation.category ===
+                                "location"
+                                ? "해당없음"
+                                : consultation
+                                    .needs_manager_matching
+                                  ? "필요"
+                                  : "불필요"}
+
+                          </td>
+
+
+                          <td>
+
+                            {consultation ? (
+
+                              <select
                                 className={
-                                  styles.profileCell
+                                  styles.statusSelect
+                                }
+
+                                value={
+                                  consultation.status
+                                }
+
+                                disabled={
+                                  updating ===
+                                  consultation.id
+                                }
+
+                                onChange={(
+                                  event
+                                ) =>
+                                  updateStatus(
+                                    item,
+                                    event.target.value
+                                  )
                                 }
                               >
 
-                                <strong>
-                                  {
-                                    secondary.emoji
-                                  }
-                                  {" "}
-                                  {
-                                    secondary.label
-                                  }
-                                </strong>
+                                {Object.entries(
+                                  STATUS
+                                ).map(
+                                  ([
+                                    value,
+                                    label,
+                                  ]) => (
+                                    <option
+                                      key={value}
+                                      value={value}
+                                    >
+                                      {label}
+                                    </option>
+                                  )
+                                )}
 
-                                <span>
-                                  {
-                                    item.secondary_score ??
-                                    "-"
-                                  }
-                                  점
-                                </span>
-
-                              </div>
+                              </select>
 
                             ) : (
                               "-"
                             )}
-
-                          </td>
-
-
-                          <td>
-
-                            {meta.combination ? (
-
-                              <div
-                                className={
-                                  styles.combinationCell
-                                }
-                              >
-
-                                <strong>
-                                  {
-                                    meta.combination
-                                      .name
-                                  }
-                                </strong>
-
-                                <span>
-                                  {
-                                    meta.strength
-                                      ?.label
-                                  }
-                                </span>
-
-                              </div>
-
-                            ) : (
-                              "-"
-                            )}
-
-                          </td>
-
-
-                          <td>
-
-                            <div
-                              className={
-                                styles.dateCell
-                              }
-                            >
-
-                              {
-                                formatDate(
-                                  item.completed_at ||
-                                  item.created_at
-                                )
-                              }
-
-                            </div>
 
                           </td>
 
@@ -1892,18 +1970,18 @@ export default function AdminPage() {
                               }
 
                               onClick={() =>
-                                setExpandedId(
-                                  isExpanded
+                                setExpanded(
+                                  expanded ===
+                                  item.id
                                     ? null
                                     : item.id
                                 )
                               }
                             >
-
-                              {isExpanded
+                              {expanded ===
+                              item.id
                                 ? "접기"
                                 : "상세보기"}
-
                             </button>
 
                           </td>
@@ -1911,147 +1989,125 @@ export default function AdminPage() {
                         </tr>
 
 
-                        {isExpanded && (
+                        {/* ===================================
+                            DETAIL
+                        =================================== */}
 
-                          <tr
-                            key={`${item.id}-detail`}
-                          >
+                        {expanded ===
+                          item.id && (
+
+                          <tr>
 
                             <td
-                              colSpan={
-                                8
-                              }
-
-                              className={
-                                styles.expandedCell
-                              }
+                              colSpan={8}
+                              className={styles.expanded}
                             >
 
-                              <div
-                                className={
-                                  styles.detailPanel
-                                }
-                              >
-
-                                {/* ===================================
-                                    개인 정보
-                                =================================== */}
-
-                                <section
-                                  className={
-                                    styles.detailBlock
-                                  }
-                                >
-
-                                  <div
-                                    className={
-                                      styles.detailTitle
-                                    }
-                                  >
-
-                                    <span>
-                                      PARTICIPANT
-                                    </span>
-
-                                    <h3>
-                                      참여자 정보
-                                    </h3>
-
-                                  </div>
+                              <div className={styles.detailPanel}>
 
 
-                                  <div
-                                    className={
-                                      styles.infoGrid
-                                    }
-                                  >
+                                {/* 기본 정보 */}
+
+                                <section>
+
+                                  <h3>
+                                    참여자 정보
+                                  </h3>
+
+
+                                  <div className={styles.infoGrid}>
 
                                     <div>
+
                                       <span>
                                         이름
                                       </span>
 
                                       <strong>
-                                        {
-                                          safeText(
-                                            item.name
-                                          )
-                                        }
+                                        {item.name || "-"}
                                       </strong>
+
                                     </div>
 
 
                                     <div>
+
                                       <span>
                                         휴대폰
                                       </span>
 
                                       <strong>
-                                        {
-                                          safeText(
-                                            item.phone
-                                          )
-                                        }
+                                        {item.phone || "-"}
                                       </strong>
+
                                     </div>
 
 
                                     <div>
+
                                       <span>
                                         면허번호
                                       </span>
 
                                       <strong>
-                                        {
-                                          safeText(
-                                            item.license_number
-                                          )
-                                        }
+                                        {item.license_number || "-"}
                                       </strong>
+
                                     </div>
 
 
                                     <div>
+
                                       <span>
                                         진단버전
                                       </span>
 
                                       <strong>
-                                        {
-                                          meta.version
-                                            .label
-                                        }
+                                        {item.meta.version}
                                       </strong>
+
                                     </div>
 
 
-                                    <div>
+                                    <div
+                                      className={
+                                        item.has_sales_manager
+                                          ? styles.salesManagerInfo
+                                          : ""
+                                      }
+                                    >
+
                                       <span>
-                                        등록일
+                                        영업담당자 유무
                                       </span>
 
                                       <strong>
-                                        {
-                                          formatDate(
-                                            item.created_at
-                                          )
-                                        }
+                                        {item.has_sales_manager ===
+                                        true
+                                          ? "있음"
+                                          : "없음"}
                                       </strong>
+
                                     </div>
 
 
-                                    <div>
+                                    <div
+                                      className={
+                                        item.has_sales_manager
+                                          ? styles.salesManagerInfo
+                                          : ""
+                                      }
+                                    >
+
                                       <span>
-                                        완료일
+                                        오스템 영업담당자
                                       </span>
 
                                       <strong>
-                                        {
-                                          formatDate(
-                                            item.completed_at
-                                          )
-                                        }
+                                        {item.sales_manager_name ||
+                                          "-"}
                                       </strong>
+
                                     </div>
 
                                   </div>
@@ -2059,251 +2115,78 @@ export default function AdminPage() {
                                 </section>
 
 
-                                {/* ===================================
-                                    결과
-                                =================================== */}
+                                {/* 진단결과 */}
 
                                 {item.completed &&
                                   primary && (
 
-                                  <section
-                                    className={
-                                      styles.detailBlock
-                                    }
-                                  >
+                                  <section>
 
-                                    <div
-                                      className={
-                                        styles.detailTitle
-                                      }
-                                    >
-
-                                      <span>
-                                        DIAGNOSIS RESULT
-                                      </span>
-
-                                      <h3>
-                                        진단 결과
-                                      </h3>
-
-                                    </div>
+                                    <h3>
+                                      진단 결과
+                                    </h3>
 
 
-                                    <div
-                                      className={
-                                        styles.resultSummary
-                                      }
-                                    >
+                                    <div className={styles.resultGrid}>
 
-                                      <div
-                                        className={
-                                          styles.primaryResult
-                                        }
-                                      >
+                                      <div>
 
                                         <span>
                                           주성향
                                         </span>
 
                                         <strong>
-                                          {
-                                            primary.emoji
-                                          }
-                                          {" "}
-                                          {
-                                            primary.label
-                                          }
+                                          {primary.emoji}{" "}
+                                          {primary.label}
                                         </strong>
 
                                         <b>
-                                          {
-                                            item.result_score
-                                          }
-                                          점
+                                          {item.result_score}점
                                         </b>
 
                                       </div>
 
 
-                                      {secondary && (
+                                      <div>
 
-                                        <div
-                                          className={
-                                            styles.secondaryResult
-                                          }
-                                        >
-
-                                          <span>
-                                            보조성향
-                                          </span>
-
-                                          <strong>
-                                            {
-                                              secondary.emoji
-                                            }
-                                            {" "}
-                                            {
-                                              secondary.label
-                                            }
-                                          </strong>
-
-                                          <b>
-                                            {
-                                              item.secondary_score
-                                            }
-                                            점
-                                          </b>
-
-                                        </div>
-
-                                      )}
-
-                                    </div>
-
-
-                                    {meta.combination && (
-
-                                      <div
-                                        className={
-                                          styles.comboDetail
-                                        }
-                                      >
-
-                                        <span
-                                          className={
-                                            styles.comboKicker
-                                          }
-                                        >
-                                          YOUR COMBINATION
+                                        <span>
+                                          보조성향
                                         </span>
 
+                                        <strong>
+                                          {item.secondary_type ||
+                                            "-"}
+                                        </strong>
 
-                                        <div
-                                          className={
-                                            styles.comboTypes
-                                          }
-                                        >
-
-                                          {
-                                            primary.emoji
-                                          }
-                                          {" "}
-                                          {
-                                            primary.label
-                                          }
-
-                                          <b>
-                                            ×
-                                          </b>
-
-                                          {
-                                            secondary?.emoji
-                                          }
-                                          {" "}
-                                          {
-                                            secondary?.label
-                                          }
-
-                                        </div>
-
-
-                                        <h3>
-                                          {
-                                            meta.combination
-                                              .name
-                                          }
-                                        </h3>
-
-
-                                        <span
-                                          className={
-                                            styles.strengthBadge
-                                          }
-                                        >
-                                          {
-                                            meta.strength
-                                              ?.label
-                                          }
-                                        </span>
-
-
-                                        <p
-                                          className={
-                                            styles.comboTagline
-                                          }
-                                        >
-                                          “{
-                                            meta.combination
-                                              .tagline
-                                          }”
-                                        </p>
-
-
-                                        <p
-                                          className={
-                                            styles.comboDescription
-                                          }
-                                        >
-                                          {
-                                            meta.combination
-                                              .description
-                                          }
-                                        </p>
+                                        <b>
+                                          {item.secondary_score ??
+                                            "-"}점
+                                        </b>
 
                                       </div>
 
-                                    )}
 
+                                      <div>
 
-                                    {/* 점수 */}
+                                        <span>
+                                          복합성향
+                                        </span>
 
-                                    <div
-                                      className={
-                                        styles.scoreGrid
-                                      }
-                                    >
+                                        <strong>
+                                          {item.meta
+                                            .combination
+                                            ?.name ||
+                                            "-"}
+                                        </strong>
 
-                                      {Object.entries(
-                                        TYPE_INFO
-                                      ).map(
-                                        ([
-                                          type,
-                                          info,
-                                        ]) => (
+                                        <b>
+                                          {item.meta
+                                            .strength
+                                            ?.label ||
+                                            ""}
+                                        </b>
 
-                                          <div
-                                            key={
-                                              type
-                                            }
-                                            className={
-                                              styles.scoreBox
-                                            }
-                                          >
-
-                                            <span>
-                                              {
-                                                info.emoji
-                                              }
-                                              {" "}
-                                              {
-                                                info.label
-                                              }
-                                            </span>
-
-                                            <strong>
-                                              {
-                                                scores[
-                                                  type
-                                                ] ??
-                                                0
-                                              }
-                                              점
-                                            </strong>
-
-                                          </div>
-
-                                        )
-                                      )}
+                                      </div>
 
                                     </div>
 
@@ -2312,240 +2195,177 @@ export default function AdminPage() {
                                 )}
 
 
-                                {/* ===================================
-                                    문항 응답
-                                =================================== */}
+                                {/* 상담 */}
 
-                                <section
-                                  className={
-                                    styles.detailBlock
-                                  }
-                                >
+                                {consultation && (
 
-                                  <div
-                                    className={
-                                      styles.detailTitle
-                                    }
-                                  >
-
-                                    <span>
-                                      ANSWERS
-                                    </span>
+                                  <section className={styles.consultationDetail}>
 
                                     <h3>
-                                      문항별 응답
+                                      상담 신청 내역
                                     </h3>
 
-                                  </div>
+
+                                    <div className={styles.infoGrid}>
+
+                                      <div>
+
+                                        <span>
+                                          희망 상담
+                                        </span>
+
+                                        <strong>
+                                          {
+                                            CATEGORY[
+                                              consultation.category
+                                            ]?.emoji
+                                          }
+                                          {" "}
+                                          {
+                                            CATEGORY[
+                                              consultation.category
+                                            ]?.label
+                                          }
+                                        </strong>
+
+                                      </div>
 
 
-                                  <div
-                                    className={
-                                      styles.answersList
-                                    }
-                                  >
+                                      <div>
+
+                                        <span>
+                                          영업담당자
+                                        </span>
+
+                                        <strong>
+                                          {item.sales_manager_name ||
+                                            "없음"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          지역 담당자 매칭
+                                        </span>
+
+                                        <strong>
+                                          {consultation.category ===
+                                          "location"
+                                            ? "해당없음"
+                                            : consultation
+                                                .needs_manager_matching
+                                              ? "필요"
+                                              : "불필요"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          상담에서 입력한 담당자
+                                        </span>
+
+                                        <strong>
+                                          {consultation.manager_name ||
+                                            "-"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          처리 상태
+                                        </span>
+
+                                        <strong>
+                                          {STATUS[
+                                            consultation.status
+                                          ] || "-"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          신청일
+                                        </span>
+
+                                        <strong>
+                                          {formatDate(
+                                            consultation.created_at
+                                          )}
+                                        </strong>
+
+                                      </div>
+
+                                    </div>
+
+                                  </section>
+
+                                )}
+
+
+                                {/* 문항 */}
+
+                                <section>
+
+                                  <h3>
+                                    문항별 응답
+                                  </h3>
+
+
+                                  <div className={styles.answers}>
 
                                     {Array.from(
                                       {
-                                        length:
-                                          12,
+                                        length: 12,
                                       },
                                       (
                                         _,
                                         index
                                       ) => {
-
-                                        const questionNumber =
-                                          index +
-                                          1;
-
-
-                                        const answer =
-                                          getAnswerEntry(
-                                            item.answers,
-                                            questionNumber
-                                          );
-
-
-                                        const storedQuestion =
-                                          (
-                                            answer &&
-                                            typeof answer ===
-                                              "object"
-                                          )
-                                            ? answer.question
-                                            : null;
+                                        const entry =
+                                          item.answers?.[
+                                            `q${index + 1}`
+                                          ];
 
 
                                         return (
 
-                                          <article
-                                            key={
-                                              questionNumber
-                                            }
-                                            className={
-                                              answer
-                                                ? styles.answerCard
-                                                : styles.answerCardEmpty
-                                            }
-                                          >
+                                          <article key={index}>
 
-                                            <div
-                                              className={
-                                                styles.answerNumber
-                                              }
-                                            >
-                                              Q
-                                              {
-                                                String(
-                                                  questionNumber
-                                                ).padStart(
-                                                  2,
-                                                  "0"
-                                                )
-                                              }
-                                            </div>
+                                            <b>
+                                              Q{index + 1}
+                                            </b>
 
 
-                                            <div
-                                              className={
-                                                styles.answerContent
-                                              }
-                                            >
-
-                                              <h4>
-
-                                                {
-                                                  storedQuestion ||
-                                                  (
-                                                    meta.version
-                                                      .isNew
-                                                      ? QUESTIONS[
-                                                          index
-                                                        ]?.question
-                                                      : "이전 버전에서 사용하지 않은 문항"
-                                                  )
-                                                }
-
-                                              </h4>
+                                            <strong>
+                                              {entry?.question ||
+                                                QUESTIONS[
+                                                  index
+                                                ]?.question ||
+                                                "-"}
+                                            </strong>
 
 
-                                              {answer ? (
-                                                <>
-
-                                                  <p>
-                                                    {
-                                                      getAnswerText(
-                                                        answer
-                                                      )
-                                                    }
-                                                  </p>
-
-
-                                                  {getAnswerTypeLabel(
-                                                    answer
-                                                  ) && (
-
-                                                    <span
-                                                      className={
-                                                        styles.answerType
-                                                      }
-                                                    >
-                                                      {
-                                                        getAnswerTypeLabel(
-                                                          answer
-                                                        )
-                                                      }
-
-                                                      {
-                                                        typeof answer ===
-                                                          "object" &&
-                                                        answer.score !==
-                                                          undefined
-                                                          ? ` · ${answer.score}점`
-                                                          : ""
-                                                      }
-
-                                                    </span>
-
-                                                  )}
-
-                                                </>
-                                              ) : (
-
-                                                <p
-                                                  className={
-                                                    styles.noAnswer
-                                                  }
-                                                >
-                                                  응답 없음
-                                                </p>
-
-                                              )}
-
-                                            </div>
+                                            <p>
+                                              {entry?.answer ||
+                                                "응답 없음"}
+                                            </p>
 
                                           </article>
 
                                         );
                                       }
-                                    )}
-
-
-                                    {item.answers
-                                      ?.tiebreaker && (
-
-                                      <article
-                                        className={`${styles.answerCard} ${styles.tieAnswerCard}`}
-                                      >
-
-                                        <div
-                                          className={
-                                            styles.answerNumber
-                                          }
-                                        >
-                                          FINAL
-                                        </div>
-
-
-                                        <div
-                                          className={
-                                            styles.answerContent
-                                          }
-                                        >
-
-                                          <h4>
-                                            {
-                                              item.answers
-                                                .tiebreaker
-                                                .question
-                                            }
-                                          </h4>
-
-                                          <p>
-                                            {
-                                              item.answers
-                                                .tiebreaker
-                                                .answer
-                                            }
-                                          </p>
-
-                                          <span
-                                            className={
-                                              styles.answerType
-                                            }
-                                          >
-                                            {
-                                              item.answers
-                                                .tiebreaker
-                                                .typeLabel
-                                            }
-                                          </span>
-
-                                        </div>
-
-                                      </article>
-
                                     )}
 
                                   </div>
@@ -2560,7 +2380,7 @@ export default function AdminPage() {
 
                         )}
 
-                      </>
+                      </Fragment>
 
                     );
                   }
@@ -2573,15 +2393,6 @@ export default function AdminPage() {
           </table>
 
         </div>
-
-
-        <footer
-          className={
-            styles.footer
-          }
-        >
-          OSSTEM IMPLANT · OPENING PROFILE ADMIN
-        </footer>
 
       </div>
 
