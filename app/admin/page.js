@@ -53,17 +53,10 @@ const CATEGORY = {
 ========================================================= */
 
 const STATUS = {
-  new:
-    "신규",
-
-  reviewing:
-    "확인중",
-
-  assigned:
-    "담당자 배정",
-
-  completed:
-    "상담 완료",
+  new: "신규",
+  reviewing: "확인중",
+  assigned: "담당자 배정",
+  completed: "상담 완료",
 };
 
 
@@ -170,7 +163,7 @@ function questionCount(
 
 
 /* =========================================================
-   진단 Meta
+   진단 META
 ========================================================= */
 
 function getMeta(item) {
@@ -272,18 +265,14 @@ export default function AdminPage() {
     consultationFilter,
     setConsultationFilter,
   ] =
-    useState(
-      "all"
-    );
+    useState("all");
 
 
   const [
     managerFilter,
     setManagerFilter,
   ] =
-    useState(
-      "all"
-    );
+    useState("all");
 
 
   const [
@@ -322,6 +311,7 @@ export default function AdminPage() {
       await supabase.auth
         .getSession();
 
+
     return (
       data?.session
         ?.access_token ||
@@ -336,8 +326,14 @@ export default function AdminPage() {
 
   async function loadData() {
     try {
-      setLoading(true);
-      setErrorMessage("");
+      setLoading(
+        true
+      );
+
+      setErrorMessage(
+        ""
+      );
+
 
       if (!supabase) {
         throw new Error(
@@ -345,8 +341,10 @@ export default function AdminPage() {
         );
       }
 
+
       const accessToken =
         await getAccessToken();
+
 
       if (!accessToken) {
         router.replace(
@@ -355,6 +353,7 @@ export default function AdminPage() {
 
         return;
       }
+
 
       const response =
         await fetch(
@@ -413,13 +412,16 @@ export default function AdminPage() {
         error
       );
 
+
       setErrorMessage(
         error.message ||
         "관리자 데이터를 불러오지 못했습니다."
       );
 
     } finally {
-      setLoading(false);
+      setLoading(
+        false
+      );
     }
   }
 
@@ -433,7 +435,7 @@ export default function AdminPage() {
 
 
   /* =======================================================
-     ENRICHED
+     데이터 가공
   ======================================================= */
 
   const enriched =
@@ -455,6 +457,9 @@ export default function AdminPage() {
 
   /* =======================================================
      영업담당자 목록
+
+     대형 담당자별 통계에는 사용하지 않고
+     검색 필터에서만 사용
   ======================================================= */
 
   const salesManagerNames =
@@ -493,7 +498,9 @@ export default function AdminPage() {
 
 
   /* =======================================================
-     전체 통계
+     상단 통계
+
+     ★ 담당자 매칭 필요 유지
   ======================================================= */
 
   const stats =
@@ -506,7 +513,7 @@ export default function AdminPage() {
           );
 
 
-        const consultation =
+        const consultations =
           enriched.filter(
             (item) =>
               item.consultation
@@ -514,7 +521,7 @@ export default function AdminPage() {
 
 
         const matching =
-          consultation.filter(
+          consultations.filter(
             (item) =>
               item.consultation
                 ?.needs_manager_matching ===
@@ -530,7 +537,7 @@ export default function AdminPage() {
             completed.length,
 
           consultation:
-            consultation.length,
+            consultations.length,
 
           matching:
             matching.length,
@@ -541,254 +548,7 @@ export default function AdminPage() {
 
 
   /* =======================================================
-     ★ 담당자별 상담 현황
-  ======================================================= */
-
-  const managerStats =
-    useMemo(
-      () => {
-        const managerMap =
-          new Map();
-
-
-        enriched.forEach(
-          (item) => {
-            /*
-              기존 영업담당자가 있는 사람만
-              담당자별 통계에 포함
-            */
-
-            if (
-              item.has_sales_manager !==
-                true ||
-              !item.sales_manager_name
-                ?.trim()
-            ) {
-              return;
-            }
-
-
-            const managerName =
-              item.sales_manager_name
-                .trim();
-
-
-            if (
-              !managerMap.has(
-                managerName
-              )
-            ) {
-              managerMap.set(
-                managerName,
-                {
-                  name:
-                    managerName,
-
-                  totalCustomers:
-                    0,
-
-                  consultationCount:
-                    0,
-
-                  location:
-                    0,
-
-                  majorEquipment:
-                    0,
-
-                  supplies:
-                    0,
-
-                  newCount:
-                    0,
-
-                  reviewing:
-                    0,
-
-                  assigned:
-                    0,
-
-                  completed:
-                    0,
-                }
-              );
-            }
-
-
-            const stat =
-              managerMap.get(
-                managerName
-              );
-
-
-            stat.totalCustomers +=
-              1;
-
-
-            if (
-              !item.consultation
-            ) {
-              return;
-            }
-
-
-            stat.consultationCount +=
-              1;
-
-
-            if (
-              item.consultation
-                .category ===
-              "location"
-            ) {
-              stat.location +=
-                1;
-            }
-
-
-            if (
-              item.consultation
-                .category ===
-              "major_equipment"
-            ) {
-              stat.majorEquipment +=
-                1;
-            }
-
-
-            if (
-              item.consultation
-                .category ===
-              "supplies"
-            ) {
-              stat.supplies +=
-                1;
-            }
-
-
-            if (
-              item.consultation
-                .status ===
-              "new"
-            ) {
-              stat.newCount +=
-                1;
-            }
-
-
-            if (
-              item.consultation
-                .status ===
-              "reviewing"
-            ) {
-              stat.reviewing +=
-                1;
-            }
-
-
-            if (
-              item.consultation
-                .status ===
-              "assigned"
-            ) {
-              stat.assigned +=
-                1;
-            }
-
-
-            if (
-              item.consultation
-                .status ===
-              "completed"
-            ) {
-              stat.completed +=
-                1;
-            }
-          }
-        );
-
-
-        return Array.from(
-          managerMap.values()
-        ).sort(
-          (
-            a,
-            b
-          ) => {
-            /*
-              상담 신청 많은 담당자 순
-            */
-
-            if (
-              b.consultationCount !==
-              a.consultationCount
-            ) {
-              return (
-                b.consultationCount -
-                a.consultationCount
-              );
-            }
-
-
-            return a.name.localeCompare(
-              b.name,
-              "ko"
-            );
-          }
-        );
-      },
-      [enriched]
-    );
-
-
-  /* =======================================================
-     미담당자 / 매칭 필요 통계
-  ======================================================= */
-
-  const noManagerStats =
-    useMemo(
-      () => {
-        const noManager =
-          enriched.filter(
-            (item) =>
-              item.has_sales_manager ===
-              false
-          );
-
-
-        const consultation =
-          noManager.filter(
-            (item) =>
-              item.consultation
-          );
-
-
-        const matching =
-          consultation.filter(
-            (item) =>
-              item.consultation
-                ?.needs_manager_matching ===
-              true
-          );
-
-
-        return {
-          customers:
-            noManager.length,
-
-          consultation:
-            consultation.length,
-
-          matching:
-            matching.length,
-        };
-      },
-      [enriched]
-    );
-
-
-  /* =======================================================
-     FILTER
+     검색 / 필터
   ======================================================= */
 
   const filtered =
@@ -802,9 +562,8 @@ export default function AdminPage() {
 
         return enriched.filter(
           (item) => {
-            /*
-              검색
-            */
+
+            /* 검색 */
 
             if (keyword) {
               const searchable =
@@ -825,7 +584,9 @@ export default function AdminPage() {
                   item.consultation
                     ?.manager_name,
                 ]
-                  .filter(Boolean)
+                  .filter(
+                    Boolean
+                  )
                   .join(" ")
                   .toLowerCase();
 
@@ -840,9 +601,7 @@ export default function AdminPage() {
             }
 
 
-            /*
-              상담 필터
-            */
+            /* 상담 신청 여부 */
 
             if (
               consultationFilter ===
@@ -862,6 +621,8 @@ export default function AdminPage() {
             }
 
 
+            /* ★ 담당자 매칭 필요 */
+
             if (
               consultationFilter ===
                 "matching" &&
@@ -872,6 +633,8 @@ export default function AdminPage() {
               return false;
             }
 
+
+            /* 상담 분야 */
 
             if (
               [
@@ -889,22 +652,22 @@ export default function AdminPage() {
             }
 
 
-            /*
-              영업담당자 필터
-            */
+            /* 영업담당자 없음 */
 
             if (
               managerFilter ===
               "none"
             ) {
               if (
-                item.has_sales_manager !==
-                false
+                item.has_sales_manager ===
+                true
               ) {
                 return false;
               }
             }
 
+
+            /* 특정 영업담당자 */
 
             if (
               managerFilter !==
@@ -958,6 +721,15 @@ export default function AdminPage() {
 
       const accessToken =
         await getAccessToken();
+
+
+      if (!accessToken) {
+        router.replace(
+          "/admin/login"
+        );
+
+        return;
+      }
 
 
       const response =
@@ -1040,7 +812,9 @@ export default function AdminPage() {
 
   async function downloadCsv() {
     try {
-      setExporting(true);
+      setExporting(
+        true
+      );
 
 
       const accessToken =
@@ -1111,6 +885,7 @@ export default function AdminPage() {
 
 
       link.click();
+
       link.remove();
 
 
@@ -1125,7 +900,9 @@ export default function AdminPage() {
       );
 
     } finally {
-      setExporting(false);
+      setExporting(
+        false
+      );
     }
   }
 
@@ -1140,6 +917,7 @@ export default function AdminPage() {
         .signOut();
     }
 
+
     router.replace(
       "/admin/login"
     );
@@ -1152,7 +930,11 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <main className={styles.loading}>
+      <main
+        className={
+          styles.loading
+        }
+      >
         관리자 데이터를
         불러오고 있습니다.
       </main>
@@ -1165,16 +947,28 @@ export default function AdminPage() {
   ======================================================= */
 
   return (
-    <main className={styles.page}>
+    <main
+      className={
+        styles.page
+      }
+    >
 
-      <div className={styles.container}>
+      <div
+        className={
+          styles.container
+        }
+      >
 
 
         {/* ===============================================
             HEADER
         =============================================== */}
 
-        <header className={styles.header}>
+        <header
+          className={
+            styles.header
+          }
+        >
 
           <div>
 
@@ -1182,24 +976,37 @@ export default function AdminPage() {
               OSSTEM IMPLANT
             </p>
 
+
             <h1>
               개원성향진단 관리자
             </h1>
 
+
             <span>
-              진단 결과와 상담 신청,
-              영업담당자별 현황을 관리합니다.
+              진단 결과와 상담 신청 현황을
+              관리합니다.
             </span>
 
           </div>
 
 
-          <div className={styles.headerButtons}>
+          <div
+            className={
+              styles.headerButtons
+            }
+          >
 
             <button
               type="button"
-              className={styles.exportButton}
-              disabled={exporting}
+
+              className={
+                styles.exportButton
+              }
+
+              disabled={
+                exporting
+              }
+
               onClick={
                 downloadCsv
               }
@@ -1212,7 +1019,11 @@ export default function AdminPage() {
 
             <button
               type="button"
-              className={styles.logoutButton}
+
+              className={
+                styles.logoutButton
+              }
+
               onClick={
                 handleLogout
               }
@@ -1226,19 +1037,27 @@ export default function AdminPage() {
 
 
         {errorMessage && (
-
-          <div className={styles.errorBox}>
+          <div
+            className={
+              styles.errorBox
+            }
+          >
             {errorMessage}
           </div>
-
         )}
 
 
         {/* ===============================================
-            전체 통계
+            상단 통계
+
+            ★ 담당자 매칭 필요 유지
         =============================================== */}
 
-        <div className={styles.stats}>
+        <section
+          className={
+            styles.stats
+          }
+        >
 
           <article>
 
@@ -1291,7 +1110,11 @@ export default function AdminPage() {
           </article>
 
 
-          <article className={styles.orange}>
+          <article
+            className={
+              styles.matchingCard
+            }
+          >
 
             <span>
               담당자 매칭 필요
@@ -1307,313 +1130,49 @@ export default function AdminPage() {
 
           </article>
 
-        </div>
-
-
-        {/* ===============================================
-            ★ 담당자별 상담 신청 현황
-        =============================================== */}
-
-        <section className={styles.managerSection}>
-
-          <div className={styles.sectionHeader}>
-
-            <div>
-
-              <p>
-                SALES MANAGER
-              </p>
-
-              <h2>
-                영업담당자별 상담 신청 현황
-              </h2>
-
-            </div>
-
-
-            <span>
-              담당자 이름을 기준으로 자동 집계합니다.
-            </span>
-
-          </div>
-
-
-          {managerStats.length ===
-          0 ? (
-
-            <div className={styles.noManagerData}>
-              아직 등록된 영업담당자 데이터가 없습니다.
-            </div>
-
-          ) : (
-
-            <div className={styles.managerGrid}>
-
-              {managerStats.map(
-                (manager) => (
-
-                  <article
-                    key={
-                      manager.name
-                    }
-                    className={
-                      styles.managerCard
-                    }
-                  >
-
-                    <div className={styles.managerHead}>
-
-                      <div className={styles.managerAvatar}>
-                        👤
-                      </div>
-
-
-                      <div>
-
-                        <span>
-                          OSSTEM SALES MANAGER
-                        </span>
-
-                        <h3>
-                          {manager.name}
-                        </h3>
-
-                      </div>
-
-                    </div>
-
-
-                    <div className={styles.managerMainNumbers}>
-
-                      <div>
-
-                        <span>
-                          담당 진단
-                        </span>
-
-                        <strong>
-                          {manager.totalCustomers}
-                        </strong>
-
-                        <small>
-                          명
-                        </small>
-
-                      </div>
-
-
-                      <div>
-
-                        <span>
-                          상담 신청
-                        </span>
-
-                        <strong>
-                          {manager.consultationCount}
-                        </strong>
-
-                        <small>
-                          건
-                        </small>
-
-                      </div>
-
-                    </div>
-
-
-                    <div className={styles.managerCategoryGrid}>
-
-                      <div>
-
-                        <span>
-                          📍 입지
-                        </span>
-
-                        <strong>
-                          {manager.location}
-                        </strong>
-
-                      </div>
-
-
-                      <div>
-
-                        <span>
-                          🦷 대장비
-                        </span>
-
-                        <strong>
-                          {manager.majorEquipment}
-                        </strong>
-
-                      </div>
-
-
-                      <div>
-
-                        <span>
-                          🧰 소장비·기구·재료
-                        </span>
-
-                        <strong>
-                          {manager.supplies}
-                        </strong>
-
-                      </div>
-
-                    </div>
-
-
-                    <div className={styles.managerStatus}>
-
-                      <div>
-
-                        <span>
-                          처리 전
-                        </span>
-
-                        <strong>
-                          {
-                            manager.newCount +
-                            manager.reviewing +
-                            manager.assigned
-                          }
-                        </strong>
-
-                      </div>
-
-
-                      <div>
-
-                        <span>
-                          상담 완료
-                        </span>
-
-                        <strong>
-                          {manager.completed}
-                        </strong>
-
-                      </div>
-
-                    </div>
-
-
-                    <button
-                      type="button"
-
-                      className={
-                        styles.managerFilterButton
-                      }
-
-                      onClick={() => {
-                        setManagerFilter(
-                          manager.name
-                        );
-
-                        window.scrollTo({
-                          top:
-                            document.body
-                              .scrollHeight,
-
-                          behavior:
-                            "smooth",
-                        });
-                      }}
-                    >
-                      {manager.name} 담당 고객 보기
-                    </button>
-
-                  </article>
-
-                )
-              )}
-
-            </div>
-
-          )}
-
-
-          {/* 담당자 없음 */}
-
-          <div className={styles.unassignedSummary}>
-
-            <div>
-
-              <span>
-                영업담당자 없음
-              </span>
-
-              <strong>
-                {noManagerStats.customers}명
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                상담 신청
-              </span>
-
-              <strong>
-                {noManagerStats.consultation}건
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                지역 담당자 매칭 필요
-              </span>
-
-              <strong>
-                {noManagerStats.matching}건
-              </strong>
-
-            </div>
-
-
-            <button
-              type="button"
-
-              onClick={() =>
-                setManagerFilter(
-                  "none"
-                )
-              }
-            >
-              담당자 없는 고객 보기
-            </button>
-
-          </div>
-
         </section>
 
 
         {/* ===============================================
-            FILTER
+            검색/필터
         =============================================== */}
 
-        <div className={styles.filters}>
+        <section
+          className={
+            styles.filters
+          }
+        >
 
-          <input
-            type="search"
-
-            placeholder="이름 · 연락처 · 면허번호 · 영업담당자 · 복합성향 검색"
-
-            value={search}
-
-            onChange={(
-              event
-            ) =>
-              setSearch(
-                event.target.value
-              )
+          <div
+            className={
+              styles.searchBox
             }
-          />
+          >
+
+            <span>
+              ⌕
+            </span>
+
+
+            <input
+              type="search"
+
+              placeholder="이름 · 연락처 · 면허번호 · 영업담당자 · 복합성향 검색"
+
+              value={
+                search
+              }
+
+              onChange={(
+                event
+              ) =>
+                setSearch(
+                  event.target.value
+                )
+              }
+            />
+
+          </div>
 
 
           <select
@@ -1634,19 +1193,23 @@ export default function AdminPage() {
               전체 영업담당자
             </option>
 
-
             <option value="none">
-              담당자 없음
+              영업담당자 없음
             </option>
 
 
             {salesManagerNames.map(
-              (name) => (
+              (managerName) => (
                 <option
-                  value={name}
-                  key={name}
+                  key={
+                    managerName
+                  }
+
+                  value={
+                    managerName
+                  }
                 >
-                  {name}
+                  {managerName}
                 </option>
               )
             )}
@@ -1673,7 +1236,7 @@ export default function AdminPage() {
             </option>
 
             <option value="applied">
-              상담 신청자
+              상담 신청
             </option>
 
             <option value="not_applied">
@@ -1681,31 +1244,93 @@ export default function AdminPage() {
             </option>
 
             <option value="matching">
-              담당자 매칭 필요
+              🔥 담당자 매칭 필요
             </option>
 
             <option value="location">
-              입지
+              📍 입지
             </option>
 
             <option value="major_equipment">
-              대장비
+              🦷 대장비
             </option>
 
             <option value="supplies">
-              소장비·기구·재료
+              🧰 소장비·기구·재료
             </option>
 
           </select>
 
+        </section>
+
+
+        {/* ===============================================
+            매칭 필요 빠른 필터
+        =============================================== */}
+
+        <div
+          className={
+            styles.quickFilterRow
+          }
+        >
+
+          <button
+            type="button"
+
+            className={
+              consultationFilter ===
+              "matching"
+                ? styles.quickFilterActive
+                : styles.quickFilterButton
+            }
+
+            onClick={() =>
+              setConsultationFilter(
+                consultationFilter ===
+                "matching"
+                  ? "all"
+                  : "matching"
+              )
+            }
+          >
+
+            <span>
+              🔥
+            </span>
+
+            담당자 매칭 필요
+
+            <strong>
+              {stats.matching}건
+            </strong>
+
+          </button>
+
         </div>
 
 
-        <div className={styles.listHeader}>
+        {/* ===============================================
+            LIST HEADER
+        =============================================== */}
 
-          <h2>
-            진단 참여자
-          </h2>
+        <div
+          className={
+            styles.listHeader
+          }
+        >
+
+          <div>
+
+            <span>
+              RESPONSE DATA
+            </span>
+
+            <h2>
+              진단 참여자
+            </h2>
+
+          </div>
+
 
           <strong>
             {filtered.length}건
@@ -1718,7 +1343,11 @@ export default function AdminPage() {
             TABLE
         =============================================== */}
 
-        <div className={styles.tableWrap}>
+        <div
+          className={
+            styles.tableWrap
+          }
+        >
 
           <table>
 
@@ -1770,10 +1399,31 @@ export default function AdminPage() {
 
                 <tr>
 
-                  <td colSpan={8}>
+                  <td
+                    colSpan={
+                      8
+                    }
+                  >
 
-                    <div className={styles.empty}>
-                      조건에 맞는 데이터가 없습니다.
+                    <div
+                      className={
+                        styles.empty
+                      }
+                    >
+
+                      <span>
+                        🔎
+                      </span>
+
+                      <strong>
+                        조건에 맞는 데이터가 없습니다.
+                      </strong>
+
+                      <p>
+                        검색어 또는 필터를
+                        변경해주세요.
+                      </p>
+
                     </div>
 
                   </td>
@@ -1784,6 +1434,7 @@ export default function AdminPage() {
 
                 filtered.map(
                   (item) => {
+
                     const primary =
                       item.meta
                         .primaryType
@@ -1797,12 +1448,30 @@ export default function AdminPage() {
                       item.consultation;
 
 
+                    const isMatchingNeeded =
+                      consultation
+                        ?.needs_manager_matching ===
+                      true;
+
+
                     return (
 
-                      <Fragment key={item.id}>
+                      <Fragment
+                        key={
+                          item.id
+                        }
+                      >
 
 
-                        <tr>
+                        <tr
+                          className={
+                            isMatchingNeeded
+                              ? styles.matchingRow
+                              : ""
+                          }
+                        >
+
+                          {/* 참여자 */}
 
                           <td>
 
@@ -1825,11 +1494,16 @@ export default function AdminPage() {
                               true &&
                             item.sales_manager_name ? (
 
-                              <div className={styles.salesManagerCell}>
+                              <div
+                                className={
+                                  styles.salesManagerCell
+                                }
+                              >
 
                                 <span>
                                   👤
                                 </span>
+
 
                                 <div>
 
@@ -1847,7 +1521,11 @@ export default function AdminPage() {
 
                             ) : (
 
-                              <span className={styles.noSalesManager}>
+                              <span
+                                className={
+                                  styles.noSalesManager
+                                }
+                              >
                                 담당자 없음
                               </span>
 
@@ -1856,18 +1534,45 @@ export default function AdminPage() {
                           </td>
 
 
+                          {/* 주성향 */}
+
                           <td>
 
-                            {primary
-                              ? `${primary.emoji} ${primary.label}`
-                              : "-"}
+                            {primary ? (
+
+                              <div
+                                className={
+                                  styles.profileCell
+                                }
+                              >
+
+                                <strong>
+                                  {primary.emoji}{" "}
+                                  {primary.label}
+                                </strong>
+
+                                <small>
+                                  {item.result_score ?? "-"}점
+                                </small>
+
+                              </div>
+
+                            ) : (
+                              "-"
+                            )}
 
                           </td>
 
 
+                          {/* 복합성향 */}
+
                           <td>
 
-                            <strong className={styles.combo}>
+                            <strong
+                              className={
+                                styles.combo
+                              }
+                            >
                               {item.meta
                                 .combination
                                 ?.name ||
@@ -1876,6 +1581,8 @@ export default function AdminPage() {
 
                           </td>
 
+
+                          {/* 상담 */}
 
                           <td>
 
@@ -1892,20 +1599,49 @@ export default function AdminPage() {
                           </td>
 
 
+                          {/* 담당자 매칭 */}
+
                           <td>
 
-                            {!consultation
-                              ? "-"
-                              : consultation.category ===
-                                "location"
-                                ? "해당없음"
-                                : consultation
-                                    .needs_manager_matching
-                                  ? "필요"
-                                  : "불필요"}
+                            {!consultation ? (
+                              "-"
+                            ) : consultation.category ===
+                              "location" ? (
+
+                              <span
+                                className={
+                                  styles.notApplicableBadge
+                                }
+                              >
+                                해당없음
+                              </span>
+
+                            ) : isMatchingNeeded ? (
+
+                              <span
+                                className={
+                                  styles.matchingBadge
+                                }
+                              >
+                                담당자 매칭 필요
+                              </span>
+
+                            ) : (
+
+                              <span
+                                className={
+                                  styles.noMatchingBadge
+                                }
+                              >
+                                매칭 불필요
+                              </span>
+
+                            )}
 
                           </td>
 
+
+                          {/* 상담상태 */}
 
                           <td>
 
@@ -1943,8 +1679,13 @@ export default function AdminPage() {
                                     label,
                                   ]) => (
                                     <option
-                                      key={value}
-                                      value={value}
+                                      key={
+                                        value
+                                      }
+
+                                      value={
+                                        value
+                                      }
                                     >
                                       {label}
                                     </option>
@@ -1990,7 +1731,7 @@ export default function AdminPage() {
 
 
                         {/* ===================================
-                            DETAIL
+                            상세보기
                         =================================== */}
 
                         {expanded ===
@@ -1999,23 +1740,48 @@ export default function AdminPage() {
                           <tr>
 
                             <td
-                              colSpan={8}
-                              className={styles.expanded}
+                              colSpan={
+                                8
+                              }
+
+                              className={
+                                styles.expanded
+                              }
                             >
 
-                              <div className={styles.detailPanel}>
+                              <div
+                                className={
+                                  styles.detailPanel
+                                }
+                              >
 
 
-                                {/* 기본 정보 */}
+                                {/* 참여자 */}
 
                                 <section>
 
-                                  <h3>
-                                    참여자 정보
-                                  </h3>
+                                  <div
+                                    className={
+                                      styles.detailTitle
+                                    }
+                                  >
+
+                                    <span>
+                                      PARTICIPANT
+                                    </span>
+
+                                    <h3>
+                                      참여자 정보
+                                    </h3>
+
+                                  </div>
 
 
-                                  <div className={styles.infoGrid}>
+                                  <div
+                                    className={
+                                      styles.infoGrid
+                                    }
+                                  >
 
                                     <div>
 
@@ -2072,7 +1838,7 @@ export default function AdminPage() {
                                     <div
                                       className={
                                         item.has_sales_manager
-                                          ? styles.salesManagerInfo
+                                          ? styles.managerHighlight
                                           : ""
                                       }
                                     >
@@ -2094,7 +1860,7 @@ export default function AdminPage() {
                                     <div
                                       className={
                                         item.has_sales_manager
-                                          ? styles.salesManagerInfo
+                                          ? styles.managerHighlight
                                           : ""
                                       }
                                     >
@@ -2115,19 +1881,35 @@ export default function AdminPage() {
                                 </section>
 
 
-                                {/* 진단결과 */}
+                                {/* 진단 결과 */}
 
                                 {item.completed &&
                                   primary && (
 
                                   <section>
 
-                                    <h3>
-                                      진단 결과
-                                    </h3>
+                                    <div
+                                      className={
+                                        styles.detailTitle
+                                      }
+                                    >
+
+                                      <span>
+                                        DIAGNOSIS
+                                      </span>
+
+                                      <h3>
+                                        진단 결과
+                                      </h3>
+
+                                    </div>
 
 
-                                    <div className={styles.resultGrid}>
+                                    <div
+                                      className={
+                                        styles.resultGrid
+                                      }
+                                    >
 
                                       <div>
 
@@ -2141,7 +1923,7 @@ export default function AdminPage() {
                                         </strong>
 
                                         <b>
-                                          {item.result_score}점
+                                          {item.result_score ?? "-"}점
                                         </b>
 
                                       </div>
@@ -2195,18 +1977,53 @@ export default function AdminPage() {
                                 )}
 
 
-                                {/* 상담 */}
+                                {/* 상담 신청 */}
 
                                 {consultation && (
 
-                                  <section className={styles.consultationDetail}>
+                                  <section
+                                    className={
+                                      isMatchingNeeded
+                                        ? styles.matchingConsultationDetail
+                                        : styles.consultationDetail
+                                    }
+                                  >
 
-                                    <h3>
-                                      상담 신청 내역
-                                    </h3>
+                                    <div
+                                      className={
+                                        styles.detailTitle
+                                      }
+                                    >
+
+                                      <span>
+                                        CONSULTATION
+                                      </span>
+
+                                      <h3>
+                                        상담 신청 내역
+                                      </h3>
+
+                                    </div>
 
 
-                                    <div className={styles.infoGrid}>
+                                    {isMatchingNeeded && (
+
+                                      <div
+                                        className={
+                                          styles.matchingAlert
+                                        }
+                                      >
+                                        🔥 지역 담당자 매칭이 필요한 상담입니다.
+                                      </div>
+
+                                    )}
+
+
+                                    <div
+                                      className={
+                                        styles.infoGrid
+                                      }
+                                    >
 
                                       <div>
 
@@ -2234,12 +2051,12 @@ export default function AdminPage() {
                                       <div>
 
                                         <span>
-                                          영업담당자
+                                          기존 영업담당자
                                         </span>
 
                                         <strong>
                                           {item.sales_manager_name ||
-                                            "없음"}
+                                            "-"}
                                         </strong>
 
                                       </div>
@@ -2255,8 +2072,7 @@ export default function AdminPage() {
                                           {consultation.category ===
                                           "location"
                                             ? "해당없음"
-                                            : consultation
-                                                .needs_manager_matching
+                                            : isMatchingNeeded
                                               ? "필요"
                                               : "불필요"}
                                         </strong>
@@ -2281,13 +2097,14 @@ export default function AdminPage() {
                                       <div>
 
                                         <span>
-                                          처리 상태
+                                          처리상태
                                         </span>
 
                                         <strong>
                                           {STATUS[
                                             consultation.status
-                                          ] || "-"}
+                                          ] ||
+                                            "-"}
                                         </strong>
 
                                       </div>
@@ -2296,7 +2113,7 @@ export default function AdminPage() {
                                       <div>
 
                                         <span>
-                                          신청일
+                                          상담 신청일
                                         </span>
 
                                         <strong>
@@ -2314,20 +2131,37 @@ export default function AdminPage() {
                                 )}
 
 
-                                {/* 문항 */}
+                                {/* 질문 */}
 
                                 <section>
 
-                                  <h3>
-                                    문항별 응답
-                                  </h3>
+                                  <div
+                                    className={
+                                      styles.detailTitle
+                                    }
+                                  >
+
+                                    <span>
+                                      ANSWERS
+                                    </span>
+
+                                    <h3>
+                                      문항별 응답
+                                    </h3>
+
+                                  </div>
 
 
-                                  <div className={styles.answers}>
+                                  <div
+                                    className={
+                                      styles.answers
+                                    }
+                                  >
 
                                     {Array.from(
                                       {
-                                        length: 12,
+                                        length:
+                                          12,
                                       },
                                       (
                                         _,
@@ -2341,7 +2175,11 @@ export default function AdminPage() {
 
                                         return (
 
-                                          <article key={index}>
+                                          <article
+                                            key={
+                                              index
+                                            }
+                                          >
 
                                             <b>
                                               Q{index + 1}
