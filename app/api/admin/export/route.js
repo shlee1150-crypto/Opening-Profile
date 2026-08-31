@@ -13,9 +13,16 @@ export const runtime =
   "nodejs";
 
 
+/* =========================================================
+   상담 종류
+========================================================= */
+
 const CATEGORY_LABEL = {
   location:
     "입지",
+
+  process:
+    "프로세스 상담",
 
   major_equipment:
     "대장비",
@@ -24,6 +31,10 @@ const CATEGORY_LABEL = {
     "소장비·기구·재료",
 };
 
+
+/* =========================================================
+   상담 상태
+========================================================= */
 
 const STATUS_LABEL = {
   new:
@@ -39,6 +50,10 @@ const STATUS_LABEL = {
     "상담 완료",
 };
 
+
+/* =========================================================
+   Supabase
+========================================================= */
 
 function getSupabaseAdmin() {
   const url =
@@ -77,6 +92,10 @@ function getSupabaseAdmin() {
 }
 
 
+/* =========================================================
+   관리자 인증
+========================================================= */
+
 async function verifyAdmin(
   request
 ) {
@@ -90,11 +109,15 @@ async function verifyAdmin(
     authorization.startsWith(
       "Bearer "
     )
-      ? authorization.slice(7)
+      ? authorization.slice(
+          7
+        )
       : null;
 
 
-  if (!token) {
+  if (
+    !token
+  ) {
     return null;
   }
 
@@ -129,13 +152,17 @@ async function verifyAdmin(
       .toLowerCase();
 
 
-  if (
+  const userEmail =
     String(
       data.user.email ||
       ""
     )
       .trim()
-      .toLowerCase() !==
+      .toLowerCase();
+
+
+  if (
+    userEmail !==
     adminEmail
   ) {
     return null;
@@ -146,8 +173,16 @@ async function verifyAdmin(
 }
 
 
-function formatDate(value) {
-  if (!value) {
+/* =========================================================
+   날짜
+========================================================= */
+
+function formatDate(
+  value
+) {
+  if (
+    !value
+  ) {
     return "";
   }
 
@@ -178,7 +213,9 @@ function formatDate(value) {
           false,
       }
     ).format(
-      new Date(value)
+      new Date(
+        value
+      )
     );
 
   } catch {
@@ -186,6 +223,10 @@ function formatDate(value) {
   }
 }
 
+
+/* =========================================================
+   질문 개수
+========================================================= */
 
 function getQuestionCount(
   answers
@@ -210,6 +251,10 @@ function getQuestionCount(
 }
 
 
+/* =========================================================
+   문항 답변
+========================================================= */
+
 function getAnswerText(
   answers,
   number
@@ -220,7 +265,9 @@ function getAnswerText(
     ];
 
 
-  if (!entry) {
+  if (
+    !entry
+  ) {
     return "";
   }
 
@@ -235,22 +282,35 @@ function getAnswerText(
 
   return (
     entry.answer ||
+    entry.text ||
     ""
   );
 }
 
 
+/* =========================================================
+   CSV 셀
+========================================================= */
+
 function csvCell(
   value
 ) {
-  return `"${String(
-    value ?? ""
-  ).replaceAll(
+  const text =
+    String(
+      value ?? ""
+    );
+
+
+  return `"${text.replaceAll(
     '"',
     '""'
   )}"`;
 }
 
+
+/* =========================================================
+   GET
+========================================================= */
 
 export async function GET(
   request
@@ -262,11 +322,14 @@ export async function GET(
       );
 
 
-    if (!supabase) {
+    if (
+      !supabase
+    ) {
       return new Response(
         "Unauthorized",
         {
-          status: 403,
+          status:
+            403,
         }
       );
     }
@@ -277,8 +340,11 @@ export async function GET(
     ===================================================== */
 
     const {
-      data: responses,
-      error,
+      data:
+        responses,
+
+      error:
+        responseError,
     } =
       await supabase
         .from(
@@ -315,11 +381,21 @@ export async function GET(
               false,
           }
         )
-        .limit(5000);
+        .limit(
+          5000
+        );
 
 
-    if (error) {
-      throw error;
+    if (
+      responseError
+    ) {
+      console.error(
+        "Export diagnosis error:",
+        responseError
+      );
+
+
+      throw responseError;
     }
 
 
@@ -340,23 +416,42 @@ export async function GET(
         )
         .select(`
           id,
+
           diagnosis_response_id,
+
           category,
+
           needs_manager_matching,
+
           manager_name,
+
           status,
+
           created_at,
+
           updated_at
         `)
-        .limit(5000);
+        .limit(
+          5000
+        );
 
 
     if (
       consultationError
     ) {
+      console.error(
+        "Export consultation error:",
+        consultationError
+      );
+
+
       throw consultationError;
     }
 
+
+    /* =====================================================
+       상담 Map
+    ===================================================== */
 
     const consultationMap =
       new Map();
@@ -376,60 +471,86 @@ export async function GET(
 
 
     /* =====================================================
-       HEADERS
+       CSV 헤더
     ===================================================== */
 
     const headers = [
       "이름",
+
       "휴대폰번호",
+
       "면허번호",
 
       "영업담당자유무",
+
       "영업담당자이름",
 
-      "진단일",
+      "진단시작일",
+
+      "진단완료일",
+
       "진단버전",
 
       "주성향",
+
       "주성향점수",
 
       "보조성향",
+
       "보조성향점수",
 
       "복합성향",
+
       "복합성향강도",
 
       "안정정착형점수",
+
       "집중공격형점수",
+
       "데이터분석형점수",
+
       "선점개척형점수",
 
       "상담신청여부",
+
       "희망상담",
 
       "지역담당자매칭",
+
       "상담에서입력한담당자",
 
       "상담상태",
+
       "상담신청일",
 
       "Q1",
+
       "Q2",
+
       "Q3",
+
       "Q4",
+
       "Q5",
+
       "Q6",
+
       "Q7",
+
       "Q8",
+
       "Q9",
+
       "Q10",
+
       "Q11",
+
       "Q12",
     ];
 
 
     /* =====================================================
-       ROWS
+       CSV ROWS
     ===================================================== */
 
     const rows =
@@ -438,6 +559,11 @@ export async function GET(
         []
       ).map(
         (item) => {
+
+          /* ===============================================
+             성향
+          =============================================== */
+
           const primaryType =
             item.result_type
               ? getTypeKeyFromLabel(
@@ -481,32 +607,70 @@ export async function GET(
               : {};
 
 
+          /* ===============================================
+             상담
+          =============================================== */
+
           const consultation =
             consultationMap.get(
               item.id
             );
 
 
-          let matching =
+          let consultationMatching =
             "";
 
 
-          if (consultation) {
+          if (
+            consultation
+          ) {
+
+            /*
+              입지 상담은 지역 담당자
+              매칭 절차 자체가 없음
+            */
+
             if (
               consultation.category ===
               "location"
             ) {
-              matching =
+              consultationMatching =
                 "해당없음";
-            } else {
-              matching =
+            }
+
+
+            /*
+              기존 영업담당자가 있는 경우
+              자동으로 기존 담당자에게 전달
+            */
+
+            else if (
+              item.has_sales_manager ===
+              true
+            ) {
+              consultationMatching =
+                "기존 담당자 있음";
+            }
+
+
+            /*
+              기존 담당자가 없는 경우
+            */
+
+            else {
+              consultationMatching =
                 consultation
-                  .needs_manager_matching
+                  .needs_manager_matching ===
+                  true
                   ? "필요"
                   : "불필요";
             }
           }
 
+
+          /* ===============================================
+             설문 버전
+          =============================================== */
 
           const count =
             getQuestionCount(
@@ -514,10 +678,27 @@ export async function GET(
             );
 
 
+          const version =
+            count >= 12
+              ? "12문항"
+              : count > 0
+                ? `${count}문항 이전`
+                : "";
+
+
+          /* ===============================================
+             ROW
+          =============================================== */
+
           return [
             item.name,
+
             item.phone,
+
             item.license_number,
+
+
+            /* 영업담당자 */
 
             item.has_sales_manager ===
             true
@@ -527,73 +708,100 @@ export async function GET(
                 ? "없음"
                 : "",
 
+
             item.sales_manager_name ||
             "",
 
+
+            /* 날짜 */
+
             formatDate(
-              item.completed_at ||
               item.created_at
             ),
 
-            count >= 12
-              ? "12문항"
-              : count > 0
-                ? `${count}문항 이전`
-                : "",
+
+            formatDate(
+              item.completed_at
+            ),
+
+
+            version,
+
+
+            /* 성향 */
 
             item.result_type ||
             "",
 
+
             item.result_score ??
             "",
+
 
             item.secondary_type ||
             "",
 
+
             item.secondary_score ??
             "",
+
 
             combination?.name ||
             "",
 
+
             strength?.label ||
             "",
+
 
             scores.stable ??
             "",
 
+
             scores.aggressive ??
             "",
+
 
             scores.analytical ??
             "",
 
+
             scores.pioneer ??
             "",
+
+
+            /* 상담 */
 
             consultation
               ? "신청"
               : "미신청",
 
+
             consultation
               ? CATEGORY_LABEL[
                   consultation.category
                 ] ||
+                consultation.category ||
                 ""
               : "",
 
-            matching,
+
+            consultationMatching,
+
 
             consultation
               ?.manager_name ||
               "",
 
+
             consultation
               ? STATUS_LABEL[
                   consultation.status
                 ] ||
+                consultation.status ||
                 ""
               : "",
+
 
             consultation
               ? formatDate(
@@ -601,9 +809,13 @@ export async function GET(
                 )
               : "",
 
+
+            /* Q1 ~ Q12 */
+
             ...Array.from(
               {
-                length: 12,
+                length:
+                  12,
               },
               (
                 _,
@@ -619,6 +831,10 @@ export async function GET(
       );
 
 
+    /* =====================================================
+       CSV 생성
+    ===================================================== */
+
     const csv =
       [
         headers,
@@ -630,26 +846,45 @@ export async function GET(
               .map(
                 csvCell
               )
-              .join(",")
+              .join(
+                ","
+              )
         )
-        .join("\r\n");
+        .join(
+          "\r\n"
+        );
+
+
+    /*
+      Excel 한글 깨짐 방지용 UTF-8 BOM
+    */
+
+    const output =
+      "\uFEFF" +
+      csv;
+
+
+    const date =
+      new Date()
+        .toISOString()
+        .slice(
+          0,
+          10
+        );
 
 
     return new Response(
-      "\uFEFF" +
-      csv,
+      output,
       {
+        status:
+          200,
+
         headers: {
           "Content-Type":
             "text/csv; charset=utf-8",
 
           "Content-Disposition":
-            `attachment; filename="opening-profile-${new Date()
-              .toISOString()
-              .slice(
-                0,
-                10
-              )}.csv"`,
+            `attachment; filename="opening-profile-${date}.csv"`,
 
           "Cache-Control":
             "no-store",
@@ -667,7 +902,8 @@ export async function GET(
     return new Response(
       "Export failed",
       {
-        status: 500,
+        status:
+          500,
       }
     );
   }
