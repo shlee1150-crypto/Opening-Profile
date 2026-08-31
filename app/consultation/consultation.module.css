@@ -1,1210 +1,1524 @@
-.page {
-  width: 100%;
-  min-height: 100dvh;
+"use client";
 
-  padding:
-    36px
-    18px
-    60px;
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-  background:
-    #f2efea;
+import {
+  useRouter,
+} from "next/navigation";
 
-  color:
-    #302b27;
-}
+import styles from "./consultation.module.css";
 
 
-.container {
-  width: 100%;
-  max-width: 720px;
+const CATEGORY_INFO = {
+  location: {
+    emoji:
+      "📍",
 
-  margin:
-    0 auto;
-}
+    title:
+      "입지",
 
+    description:
+      "개원 후보지 · 상권 · 입지 검토",
+  },
 
-.header {
-  margin-bottom:
-    21px;
 
-  padding:
-    32px
-    29px;
+  process: {
+    emoji:
+      "📋",
 
-  border:
-    1px solid
-    #e2dbd4;
+    title:
+      "프로세스 상담",
 
-  border-radius:
-    21px;
+    description:
+      "개원 일정 · 준비과정 · 단계별 개원 프로세스",
+  },
 
-  background:
-    #ffffff;
 
-  box-shadow:
-    0 9px 30px
-    rgba(
-      70,
-      50,
-      35,
-      0.06
-    );
-}
+  major_equipment: {
+    emoji:
+      "🦷",
 
+    title:
+      "대장비",
 
-.brand {
-  margin:
-    0 0 17px;
+    description:
+      "체어 · CT · 구강스캐너",
+  },
 
-  color:
-    #f26a21;
 
-  font-size:
-    11px;
+  supplies: {
+    emoji:
+      "🧰",
 
-  font-weight:
-    900;
+    title:
+      "소장비 · 기구 · 재료",
 
-  letter-spacing:
-    1.5px;
-}
+    description:
+      "개원에 필요한 소장비와 기구·재료 상담",
+  },
+};
 
 
-.kicker {
-  margin:
-    0 0 5px;
+const CATEGORY_ORDER = [
+  "location",
+  "process",
+  "major_equipment",
+  "supplies",
+];
 
-  color:
-    #aaa29b;
 
-  font-size:
-    9px;
+export default function ConsultationPage() {
+  const router =
+    useRouter();
 
-  font-weight:
-    900;
 
-  letter-spacing:
-    1.7px;
-}
+  /* =======================================================
+     진단
+  ======================================================= */
 
+  const [
+    responseId,
+    setResponseId,
+  ] =
+    useState(null);
 
-.header h1 {
-  margin:
-    0 0 9px;
 
-  color:
-    #2c2723;
+  /* =======================================================
+     기존 영업담당자
+  ======================================================= */
 
-  font-size:
-    31px;
+  const [
+    hasSalesManager,
+    setHasSalesManager,
+  ] =
+    useState(false);
 
-  font-weight:
-    900;
 
-  letter-spacing:
-    -1.3px;
-}
+  const [
+    salesManagerName,
+    setSalesManagerName,
+  ] =
+    useState("");
 
 
-.header > p:last-child {
-  margin:
-    0;
+  /* =======================================================
+     상담 선택
+  ======================================================= */
 
-  color:
-    #7d756e;
+  const [
+    selectedCategories,
+    setSelectedCategories,
+  ] =
+    useState([]);
 
-  font-size:
-    14px;
 
-  line-height:
-    1.7;
+  const [
+    needsMatching,
+    setNeedsMatching,
+  ] =
+    useState(null);
 
-  word-break:
-    keep-all;
-}
 
+  const [
+    managerName,
+    setManagerName,
+  ] =
+    useState("");
 
-.section {
-  margin-bottom:
-    18px;
 
-  padding:
-    28px;
+  /* =======================================================
+     기타 상태
+  ======================================================= */
 
-  border:
-    1px solid
-    #e2dbd4;
+  const [
+    loadingSession,
+    setLoadingSession,
+  ] =
+    useState(true);
+
+
+  const [
+    submitting,
+    setSubmitting,
+  ] =
+    useState(false);
 
-  border-radius:
-    20px;
-
-  background:
-    #ffffff;
-
-  box-shadow:
-    0 7px 24px
-    rgba(
-      60,
-      45,
-      35,
-      0.045
-    );
-}
-
-
-.sectionTitle {
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    13px;
-
-  margin-bottom:
-    21px;
-}
-
-
-.sectionTitle > span {
-  display:
-    flex;
-
-  align-items:
-    center;
-  justify-content:
-    center;
-
-  width:
-    38px;
-
-  height:
-    38px;
-
-  flex:
-    0 0 38px;
-
-  border-radius:
-    11px;
-
-  background:
-    #fff0e6;
-
-  color:
-    #f26a21;
-
-  font-size:
-    11px;
-
-  font-weight:
-    900;
-}
-
-
-.sectionTitle small {
-  display:
-    block;
-
-  margin-bottom:
-    2px;
-
-  color:
-    #aaa29a;
-
-  font-size:
-    8px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    1.4px;
-}
-
-
-.sectionTitle h2 {
-  margin:
-    0;
-
-  color:
-    #332e29;
-
-  font-size:
-    19px;
-
-  line-height:
-    1.4;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    -0.5px;
-}
-
-
-.categoryList,
-.matchingList {
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  gap:
-    10px;
-}
-
-
-.categoryButton,
-.matchButton {
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  width:
-    100%;
-
-  min-height:
-    76px;
-
-  padding:
-    15px
-    16px;
-
-  border:
-    1.5px solid
-    #ded7d0;
-
-  border-radius:
-    14px;
-
-  background:
-    #ffffff;
-
-  text-align:
-    left;
-
-  cursor:
-    pointer;
-
-  transition:
-    all
-    0.2s ease;
-}
-
-
-.categoryButton:hover,
-.matchButton:hover {
-  border-color:
-    #f2a272;
-
-  transform:
-    translateY(
-      -1px
-    );
-}
-
-
-.categoryButton.selected,
-.matchButton.selected {
-  border-color:
-    #f26a21;
-
-  background:
-    #fff8f3;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(
-      242,
-      106,
-      33,
-      0.08
-    );
-}
-
-
-.categoryButton:disabled,
-.matchButton:disabled {
-  cursor:
-    default;
-
-  opacity:
-    0.7;
-}
-
-
-.categoryEmoji {
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  width:
-    45px;
-
-  height:
-    45px;
-
-  flex:
-    0 0 45px;
-
-  margin-right:
-    13px;
-
-  border-radius:
-    13px;
-
-  background:
-    #f7f4f0;
-
-  font-size:
-    22px;
-}
-
-
-.categoryButton > div,
-.matchButton > div {
-  flex:
-    1;
-
-  min-width:
-    0;
-}
-
-
-.categoryButton strong,
-.matchButton strong {
-  display:
-    block;
-
-  margin-bottom:
-    4px;
-
-  color:
-    #37322d;
-
-  font-size:
-    15px;
-
-  font-weight:
-    900;
-}
-
-
-.categoryButton p,
-.matchButton p {
-  margin:
-    0;
-
-  color:
-    #8c847d;
-
-  font-size:
-    12px;
-
-  line-height:
-    1.5;
-
-  word-break:
-    keep-all;
-}
-
-
-.radio {
-  position:
-    relative;
-
-  width:
-    21px;
-
-  height:
-    21px;
-
-  flex:
-    0 0 21px;
-
-  margin-left:
-    12px;
-
-  border:
-    2px solid
-    #d0c8c1;
-
-  border-radius:
-    50%;
-
-  background:
-    #ffffff;
-}
-
-
-.selected .radio {
-  border-color:
-    #f26a21;
-}
-
-
-.selected .radio::after {
-  content:
-    "";
-
-  position:
-    absolute;
-
-  top:
-    4px;
-
-  left:
-    4px;
-
-  width:
-    9px;
-
-  height:
-    9px;
-
-  border-radius:
-    50%;
-
-  background:
-    #f26a21;
-}
-
-
-.matchButton .radio {
-  margin:
-    0 13px 0 0;
-}
-
-
-.reveal {
-  max-height:
-    0;
-
-  overflow:
-    hidden;
-
-  opacity:
-    0;
-
-  transform:
-    translateY(
-      -12px
+
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] =
+    useState("");
+
+
+  const [
+    completed,
+    setCompleted,
+  ] =
+    useState(false);
+
+
+  const [
+    completedData,
+    setCompletedData,
+  ] =
+    useState(null);
+
+
+  /* =======================================================
+     SESSION
+  ======================================================= */
+
+  useEffect(
+    () => {
+      try {
+        const stored =
+          sessionStorage.getItem(
+            "openingProfileResultState"
+          );
+
+
+        if (
+          !stored
+        ) {
+          return;
+        }
+
+
+        const parsed =
+          JSON.parse(
+            stored
+          );
+
+
+        if (
+          parsed?.responseId
+        ) {
+          setResponseId(
+            parsed.responseId
+          );
+        }
+
+
+        if (
+          parsed?.hasSalesManager ===
+          true
+        ) {
+          setHasSalesManager(
+            true
+          );
+
+
+          setSalesManagerName(
+            parsed.salesManagerName ||
+            ""
+          );
+        } else {
+          setHasSalesManager(
+            false
+          );
+
+
+          setSalesManagerName(
+            ""
+          );
+        }
+
+      } catch (error) {
+        console.error(
+          "Consultation session error:",
+          error
+        );
+
+      } finally {
+        setLoadingSession(
+          false
+        );
+      }
+    },
+    []
+  );
+
+
+  /* =======================================================
+     입지 이외의 상담이 하나라도 선택됐는지
+  ======================================================= */
+
+  const hasNonLocationCategory =
+    useMemo(
+      () =>
+        selectedCategories.some(
+          (category) =>
+            category !==
+            "location"
+        ),
+      [
+        selectedCategories,
+      ]
     );
 
-  transition:
-    max-height
-      0.75s
-      cubic-bezier(
-        0.22,
-        1,
-        0.36,
-        1
-      ),
-    opacity
-      0.35s ease,
-    transform
-      0.45s ease;
-}
 
+  /* =======================================================
+     지역담당자 매칭 질문 표시 조건
 
-.revealOpen {
-  max-height:
-    1200px;
+     기존 영업담당자가 없고
+     입지 외 상담이 포함된 경우
+  ======================================================= */
 
-  opacity:
-    1;
+  const shouldShowMatchingStep =
+    !hasSalesManager &&
+    hasNonLocationCategory;
 
-  transform:
-    translateY(
-      0
-    );
-}
 
+  /* =======================================================
+     상담 종류 선택 / 해제
+  ======================================================= */
 
-.managerReveal {
-  max-height:
-    0;
+  const toggleCategory =
+    (category) => {
+      if (
+        submitting
+      ) {
+        return;
+      }
 
-  opacity:
-    0;
 
-  overflow:
-    hidden;
-
-  transform:
-    translateY(
-      -10px
-    );
-
-  transition:
-    max-height
-      0.55s ease,
-    opacity
-      0.35s ease,
-    transform
-      0.35s ease;
-}
-
-
-.managerRevealOpen {
-  max-height:
-    350px;
-
-  opacity:
-    1;
-
-  transform:
-    translateY(
-      0
-    );
-}
-
-
-.managerBox {
-  margin-top:
-    18px;
-
-  padding-top:
-    19px;
-
-  border-top:
-    1px solid
-    #eee8e2;
-}
-
-
-.managerBox label {
-  display:
-    block;
-
-  margin-bottom:
-    8px;
-
-  color:
-    #4c4640;
-
-  font-size:
-    13px;
-
-  font-weight:
-    900;
-}
-
-
-.managerBox input {
-  width:
-    100%;
-
-  height:
-    56px;
-
-  padding:
-    0 15px;
-
-  border:
-    1px solid
-    #d8d0c9;
-
-  border-radius:
-    12px;
-
-  outline:
-    0;
-
-  color:
-    #332e29;
-
-  background:
-    #ffffff;
-
-  font-size:
-    15px;
-
-  font-weight:
-    700;
-}
-
-
-.managerBox input:focus {
-  border-color:
-    #f26a21;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(
-      242,
-      106,
-      33,
-      0.08
-    );
-}
-
-
-.submitButton,
-.returnButton,
-.errorCard button {
-  width:
-    100%;
-
-  height:
-    56px;
-
-  margin-top:
-    12px;
-
-  border:
-    0;
-
-  border-radius:
-    13px;
-
-  background:
-    #f26a21;
-
-  color:
-    #ffffff;
-
-  font-size:
-    15px;
-
-  font-weight:
-    900;
-
-  cursor:
-    pointer;
-
-  box-shadow:
-    0 7px 18px
-    rgba(
-      242,
-      106,
-      33,
-      0.18
-    );
-}
-
-
-.submitButton:disabled {
-  background:
-    #c9c2bc;
-
-  cursor:
-    default;
-
-  box-shadow:
-    none;
-}
-
-
-.submittingBox {
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    10px;
-
-  margin-bottom:
-    12px;
-
-  padding:
-    14px;
-
-  border-radius:
-    12px;
-
-  background:
-    #fff8f3;
-
-  color:
-    #a25528;
-
-  font-size:
-    12px;
-
-  font-weight:
-    800;
-}
-
-
-.smallSpinner {
-  width:
-    17px;
-
-  height:
-    17px;
-
-  border:
-    2px solid
-    #f5ceb6;
-
-  border-top-color:
-    #f26a21;
-
-  border-radius:
-    50%;
-
-  animation:
-    spin
-    0.7s linear
-    infinite;
-}
-
-
-.errorMessage {
-  margin-bottom:
-    13px;
-
-  padding:
-    13px 15px;
-
-  border-radius:
-    11px;
-
-  background:
-    #fff0eb;
-
-  color:
-    #c75232;
-
-  font-size:
-    12px;
-
-  font-weight:
-    800;
-
-  line-height:
-    1.55;
-}
-
-
-.privacyNote {
-  margin:
-    15px auto 0;
-
-  max-width:
-    530px;
-
-  color:
-    #aaa29b;
-
-  text-align:
-    center;
-
-  font-size:
-    10px;
-
-  line-height:
-    1.6;
-
-  word-break:
-    keep-all;
-}
-
-
-/* =========================================================
-   COMPLETE
-========================================================= */
-
-.completedCard,
-.errorCard {
-  width:
-    calc(
-      100% - 28px
-    );
-
-  max-width:
-    570px;
-
-  margin:
-    50px auto;
-
-  padding:
-    39px
-    31px;
-
-  border:
-    1px solid
-    #e1d9d2;
-
-  border-radius:
-    22px;
-
-  background:
-    #ffffff;
-
-  text-align:
-    center;
-
-  box-shadow:
-    0 12px 35px
-    rgba(
-      63,
-      47,
-      36,
-      0.07
-    );
-}
-
-
-.checkIcon {
-  display:
-    flex;
-
-  align-items:
-    center;
-  justify-content:
-    center;
-
-  width:
-    64px;
-
-  height:
-    64px;
-
-  margin:
-    0 auto 20px;
-
-  border-radius:
-    50%;
-
-  background:
-    #f26a21;
-
-  color:
-    #ffffff;
-
-  font-size:
-    30px;
-
-  font-weight:
-    900;
-}
-
-
-.completedCard .brand,
-.errorCard .brand {
-  margin-bottom:
-    8px;
-}
-
-
-.completedCard h1,
-.errorCard h1 {
-  margin:
-    0 0 11px;
-
-  color:
-    #302b27;
-
-  font-size:
-    27px;
-
-  line-height:
-    1.4;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    -1px;
-
-  word-break:
-    keep-all;
-}
-
-
-.completedDescription,
-.errorCard > p:not(.brand) {
-  margin:
-    0;
-
-  color:
-    #807871;
-
-  font-size:
-    13px;
-
-  line-height:
-    1.7;
-
-  word-break:
-    keep-all;
-}
-
-
-.completedSummary {
-  margin-top:
-    25px;
-
-  padding:
-    6px
-    17px;
-
-  border-radius:
-    14px;
-
-  background:
-    #f8f5f1;
-
-  text-align:
-    left;
-}
-
-
-.completedSummary > div {
-  display:
-    flex;
-
-  align-items:
-    center;
-  justify-content:
-    space-between;
-
-  gap:
-    15px;
-
-  padding:
-    13px 0;
-
-  border-bottom:
-    1px solid
-    #e8e1da;
-}
-
-
-.completedSummary > div:last-child {
-  border-bottom:
-    0;
-}
-
-
-.completedSummary span {
-  color:
-    #918981;
-
-  font-size:
-    11px;
-
-  font-weight:
-    700;
-}
-
-
-.completedSummary strong {
-  color:
-    #3c3732;
-
-  text-align:
-    right;
-
-  font-size:
-    12px;
-
-  font-weight:
-    900;
-}
-
-
-.returnButton {
-  margin-top:
-    19px;
-}
-
-
-.errorIcon {
-  margin-bottom:
-    14px;
-
-  font-size:
-    39px;
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-.loading {
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    center;
-
-  gap:
-    15px;
-
-  margin-top:
-    100px;
-
-  color:
-    #787069;
-
-  font-size:
-    12px;
-
-  font-weight:
-    800;
-}
-
-
-.spinner {
-  width:
-    38px;
-
-  height:
-    38px;
-
-  border:
-    4px solid
-    #dfd8d1;
-
-  border-top-color:
-    #f26a21;
-
-  border-radius:
-    50%;
-
-  animation:
-    spin
-    0.75s linear
-    infinite;
-}
-
-
-@keyframes spin {
-  to {
-    transform:
-      rotate(
-        360deg
+      setErrorMessage(
+        ""
       );
+
+
+      setSelectedCategories(
+        (previous) => {
+          const alreadySelected =
+            previous.includes(
+              category
+            );
+
+
+          const next =
+            alreadySelected
+              ? previous.filter(
+                  (item) =>
+                    item !==
+                    category
+                )
+              : [
+                  ...previous,
+                  category,
+                ];
+
+
+          /*
+            정해진 화면 순서대로 저장
+          */
+
+          return CATEGORY_ORDER.filter(
+            (item) =>
+              next.includes(
+                item
+              )
+          );
+        }
+      );
+    };
+
+
+  /* =======================================================
+     선택 내용 변경 후
+     매칭 질문이 더 이상 필요 없게 된 경우 초기화
+  ======================================================= */
+
+  useEffect(
+    () => {
+      if (
+        shouldShowMatchingStep
+      ) {
+        return;
+      }
+
+
+      setNeedsMatching(
+        null
+      );
+
+
+      setManagerName(
+        ""
+      );
+    },
+    [
+      shouldShowMatchingStep,
+    ]
+  );
+
+
+  /* =======================================================
+     지역 담당자 매칭
+  ======================================================= */
+
+  const chooseMatching =
+    (value) => {
+      if (
+        submitting
+      ) {
+        return;
+      }
+
+
+      setNeedsMatching(
+        value
+      );
+
+
+      setErrorMessage(
+        ""
+      );
+
+
+      if (
+        value ===
+        true
+      ) {
+        setManagerName(
+          ""
+        );
+      }
+    };
+
+
+  /* =======================================================
+     상담 신청
+  ======================================================= */
+
+  const submitConsultation =
+    async () => {
+      if (
+        submitting
+      ) {
+        return;
+      }
+
+
+      setErrorMessage(
+        ""
+      );
+
+
+      /* ===============================================
+         상담 선택 확인
+      =============================================== */
+
+      if (
+        selectedCategories.length ===
+        0
+      ) {
+        setErrorMessage(
+          "원하는 상담을 하나 이상 선택해주세요."
+        );
+
+
+        return;
+      }
+
+
+      /* ===============================================
+         담당자 없음 +
+         입지 외 상담 포함
+
+         → 매칭 여부 필수
+      =============================================== */
+
+      if (
+        shouldShowMatchingStep &&
+        typeof needsMatching !==
+          "boolean"
+      ) {
+        setErrorMessage(
+          "지역 담당자 매칭 여부를 선택해주세요."
+        );
+
+
+        return;
+      }
+
+
+      /* ===============================================
+         매칭 불필요
+         → 기존 담당자 이름 필수
+      =============================================== */
+
+      if (
+        shouldShowMatchingStep &&
+        needsMatching ===
+          false &&
+        managerName.trim().length <
+          2
+      ) {
+        setErrorMessage(
+          "현재 오스템 담당자 이름을 입력해주세요."
+        );
+
+
+        return;
+      }
+
+
+      if (
+        !responseId
+      ) {
+        setErrorMessage(
+          "진단 정보를 확인할 수 없습니다."
+        );
+
+
+        return;
+      }
+
+
+      try {
+        setSubmitting(
+          true
+        );
+
+
+        const response =
+          await fetch(
+            "/api/consultation",
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body:
+                JSON.stringify({
+                  responseId,
+
+                  categories:
+                    selectedCategories,
+
+                  needsManagerMatching:
+                    shouldShowMatchingStep
+                      ? needsMatching
+                      : null,
+
+                  managerName:
+                    shouldShowMatchingStep &&
+                    needsMatching ===
+                      false
+                      ? managerName.trim()
+                      : null,
+                }),
+            }
+          );
+
+
+        let result =
+          null;
+
+
+        try {
+          result =
+            await response.json();
+        } catch {
+          result =
+            null;
+        }
+
+
+        if (
+          !response.ok ||
+          !result?.success
+        ) {
+          throw new Error(
+            result?.message ||
+            "상담 신청에 실패했습니다."
+          );
+        }
+
+
+        setCompletedData(
+          result.consultation
+        );
+
+
+        setCompleted(
+          true
+        );
+
+
+        sessionStorage.setItem(
+          "openingProfileConsultationCompleted",
+          "1"
+        );
+
+      } catch (error) {
+        console.error(
+          "Consultation submit error:",
+          error
+        );
+
+
+        setErrorMessage(
+          error.message ||
+          "상담 신청 중 오류가 발생했습니다."
+        );
+
+      } finally {
+        setSubmitting(
+          false
+        );
+      }
+    };
+
+
+  /* =======================================================
+     결과로 복귀
+  ======================================================= */
+
+  const returnToResult =
+    () => {
+      sessionStorage.setItem(
+        "openingProfileReturnToResult",
+        "1"
+      );
+
+
+      router.push(
+        "/"
+      );
+    };
+
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
+
+  if (
+    loadingSession
+  ) {
+    return (
+      <main
+        className={
+          styles.page
+        }
+      >
+
+        <div
+          className={
+            styles.loading
+          }
+        >
+
+          <div
+            className={
+              styles.spinner
+            }
+          />
+
+
+          <p>
+            상담 신청 정보를
+            준비하고 있습니다.
+          </p>
+
+        </div>
+
+      </main>
+    );
   }
-}
 
 
-/* =========================================================
-   TABLET
-========================================================= */
+  /* =======================================================
+     진단 정보 없음
+  ======================================================= */
 
-@media (
-  min-width: 601px
-)
-and (
-  max-width: 1100px
-) {
-  .container {
-    max-width:
-      760px;
+  if (
+    !responseId
+  ) {
+    return (
+      <main
+        className={
+          styles.page
+        }
+      >
+
+        <div
+          className={
+            styles.errorCard
+          }
+        >
+
+          <div
+            className={
+              styles.errorIcon
+            }
+          >
+            🦷
+          </div>
+
+
+          <p
+            className={
+              styles.brand
+            }
+          >
+            OSSTEM IMPLANT
+          </p>
+
+
+          <h1>
+            진단 결과를
+            확인할 수 없습니다.
+          </h1>
+
+
+          <p>
+            개원성향진단을 완료한 후
+            상담을 신청해주세요.
+          </p>
+
+
+          <button
+            type="button"
+
+            onClick={() =>
+              router.push(
+                "/"
+              )
+            }
+          >
+            개원성향진단으로 이동
+          </button>
+
+        </div>
+
+      </main>
+    );
   }
 
-  .header {
-    padding:
-      38px
-      35px;
+
+  /* =======================================================
+     완료 화면
+  ======================================================= */
+
+  if (
+    completed
+  ) {
+    const savedCategories =
+      Array.isArray(
+        completedData?.categories
+      ) &&
+      completedData.categories
+        .length >
+        0
+        ? completedData.categories
+        : selectedCategories;
+
+
+    return (
+      <main
+        className={
+          styles.page
+        }
+      >
+
+        <div
+          className={
+            styles.completedCard
+          }
+        >
+
+          <div
+            className={
+              styles.checkIcon
+            }
+          >
+            ✓
+          </div>
+
+
+          <p
+            className={
+              styles.brand
+            }
+          >
+            OSSTEM IMPLANT
+          </p>
+
+
+          <h1>
+            상담 신청이
+            완료되었습니다.
+          </h1>
+
+
+          <p
+            className={
+              styles.completedDescription
+            }
+          >
+            신청 내용을 확인 후
+            상담이 진행될 수 있도록
+            안내드리겠습니다.
+          </p>
+
+
+          <div
+            className={
+              styles.completedSummary
+            }
+          >
+
+            <div
+              className={
+                styles.completedCategoriesRow
+              }
+            >
+
+              <span>
+                희망 상담
+              </span>
+
+
+              <div
+                className={
+                  styles.completedCategoryList
+                }
+              >
+
+                {savedCategories.map(
+                  (category) => {
+                    const info =
+                      CATEGORY_INFO[
+                        category
+                      ];
+
+
+                    if (
+                      !info
+                    ) {
+                      return null;
+                    }
+
+
+                    return (
+                      <strong
+                        key={
+                          category
+                        }
+                      >
+                        {info.emoji}{" "}
+                        {info.title}
+                      </strong>
+                    );
+                  }
+                )}
+
+              </div>
+
+            </div>
+
+
+            {hasSalesManager &&
+              salesManagerName && (
+
+              <div>
+
+                <span>
+                  오스템 영업담당자
+                </span>
+
+
+                <strong>
+                  {salesManagerName}
+                </strong>
+
+              </div>
+
+            )}
+
+
+            {!hasSalesManager &&
+              hasNonLocationCategory && (
+
+              <div>
+
+                <span>
+                  지역 담당자 매칭
+                </span>
+
+
+                <strong>
+                  {completedData
+                    ?.needs_manager_matching
+                    ? "필요합니다"
+                    : "필요하지 않습니다"}
+                </strong>
+
+              </div>
+
+            )}
+
+
+            {completedData
+              ?.manager_name && (
+
+              <div>
+
+                <span>
+                  입력 담당자
+                </span>
+
+
+                <strong>
+                  {
+                    completedData
+                      .manager_name
+                  }
+                </strong>
+
+              </div>
+
+            )}
+
+          </div>
+
+
+          <button
+            type="button"
+
+            className={
+              styles.returnButton
+            }
+
+            onClick={
+              returnToResult
+            }
+          >
+            진단 결과로 돌아가기
+          </button>
+
+        </div>
+
+      </main>
+    );
   }
 
-  .header h1 {
-    font-size:
-      37px;
-  }
 
-  .section {
-    padding:
-      34px;
-  }
+  /* =======================================================
+     신청 화면
+  ======================================================= */
 
-  .categoryButton,
-  .matchButton {
-    min-height:
-      86px;
+  return (
+    <main
+      className={
+        styles.page
+      }
+    >
 
-    padding:
-      18px;
-  }
-
-  .categoryButton strong,
-  .matchButton strong {
-    font-size:
-      17px;
-  }
-
-  .categoryButton p,
-  .matchButton p {
-    font-size:
-      13px;
-  }
-}
+      <div
+        className={
+          styles.container
+        }
+      >
 
 
-/* =========================================================
-   MOBILE
-========================================================= */
+        {/* ===============================================
+            HEADER
+        =============================================== */}
 
-@media (
-  max-width: 600px
-) {
-  .page {
-    padding:
-      19px
-      12px
-      45px;
-  }
+        <header
+          className={
+            styles.header
+          }
+        >
 
-  .header {
-    padding:
-      25px
-      21px;
-  }
+          <p
+            className={
+              styles.brand
+            }
+          >
+            OSSTEM IMPLANT
+          </p>
 
-  .header h1 {
-    font-size:
-      27px;
-  }
 
-  .section {
-    padding:
-      21px;
-  }
+          <p
+            className={
+              styles.kicker
+            }
+          >
+            OPENING CONSULTATION
+          </p>
 
-  .categoryEmoji {
-    width:
-      40px;
 
-    height:
-      40px;
+          <h1>
+            개원 상담 신청
+          </h1>
 
-    flex-basis:
-      40px;
 
-    margin-right:
-      10px;
+          <p>
+            필요한 상담을 복수로 선택한 뒤
+            아래 상담 신청하기 버튼을 눌러주세요.
+          </p>
 
-    font-size:
-      19px;
-  }
+        </header>
 
-  .radio {
-    margin-left:
-      8px;
-  }
+
+        {/* ===============================================
+            기존 영업담당자
+        =============================================== */}
+
+        {hasSalesManager &&
+          salesManagerName && (
+
+          <section
+            className={
+              styles.salesManagerCard
+            }
+          >
+
+            <div>
+
+              <p>
+                CURRENT OSSTEM MANAGER
+              </p>
+
+
+              <span>
+                현재 오스템 영업담당자
+              </span>
+
+
+              <strong>
+                {salesManagerName}
+              </strong>
+
+            </div>
+
+
+            <div
+              className={
+                styles.salesManagerIcon
+              }
+            >
+              👤
+            </div>
+
+          </section>
+
+        )}
+
+
+        {/* ===============================================
+            STEP 01
+        =============================================== */}
+
+        <section
+          className={
+            styles.section
+          }
+        >
+
+          <div
+            className={
+              styles.sectionTitle
+            }
+          >
+
+            <span>
+              01
+            </span>
+
+
+            <div>
+
+              <small>
+                CONSULTATION
+              </small>
+
+
+              <h2>
+                원하는 상담을
+                선택해주세요
+              </h2>
+
+
+              <p
+                className={
+                  styles.multiSelectNotice
+                }
+              >
+                여러 항목을 동시에 선택할 수 있습니다.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div
+            className={
+              styles.categoryList
+            }
+          >
+
+            {CATEGORY_ORDER.map(
+              (key) => {
+                const item =
+                  CATEGORY_INFO[
+                    key
+                  ];
+
+
+                const selected =
+                  selectedCategories.includes(
+                    key
+                  );
+
+
+                return (
+                  <button
+                    type="button"
+
+                    key={
+                      key
+                    }
+
+                    disabled={
+                      submitting
+                    }
+
+                    className={`${styles.categoryButton} ${
+                      selected
+                        ? styles.selected
+                        : ""
+                    }`}
+
+                    onClick={() =>
+                      toggleCategory(
+                        key
+                      )
+                    }
+                  >
+
+                    <span
+                      className={
+                        styles.categoryEmoji
+                      }
+                    >
+                      {item.emoji}
+                    </span>
+
+
+                    <div
+                      className={
+                        styles.categoryText
+                      }
+                    >
+
+                      <strong>
+                        {item.title}
+                      </strong>
+
+
+                      <p>
+                        {item.description}
+                      </p>
+
+                    </div>
+
+
+                    <span
+                      className={`${styles.checkBox} ${
+                        selected
+                          ? styles.checkBoxSelected
+                          : ""
+                      }`}
+                    >
+                      {selected
+                        ? "✓"
+                        : ""}
+                    </span>
+
+                  </button>
+                );
+              }
+            )}
+
+          </div>
+
+        </section>
+
+
+        {/* ===============================================
+            STEP 02
+
+            기존 영업담당자가 없고
+            입지 외 상담이 포함되면 노출
+        =============================================== */}
+
+        <div
+          className={`${styles.reveal} ${
+            shouldShowMatchingStep
+              ? styles.revealOpen
+              : ""
+          }`}
+        >
+
+          {shouldShowMatchingStep && (
+
+            <section
+              className={
+                styles.section
+              }
+            >
+
+              <div
+                className={
+                  styles.sectionTitle
+                }
+              >
+
+                <span>
+                  02
+                </span>
+
+
+                <div>
+
+                  <small>
+                    MANAGER MATCHING
+                  </small>
+
+
+                  <h2>
+                    지역 담당자 매칭이
+                    필요하신가요?
+                  </h2>
+
+                </div>
+
+              </div>
+
+
+              <div
+                className={
+                  styles.matchingList
+                }
+              >
+
+                <button
+                  type="button"
+
+                  disabled={
+                    submitting
+                  }
+
+                  className={`${styles.matchButton} ${
+                    needsMatching ===
+                    true
+                      ? styles.selected
+                      : ""
+                  }`}
+
+                  onClick={() =>
+                    chooseMatching(
+                      true
+                    )
+                  }
+                >
+
+                  <span
+                    className={
+                      styles.radio
+                    }
+                  />
+
+
+                  <div>
+
+                    <strong>
+                      필요합니다
+                    </strong>
+
+
+                    <p>
+                      지역 담당자 매칭을
+                      요청합니다.
+                    </p>
+
+                  </div>
+
+                </button>
+
+
+                <button
+                  type="button"
+
+                  disabled={
+                    submitting
+                  }
+
+                  className={`${styles.matchButton} ${
+                    needsMatching ===
+                    false
+                      ? styles.selected
+                      : ""
+                  }`}
+
+                  onClick={() =>
+                    chooseMatching(
+                      false
+                    )
+                  }
+                >
+
+                  <span
+                    className={
+                      styles.radio
+                    }
+                  />
+
+
+                  <div>
+
+                    <strong>
+                      필요하지 않습니다
+                    </strong>
+
+
+                    <p>
+                      현재 상담 중인
+                      오스템 담당자가 있습니다.
+                    </p>
+
+                  </div>
+
+                </button>
+
+              </div>
+
+
+              {/* ===========================================
+                  현재 담당자 이름
+              =========================================== */}
+
+              <div
+                className={`${styles.managerReveal} ${
+                  needsMatching ===
+                  false
+                    ? styles.managerRevealOpen
+                    : ""
+                }`}
+              >
+
+                {needsMatching ===
+                  false && (
+
+                  <div
+                    className={
+                      styles.managerBox
+                    }
+                  >
+
+                    <label
+                      htmlFor="managerName"
+                    >
+                      현재 오스템 담당자 이름
+                    </label>
+
+
+                    <input
+                      id="managerName"
+
+                      type="text"
+
+                      autoComplete="off"
+
+                      maxLength={
+                        50
+                      }
+
+                      placeholder="담당자 이름을 입력해주세요"
+
+                      value={
+                        managerName
+                      }
+
+                      disabled={
+                        submitting
+                      }
+
+                      onChange={(
+                        event
+                      ) => {
+                        setManagerName(
+                          event.target.value
+                        );
+
+
+                        setErrorMessage(
+                          ""
+                        );
+                      }}
+                    />
+
+                  </div>
+
+                )}
+
+              </div>
+
+            </section>
+
+          )}
+
+        </div>
+
+
+        {/* ===============================================
+            ERROR
+        =============================================== */}
+
+        {errorMessage && (
+
+          <div
+            className={
+              styles.errorMessage
+            }
+          >
+            {errorMessage}
+          </div>
+
+        )}
+
+
+        {/* ===============================================
+            최종 선택 요약
+        =============================================== */}
+
+        {selectedCategories.length >
+          0 && (
+
+          <div
+            className={
+              styles.selectionSummary
+            }
+          >
+
+            <span>
+              선택한 상담
+            </span>
+
+
+            <div>
+
+              {selectedCategories.map(
+                (category) => {
+
+                  const info =
+                    CATEGORY_INFO[
+                      category
+                    ];
+
+
+                  return (
+                    <strong
+                      key={
+                        category
+                      }
+                    >
+                      {info.emoji}{" "}
+                      {info.title}
+                    </strong>
+                  );
+                }
+              )}
+
+            </div>
+
+          </div>
+
+        )}
+
+
+        {/* ===============================================
+            최종 신청 버튼
+
+            ★ 이제 이 버튼을 눌러야 저장됨
+        =============================================== */}
+
+        <button
+          type="button"
+
+          className={
+            styles.finalSubmitButton
+          }
+
+          disabled={
+            submitting ||
+            selectedCategories.length ===
+              0
+          }
+
+          onClick={
+            submitConsultation
+          }
+        >
+
+          {submitting
+            ? "상담 신청 중..."
+            : selectedCategories.length >
+              0
+              ? `상담 신청하기 (${selectedCategories.length}개 선택)`
+              : "상담 신청하기"}
+
+        </button>
+
+
+        {submitting && (
+
+          <div
+            className={
+              styles.submittingBox
+            }
+          >
+
+            <div
+              className={
+                styles.smallSpinner
+              }
+            />
+
+
+            상담 신청을 저장하고 있습니다.
+
+          </div>
+
+        )}
+
+
+        <p
+          className={
+            styles.privacyNote
+          }
+        >
+          상담 신청 시 진단 과정에서 입력한
+          연락처 및 담당자 정보가 상담 진행을 위해
+          활용될 수 있습니다.
+        </p>
+
+      </div>
+
+    </main>
+  );
 }
