@@ -64,6 +64,31 @@ function isValidUuid(
 }
 
 
+function normalizeCategories(
+  input
+) {
+  if (
+    !Array.isArray(
+      input
+    )
+  ) {
+    return [];
+  }
+
+
+  return [
+    ...new Set(
+      input.filter(
+        (category) =>
+          VALID_CATEGORIES.includes(
+            category
+          )
+      )
+    ),
+  ];
+}
+
+
 export async function POST(
   request
 ) {
@@ -74,14 +99,17 @@ export async function POST(
 
     const {
       responseId,
-      category,
+
+      categories,
+
       needsManagerMatching,
+
       managerName,
     } = body;
 
 
     /* =====================================================
-       기본 검증
+       진단 ID 확인
     ===================================================== */
 
     if (
@@ -105,10 +133,19 @@ export async function POST(
     }
 
 
+    /* =====================================================
+       상담 종류 검증
+    ===================================================== */
+
+    const normalizedCategories =
+      normalizeCategories(
+        categories
+      );
+
+
     if (
-      !VALID_CATEGORIES.includes(
-        category
-      )
+      normalizedCategories.length ===
+      0
     ) {
       return NextResponse.json(
         {
@@ -116,7 +153,7 @@ export async function POST(
             false,
 
           message:
-            "상담 항목을 다시 선택해주세요.",
+            "원하는 상담을 하나 이상 선택해주세요.",
         },
         {
           status:
@@ -131,9 +168,10 @@ export async function POST(
 
 
     /* =====================================================
-       진단 정보 확인
+       실제 완료된 진단인지 확인
 
-       ★ 영업담당자 여부도 DB에서 직접 확인
+       ★ 영업담당자 유무는
+       클라이언트를 믿지 않고 DB에서 확인
     ===================================================== */
 
     const {
@@ -192,6 +230,18 @@ export async function POST(
       true;
 
 
+    /*
+      입지 이외 상담이 하나라도 포함돼 있는가
+    */
+
+    const requiresManagerDecision =
+      normalizedCategories.some(
+        (category) =>
+          category !==
+          "location"
+      );
+
+
     let normalizedNeedsMatching =
       null;
 
@@ -201,15 +251,13 @@ export async function POST(
 
 
     /* =====================================================
-       입지 상담
+       1. 입지만 선택
 
-       → 기존과 동일
-       → 담당자 여부와 관계 없이 바로 접수
+       → 지역 담당자 매칭 질문 없음
     ===================================================== */
 
     if (
-      category ===
-      "location"
+      !requiresManagerDecision
     ) {
       normalizedNeedsMatching =
         null;
@@ -220,13 +268,11 @@ export async function POST(
 
 
     /* =====================================================
-       프로세스 / 대장비 / 소장비
+       2. 입지 외 상담 포함 +
+          기존 영업담당자 있음
 
-       ★ 기존 영업담당자가 있는 경우
-       → 담당자 매칭 질문 필요 없음
-       → 바로 신청 완료
-
-       needs_manager_matching = false 로 저장
+       → 매칭 질문 필요 없음
+       → 기존 영업담당자에게 연결
     ===================================================== */
 
     else if (
@@ -241,9 +287,10 @@ export async function POST(
 
 
     /* =====================================================
-       기존 영업담당자가 없는 경우
+       3. 입지 외 상담 포함 +
+          기존 영업담당자 없음
 
-       → 지역 담당자 매칭 질문
+       → 매칭 여부 반드시 선택
     ===================================================== */
 
     else {
@@ -272,23 +319,8 @@ export async function POST(
 
 
       /*
-        매칭 필요
-        → 별도 이름 필요 없음
-      */
-
-      if (
-        needsManagerMatching ===
-        true
-      ) {
-        normalizedManagerName =
-          null;
-      }
-
-
-      /*
-        매칭 불필요
-
-        → 현재 알고 있는 오스템 담당자 이름 입력
+        매칭 불필요라고 선택한 경우
+        현재 알고 있는 담당자 이름 필수
       */
 
       if (
@@ -347,7 +379,11 @@ export async function POST(
     /* =====================================================
        저장
 
-       진단 1건당 상담 1건
+       category
+       → 기존 시스템 호환용 첫 번째 상담
+
+       categories
+       → 실제 복수 상담 목록
     ===================================================== */
 
     const {
@@ -363,7 +399,11 @@ export async function POST(
             diagnosis_response_id:
               responseId,
 
-            category,
+            category:
+              normalizedCategories[0],
+
+            categories:
+              normalizedCategories,
 
             needs_manager_matching:
               normalizedNeedsMatching,
@@ -387,6 +427,7 @@ export async function POST(
           id,
           diagnosis_response_id,
           category,
+          categories,
           needs_manager_matching,
           manager_name,
           status,
@@ -396,7 +437,9 @@ export async function POST(
         .single();
 
 
-    if (error) {
+    if (
+      error
+    ) {
       console.error(
         "Consultation save error:",
         error
