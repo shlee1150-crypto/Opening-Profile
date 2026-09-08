@@ -23,6 +23,14 @@ const LOCATION_SELECTION_LABELS = {
   planned: "추후예정",
 };
 
+const OPENING_TYPE_LABELS = {
+  new_opening: "신규개원",
+  relocation: "이전개원",
+  acquisition: "인수개원",
+  reopening: "재개원",
+  confirmed: "확정",
+};
+
 function getSupabaseAdmin() {
   const supabaseUrl =
     process.env.SUPABASE_URL ||
@@ -32,10 +40,7 @@ function getSupabaseAdmin() {
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (
-    !supabaseUrl ||
-    !supabaseSecretKey
-  ) {
+  if (!supabaseUrl || !supabaseSecretKey) {
     throw new Error(
       "Supabase 환경변수가 설정되어 있지 않습니다."
     );
@@ -53,22 +58,13 @@ function getSupabaseAdmin() {
   );
 }
 
-async function verifyAdmin(
-  request
-) {
+async function verifyAdmin(request) {
   const authorization =
-    request.headers.get(
-      "authorization"
-    ) || "";
+    request.headers.get("authorization") || "";
 
-  const token =
-    authorization.startsWith(
-      "Bearer "
-    )
-      ? authorization.slice(
-          7
-        )
-      : null;
+  const token = authorization.startsWith("Bearer ")
+    ? authorization.slice(7)
+    : null;
 
   if (!token) {
     return {
@@ -77,13 +73,11 @@ async function verifyAdmin(
     };
   }
 
-  const adminEmail =
-    String(
-      process.env.ADMIN_EMAIL ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+  const adminEmail = String(
+    process.env.ADMIN_EMAIL || ""
+  )
+    .trim()
+    .toLowerCase();
 
   if (!adminEmail) {
     return {
@@ -92,39 +86,25 @@ async function verifyAdmin(
     };
   }
 
-  const supabase =
-    getSupabaseAdmin();
+  const supabase = getSupabaseAdmin();
 
-  const {
-    data,
-    error,
-  } =
-    await supabase.auth.getUser(
-      token
-    );
+  const { data, error } =
+    await supabase.auth.getUser(token);
 
-  if (
-    error ||
-    !data?.user
-  ) {
+  if (error || !data?.user) {
     return {
       success: false,
       status: 401,
     };
   }
 
-  const userEmail =
-    String(
-      data.user.email ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+  const userEmail = String(
+    data.user.email || ""
+  )
+    .trim()
+    .toLowerCase();
 
-  if (
-    userEmail !==
-    adminEmail
-  ) {
+  if (userEmail !== adminEmail) {
     return {
       success: false,
       status: 403,
@@ -138,29 +118,17 @@ async function verifyAdmin(
 }
 
 function csvCell(value) {
-  if (
-    value === null ||
-    value === undefined
-  ) {
+  if (value === null || value === undefined) {
     return '""';
   }
 
-  let text =
-    String(value);
+  let text = String(value);
 
-  if (
-    /^[=+\-@]/.test(
-      text
-    )
-  ) {
-    text =
-      `'${text}`;
+  if (/^[=+\-@]/.test(text)) {
+    text = `'${text}`;
   }
 
-  return `"${text.replace(
-    /"/g,
-    '""'
-  )}"`;
+  return `"${text.replace(/"/g, '""')}"`;
 }
 
 function formatDate(value) {
@@ -169,245 +137,149 @@ function formatDate(value) {
   }
 
   try {
-    return new Intl.DateTimeFormat(
-      "ko-KR",
-      {
-        timeZone:
-          "Asia/Seoul",
-
-        year:
-          "numeric",
-
-        month:
-          "2-digit",
-
-        day:
-          "2-digit",
-
-        hour:
-          "2-digit",
-
-        minute:
-          "2-digit",
-
-        hour12:
-          false,
-      }
-    ).format(
-      new Date(
-        value
-      )
-    );
+    return new Intl.DateTimeFormat("ko-KR", {
+      timeZone: "Asia/Seoul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(value));
   } catch {
-    return String(
-      value
-    );
+    return String(value);
   }
 }
 
-function normalizeCategories(
-  consultation
-) {
-  if (
-    !consultation
-  ) {
+function normalizeCategories(consultation) {
+  if (!consultation) {
     return [];
   }
 
   if (
-    Array.isArray(
-      consultation.categories
-    ) &&
-    consultation.categories.length >
-      0
+    Array.isArray(consultation.categories) &&
+    consultation.categories.length > 0
   ) {
     return consultation.categories;
   }
 
   return consultation.category
-    ? [
-        consultation.category,
-      ]
+    ? [consultation.category]
     : [];
 }
 
-function getAnswerText(
-  answers,
-  index
-) {
-  const entry =
-    answers?.[
-      `q${index}`
-    ];
+function getAnswerText(answers, index) {
+  const entry = answers?.[`q${index}`];
 
-  if (
-    !entry
-  ) {
+  if (!entry) {
     return "";
   }
 
-  if (
-    typeof entry ===
-    "string"
-  ) {
+  if (typeof entry === "string") {
     return entry;
   }
 
-  return (
-    entry.answer ||
-    entry.label ||
-    entry.value ||
-    ""
-  );
+  return entry.answer || entry.label || entry.value || "";
 }
 
-export async function GET(
-  request
-) {
+export async function GET(request) {
   try {
-    const auth =
-      await verifyAdmin(
-        request
-      );
+    const auth = await verifyAdmin(request);
 
-    if (
-      !auth.success
-    ) {
+    if (!auth.success) {
       return NextResponse.json(
         {
           success: false,
-
-          message:
-            "관리자 권한이 없습니다.",
+          message: "관리자 권한이 없습니다.",
         },
-        {
-          status:
-            auth.status,
-        }
+        { status: auth.status }
       );
     }
 
     const {
-      data:
-        responses,
+      data: responses,
+      error: responseError,
+    } = await auth.supabase
+      .from("diagnosis_responses")
+      .select(`
+        id,
+        name,
+        phone,
+        license_number,
+        privacy_consent,
+        answers,
+        type_scores,
+        result_type,
+        result_score,
+        secondary_type,
+        secondary_score,
+        completed,
+        has_sales_manager,
+        sales_manager_name,
+        created_at,
+        completed_at
+      `)
+      .order("created_at", { ascending: false })
+      .limit(5000);
 
-      error:
-        responseError,
-    } =
-      await auth.supabase
-        .from(
-          "diagnosis_responses"
-        )
-        .select(`
-          id,
-          name,
-          phone,
-          license_number,
-          privacy_consent,
-          answers,
-          type_scores,
-          result_type,
-          result_score,
-          secondary_type,
-          secondary_score,
-          completed,
-          has_sales_manager,
-          sales_manager_name,
-          created_at,
-          completed_at
-        `)
-        .order(
-          "created_at",
-          {
-            ascending:
-              false,
-          }
-        )
-        .limit(
-          5000
-        );
-
-    if (
-      responseError
-    ) {
+    if (responseError) {
       console.error(
         "CSV diagnosis responses error:",
         responseError
       );
-
       throw responseError;
     }
 
     const {
-      data:
-        consultations,
+      data: consultations,
+      error: consultationError,
+    } = await auth.supabase
+      .from("consultation_requests")
+      .select(`
+        id,
+        diagnosis_response_id,
+        category,
+        categories,
+        opening_types,
+        needs_manager_matching,
+        manager_name,
+        desired_region,
+        planned_opening_year,
+        planned_opening_month,
+        location_selection_status,
+        chair_count,
+        memo,
+        consultant_name,
+        status,
+        created_at,
+        updated_at
+      `)
+      .order("created_at", { ascending: false })
+      .limit(5000);
 
-      error:
-        consultationError,
-    } =
-      await auth.supabase
-        .from(
-          "consultation_requests"
-        )
-        .select(`
-          id,
-          diagnosis_response_id,
-          category,
-          categories,
-          needs_manager_matching,
-          manager_name,
-          desired_region,
-          planned_opening_year,
-          planned_opening_month,
-          location_selection_status,
-          memo,
-          status,
-          created_at,
-          updated_at
-        `)
-        .order(
-          "created_at",
-          {
-            ascending:
-              false,
-          }
-        )
-        .limit(
-          5000
-        );
-
-    if (
-      consultationError
-    ) {
+    if (consultationError) {
       console.error(
         "CSV consultations error:",
         consultationError
       );
-
       throw consultationError;
     }
 
-    const consultationMap =
-      new Map();
+    const consultationMap = new Map();
 
-    (
-      consultations ||
-      []
-    ).forEach(
-      (consultation) => {
-        if (
-          consultation?.diagnosis_response_id &&
-          !consultationMap.has(
-            consultation.diagnosis_response_id
-          )
-        ) {
-          consultationMap.set(
-            consultation.diagnosis_response_id,
-            consultation
-          );
-        }
+    (consultations || []).forEach((consultation) => {
+      if (
+        consultation?.diagnosis_response_id &&
+        !consultationMap.has(
+          consultation.diagnosis_response_id
+        )
+      ) {
+        consultationMap.set(
+          consultation.diagnosis_response_id,
+          consultation
+        );
       }
-    );
+    });
 
     const headers = [
       "등록일",
@@ -423,261 +295,139 @@ export async function GET(
       "보조성향",
       "보조성향 점수",
       "상담 신청 여부",
+      "개원종류",
       "개원 희망 지역",
       "개원 예정 연도",
       "개원 예정 월",
       "입지선정",
+      "체어규모",
       "희망 상담",
       "영업담당자 매칭 필요",
       "상담에서 입력한 영업담당자",
       "상담 상태",
       "상담 신청일",
       "메모",
-
+      "상담자",
       ...Array.from(
-        {
-          length:
-            12,
-        },
-        (
-          _,
-          index
-        ) =>
-          `Q${index + 1} 응답`
+        { length: 12 },
+        (_, index) => `Q${index + 1} 응답`
       ),
     ];
 
-    const rows =
-      (
-        responses ||
-        []
-      ).map(
-        (item) => {
-          const consultation =
-            consultationMap.get(
-              item.id
-            ) ||
-            null;
+    const rows = (responses || []).map((item) => {
+      const consultation =
+        consultationMap.get(item.id) || null;
 
-          const categories =
-            normalizeCategories(
-              consultation
-            );
+      const categories =
+        normalizeCategories(consultation);
 
-          const consultationLabels =
-            categories
-              .map(
-                (category) =>
-                  CATEGORY_LABELS[
-                    category
-                  ] ||
-                  category
-              )
-              .join(
-                " / "
-              );
+      const consultationLabels = categories
+        .map(
+          (category) =>
+            CATEGORY_LABELS[category] || category
+        )
+        .join(" / ");
 
-          const hasNonLocation =
-            categories.some(
-              (category) =>
-                category !==
-                "location"
-            );
+      const openingTypeLabels = Array.isArray(
+        consultation?.opening_types
+      )
+        ? consultation.opening_types
+            .map(
+              (type) =>
+                OPENING_TYPE_LABELS[type] || type
+            )
+            .join(" / ")
+        : "";
 
-          let matchingLabel =
-            "";
+      const hasNonLocation = categories.some(
+        (category) => category !== "location"
+      );
 
-          if (
-            consultation
-          ) {
-            if (
-              !hasNonLocation
-            ) {
-              matchingLabel =
-                "해당없음";
-            } else if (
-              item.has_sales_manager ===
-              true
-            ) {
-              matchingLabel =
-                "기존 담당자 있음";
-            } else {
-              matchingLabel =
-                consultation.needs_manager_matching ===
-                true
-                  ? "필요"
-                  : "불필요";
-            }
-          }
+      let matchingLabel = "";
 
-          return [
-            formatDate(
-              item.created_at
-            ),
-
-            formatDate(
-              item.completed_at
-            ),
-
-            item.name ||
-              "",
-
-            item.phone ||
-              "",
-
-            item.license_number ||
-              "",
-
-            item.privacy_consent ===
-            true
-              ? "동의"
-              : "미동의",
-
-            item.has_sales_manager ===
-            true
-              ? "있음"
-              : "없음",
-
-            item.sales_manager_name ||
-              "",
-
-            item.result_type ||
-              "",
-
-            item.result_score ??
-              "",
-
-            item.secondary_type ||
-              "",
-
-            item.secondary_score ??
-              "",
-
-            consultation
-              ? "신청"
-              : "미신청",
-
-            consultation
-              ?.desired_region ||
-              "",
-
-            consultation
-              ?.planned_opening_year ??
-              "",
-
-            consultation
-              ?.planned_opening_month ??
-              "",
-
-            consultation
-              ? LOCATION_SELECTION_LABELS[
-                  consultation.location_selection_status
-                ] ||
-                ""
-              : "",
-
-            consultationLabels,
-
-            matchingLabel,
-
-            consultation
-              ?.manager_name ||
-              "",
-
-            consultation
-              ? CONSULTATION_STATUS_LABELS[
-                  consultation.status
-                ] ||
-                consultation.status ||
-                ""
-              : "",
-
-            formatDate(
-              consultation?.created_at
-            ),
-
-            consultation
-              ?.memo ||
-              "",
-
-            ...Array.from(
-              {
-                length:
-                  12,
-              },
-              (
-                _,
-                index
-              ) =>
-                getAnswerText(
-                  item.answers,
-                  index + 1
-                )
-            ),
-          ];
+      if (consultation) {
+        if (!hasNonLocation) {
+          matchingLabel = "해당없음";
+        } else if (item.has_sales_manager === true) {
+          matchingLabel = "기존 담당자 있음";
+        } else {
+          matchingLabel =
+            consultation.needs_manager_matching === true
+              ? "필요"
+              : "불필요";
         }
-      );
-
-    const csv =
-      [
-        headers
-          .map(
-            csvCell
-          )
-          .join(
-            ","
-          ),
-
-        ...rows.map(
-          (row) =>
-            row
-              .map(
-                csvCell
-              )
-              .join(
-                ","
-              )
-        ),
-      ].join(
-        "\r\n"
-      );
-
-    const bomCsv =
-      `\uFEFF${csv}`;
-
-    return new Response(
-      bomCsv,
-      {
-        status: 200,
-
-        headers: {
-          "Content-Type":
-            "text/csv; charset=utf-8",
-
-          "Content-Disposition":
-            'attachment; filename="opening-profile.csv"',
-
-          "Cache-Control":
-            "no-store",
-        },
       }
-    );
+
+      return [
+        formatDate(item.created_at),
+        formatDate(item.completed_at),
+        item.name || "",
+        item.phone || "",
+        item.license_number || "",
+        item.privacy_consent === true ? "동의" : "미동의",
+        item.has_sales_manager === true ? "있음" : "없음",
+        item.sales_manager_name || "",
+        item.result_type || "",
+        item.result_score ?? "",
+        item.secondary_type || "",
+        item.secondary_score ?? "",
+        consultation ? "신청" : "미신청",
+        openingTypeLabels,
+        consultation?.desired_region || "",
+        consultation?.planned_opening_year ?? "",
+        consultation?.planned_opening_month ?? "",
+        consultation
+          ? LOCATION_SELECTION_LABELS[
+              consultation.location_selection_status
+            ] || ""
+          : "",
+        consultation?.chair_count ?? "",
+        consultationLabels,
+        matchingLabel,
+        consultation?.manager_name || "",
+        consultation
+          ? CONSULTATION_STATUS_LABELS[
+              consultation.status
+            ] || consultation.status || ""
+          : "",
+        formatDate(consultation?.created_at),
+        consultation?.memo || "",
+        consultation?.consultant_name || "",
+        ...Array.from(
+          { length: 12 },
+          (_, index) =>
+            getAnswerText(item.answers, index + 1)
+        ),
+      ];
+    });
+
+    const csv = [
+      headers.map(csvCell).join(","),
+      ...rows.map((row) =>
+        row.map(csvCell).join(",")
+      ),
+    ].join("\r\n");
+
+    const bomCsv = `\uFEFF${csv}`;
+
+    return new Response(bomCsv, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition":
+          'attachment; filename="opening-profile.csv"',
+        "Cache-Control": "no-store",
+      },
+    });
   } catch (error) {
-    console.error(
-      "Admin CSV export error:",
-      error
-    );
+    console.error("Admin CSV export error:", error);
 
     return NextResponse.json(
       {
         success: false,
-
-        message:
-          "CSV 파일 생성에 실패했습니다.",
+        message: "CSV 파일 생성에 실패했습니다.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
