@@ -76,6 +76,18 @@ const STATUS = {
 };
 
 
+const LOCATION_SELECTION_STATUS = {
+  completed:
+    "완료",
+
+  in_progress:
+    "진행중",
+
+  planned:
+    "추후예정",
+};
+
+
 const supabaseUrl =
   process.env
     .NEXT_PUBLIC_SUPABASE_URL;
@@ -564,11 +576,6 @@ export default function AdminPage() {
   );
 
 
-  /*
-    검색 / 필터 변경 시
-    이전에 체크해놓은 항목 자동 해제
-  */
-
   useEffect(
     () => {
       setSelectedIds(
@@ -745,6 +752,23 @@ export default function AdminPage() {
                   item.consultation
                     ?.manager_name,
 
+                  item.consultation
+                    ?.desired_region,
+
+                  item.consultation
+                    ?.planned_opening_year,
+
+                  item.consultation
+                    ?.planned_opening_month,
+
+                  LOCATION_SELECTION_STATUS[
+                    item.consultation
+                      ?.location_selection_status
+                  ],
+
+                  item.consultation
+                    ?.memo,
+
                   ...categories.map(
                     (category) =>
                       CATEGORY[
@@ -771,8 +795,6 @@ export default function AdminPage() {
             }
 
 
-            /* 상담 신청 */
-
             if (
               consultationFilter ===
                 "applied" &&
@@ -791,8 +813,6 @@ export default function AdminPage() {
             }
 
 
-            /* 영업담당자 매칭 필요 */
-
             if (
               consultationFilter ===
                 "matching" &&
@@ -803,8 +823,6 @@ export default function AdminPage() {
               return false;
             }
 
-
-            /* 상담종류 */
 
             if (
               [
@@ -823,8 +841,6 @@ export default function AdminPage() {
             }
 
 
-            /* 영업담당자 없음 */
-
             if (
               managerFilter ===
               "none"
@@ -837,8 +853,6 @@ export default function AdminPage() {
               }
             }
 
-
-            /* 특정 영업담당자 */
 
             if (
               managerFilter !==
@@ -1864,41 +1878,33 @@ export default function AdminPage() {
 
                 </th>
 
-
                 <th>
                   참여자
                 </th>
-
 
                 <th>
                   영업담당자
                 </th>
 
-
                 <th>
                   진단결과
                 </th>
-
 
                 <th>
                   복합성향
                 </th>
 
-
                 <th>
                   상담
                 </th>
-
 
                 <th>
                   영업담당자 매칭
                 </th>
 
-
                 <th>
                   상담 상태
                 </th>
-
 
                 <th>
                   상세
@@ -2435,7 +2441,6 @@ export default function AdminPage() {
                                         DIAGNOSIS
                                       </span>
 
-
                                       <h3>
                                         진단 결과
                                       </h3>
@@ -2530,7 +2535,6 @@ export default function AdminPage() {
                                         CONSULTATION
                                       </span>
 
-
                                       <h3>
                                         상담 신청 내역
                                       </h3>
@@ -2559,6 +2563,51 @@ export default function AdminPage() {
                                           {consultationLabel(
                                             consultation
                                           )}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          개원 희망 지역
+                                        </span>
+
+                                        <strong>
+                                          {consultation.desired_region ||
+                                            "-"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          개원 예정시기
+                                        </span>
+
+                                        <strong>
+                                          {consultation.planned_opening_year &&
+                                          consultation.planned_opening_month
+                                            ? `${consultation.planned_opening_year}년 ${consultation.planned_opening_month}월`
+                                            : "-"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          입지선정
+                                        </span>
+
+                                        <strong>
+                                          {LOCATION_SELECTION_STATUS[
+                                            consultation.location_selection_status
+                                          ] || "-"}
                                         </strong>
 
                                       </div>
@@ -2641,6 +2690,20 @@ export default function AdminPage() {
 
                                       </div>
 
+
+                                      <div>
+
+                                        <span>
+                                          메모
+                                        </span>
+
+                                        <strong>
+                                          {consultation.memo ||
+                                            "-"}
+                                        </strong>
+
+                                      </div>
+
                                     </div>
 
                                   </section>
@@ -2657,7 +2720,6 @@ export default function AdminPage() {
                                     <span>
                                       ANSWERS
                                     </span>
-
 
                                     <h3>
                                       문항별 응답
