@@ -1,1335 +1,1129 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
-import {
-  useRouter,
-} from "next/navigation";
-
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./consultation.module.css";
 
-
-const CATEGORY_INFO = {
-  location: {
+const CATEGORY_OPTIONS = [
+  {
+    value: "location",
     emoji: "📍",
     title: "입지",
-    description:
-      "개원 후보지 · 상권 · 입지 검토",
+    description: "개원 후보지와 상권·입지를 함께 검토합니다.",
   },
-
-  process: {
+  {
+    value: "process",
     emoji: "📋",
     title: "프로세스 상담",
-    description:
-      "개원 일정 · 준비과정 · 단계별 개원 프로세스",
+    description: "개원 준비 순서와 전체 진행 과정을 상담합니다.",
   },
-
-  major_equipment: {
+  {
+    value: "major_equipment",
     emoji: "🦷",
     title: "대장비",
-    description:
-      "체어 · CT · 구강스캐너",
+    description: "체어·CT 등 주요 장비 구성을 상담합니다.",
   },
-
-  supplies: {
+  {
+    value: "supplies",
     emoji: "🧰",
-    title: "소장비 · 기구 · 재료",
-    description:
-      "개원에 필요한 소장비와 기구·재료 상담",
+    title: "소장비·기구·재료",
+    description: "개원에 필요한 소장비·기구·재료를 상담합니다.",
   },
-};
-
-
-const CATEGORY_ORDER = [
-  "location",
-  "process",
-  "major_equipment",
-  "supplies",
 ];
 
+const LOCATION_STATUS_OPTIONS = [
+  {
+    value: "completed",
+    label: "완료",
+  },
+  {
+    value: "in_progress",
+    label: "진행중",
+  },
+  {
+    value: "planned",
+    label: "추후예정",
+  },
+];
 
-export default function ConsultationPage() {
-  const router =
-    useRouter();
+function readResultState() {
+  if (typeof window === "undefined") {
+    return null;
+  }
 
-
-  /* =======================================================
-     진단 정보
-  ======================================================= */
-
-  const [
-    responseId,
-    setResponseId,
-  ] =
-    useState(null);
-
-
-  /* =======================================================
-     기존 영업담당자
-  ======================================================= */
-
-  const [
-    hasSalesManager,
-    setHasSalesManager,
-  ] =
-    useState(false);
-
-
-  const [
-    salesManagerName,
-    setSalesManagerName,
-  ] =
-    useState("");
-
-
-  /* =======================================================
-     복수 상담 선택
-  ======================================================= */
-
-  const [
-    selectedCategories,
-    setSelectedCategories,
-  ] =
-    useState([]);
-
-
-  /* =======================================================
-     영업담당자 매칭
-  ======================================================= */
-
-  const [
-    needsMatching,
-    setNeedsMatching,
-  ] =
-    useState(null);
-
-
-  const [
-    managerName,
-    setManagerName,
-  ] =
-    useState("");
-
-
-  /* =======================================================
-     기타 상태
-  ======================================================= */
-
-  const [
-    loadingSession,
-    setLoadingSession,
-  ] =
-    useState(true);
-
-
-  const [
-    submitting,
-    setSubmitting,
-  ] =
-    useState(false);
-
-
-  const [
-    errorMessage,
-    setErrorMessage,
-  ] =
-    useState("");
-
-
-  const [
-    completed,
-    setCompleted,
-  ] =
-    useState(false);
-
-
-  const [
-    completedData,
-    setCompletedData,
-  ] =
-    useState(null);
-
-
-  /* =======================================================
-     SESSION
-  ======================================================= */
-
-  useEffect(
-    () => {
-      try {
-        const stored =
-          sessionStorage.getItem(
-            "openingProfileResultState"
-          );
-
-
-        if (!stored) {
-          return;
-        }
-
-
-        const parsed =
-          JSON.parse(
-            stored
-          );
-
-
-        if (
-          parsed?.responseId
-        ) {
-          setResponseId(
-            parsed.responseId
-          );
-        }
-
-
-        if (
-          parsed?.hasSalesManager ===
-          true
-        ) {
-          setHasSalesManager(
-            true
-          );
-
-
-          setSalesManagerName(
-            parsed.salesManagerName ||
-            ""
-          );
-        } else {
-          setHasSalesManager(
-            false
-          );
-
-
-          setSalesManagerName(
-            ""
-          );
-        }
-
-      } catch (error) {
-        console.error(
-          "Consultation session error:",
-          error
-        );
-
-      } finally {
-        setLoadingSession(
-          false
-        );
-      }
-    },
-    []
-  );
-
-
-  /* =======================================================
-     입지 외 상담 포함 여부
-  ======================================================= */
-
-  const hasNonLocationCategory =
-    useMemo(
-      () =>
-        selectedCategories.some(
-          (category) =>
-            category !==
-            "location"
-        ),
-      [
-        selectedCategories,
-      ]
+  try {
+    const raw = window.sessionStorage.getItem(
+      "openingProfileResultState"
     );
 
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.error("Result session parse error:", error);
+    return null;
+  }
+}
 
-  /* =======================================================
-     영업담당자 매칭 질문 표시 조건
+function getResponseId(state) {
+  return (
+    state?.responseId ||
+    state?.diagnosisResponseId ||
+    state?.diagnosis_response_id ||
+    state?.id ||
+    state?.response?.id ||
+    state?.diagnosis?.id ||
+    ""
+  );
+}
 
-     기존 영업담당자가 없고
-     입지 외 상담이 하나 이상 선택된 경우
-  ======================================================= */
+export default function ConsultationPage() {
+  const router = useRouter();
 
-  const shouldShowMatchingStep =
-    !hasSalesManager &&
-    hasNonLocationCategory;
+  const [responseId, setResponseId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
+  const [hasSalesManager, setHasSalesManager] =
+    useState(false);
+  const [salesManagerName, setSalesManagerName] =
+    useState("");
 
-  /* =======================================================
-     상담 항목 복수 선택
-  ======================================================= */
+  const [desiredRegion, setDesiredRegion] =
+    useState("");
+  const [plannedOpeningYear, setPlannedOpeningYear] =
+    useState("");
+  const [plannedOpeningMonth, setPlannedOpeningMonth] =
+    useState("");
+  const [locationSelectionStatus, setLocationSelectionStatus] =
+    useState("");
 
-  const toggleCategory =
-    (category) => {
-      if (
-        submitting
-      ) {
-        return;
-      }
+  const [selectedCategories, setSelectedCategories] =
+    useState([]);
+  const [needsManagerMatching, setNeedsManagerMatching] =
+    useState(null);
+  const [managerName, setManagerName] = useState("");
+  const [memo, setMemo] = useState("");
 
-
-      setErrorMessage(
-        ""
-      );
-
-
-      setSelectedCategories(
-        (previous) => {
-          const exists =
-            previous.includes(
-              category
-            );
-
-
-          let next;
-
-
-          if (
-            exists
-          ) {
-            next =
-              previous.filter(
-                (item) =>
-                  item !==
-                  category
-              );
-          } else {
-            next = [
-              ...previous,
-              category,
-            ];
-          }
-
-
-          return CATEGORY_ORDER.filter(
-            (item) =>
-              next.includes(
-                item
-              )
-          );
-        }
-      );
-    };
-
-
-  /* =======================================================
-     영업담당자 매칭 질문이
-     필요 없어졌을 때 초기화
-  ======================================================= */
-
-  useEffect(
-    () => {
-      if (
-        shouldShowMatchingStep
-      ) {
-        return;
-      }
-
-
-      setNeedsMatching(
-        null
-      );
-
-
-      setManagerName(
-        ""
-      );
-    },
-    [
-      shouldShowMatchingStep,
-    ]
+  const hasNonLocation = useMemo(
+    () =>
+      selectedCategories.some(
+        (category) => category !== "location"
+      ),
+    [selectedCategories]
   );
 
+  const showManagerMatching =
+    !hasSalesManager && hasNonLocation;
 
-  /* =======================================================
-     영업담당자 매칭 선택
-  ======================================================= */
+  useEffect(() => {
+    async function load() {
+      const state = readResultState();
+      const id = String(getResponseId(state) || "").trim();
 
-  const chooseMatching =
-    (value) => {
-      if (
-        submitting
-      ) {
-        return;
-      }
-
-
-      setErrorMessage(
-        ""
-      );
-
-
-      setNeedsMatching(
-        value
-      );
-
-
-      if (
-        value === true
-      ) {
-        setManagerName(
-          ""
-        );
-      }
-    };
-
-
-  /* =======================================================
-     최종 상담 신청
-  ======================================================= */
-
-  const submitConsultation =
-    async () => {
-      if (
-        submitting
-      ) {
-        return;
-      }
-
-
-      setErrorMessage(
-        ""
-      );
-
-
-      /* 상담 1개 이상 선택 */
-
-      if (
-        selectedCategories.length ===
-        0
-      ) {
+      if (!id) {
         setErrorMessage(
-          "원하는 상담을 하나 이상 선택해주세요."
+          "완료된 진단 결과를 확인할 수 없습니다."
         );
-
-
+        setLoading(false);
         return;
       }
 
-
-      /* 영업담당자가 없고 입지 외 상담 포함 */
-
-      if (
-        shouldShowMatchingStep &&
-        typeof needsMatching !==
-          "boolean"
-      ) {
-        setErrorMessage(
-          "영업담당자 매칭 여부를 선택해주세요."
-        );
-
-
-        return;
-      }
-
-
-      /* 매칭 불필요 → 현재 담당자 입력 */
-
-      if (
-        shouldShowMatchingStep &&
-        needsMatching ===
-          false &&
-        managerName.trim().length <
-          2
-      ) {
-        setErrorMessage(
-          "현재 오스템 영업담당자 이름을 입력해주세요."
-        );
-
-
-        return;
-      }
-
-
-      if (
-        !responseId
-      ) {
-        setErrorMessage(
-          "완료된 진단 정보를 확인할 수 없습니다."
-        );
-
-
-        return;
-      }
-
+      setResponseId(id);
 
       try {
-        setSubmitting(
-          true
+        const response = await fetch(
+          `/api/consultation?responseId=${encodeURIComponent(id)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
         );
 
+        const result = await response.json();
 
-        const response =
-          await fetch(
-            "/api/consultation",
-            {
-              method:
-                "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body:
-                JSON.stringify({
-                  responseId,
-
-                  categories:
-                    selectedCategories,
-
-                  needsManagerMatching:
-                    shouldShowMatchingStep
-                      ? needsMatching
-                      : null,
-
-                  managerName:
-                    shouldShowMatchingStep &&
-                    needsMatching ===
-                      false
-                      ? managerName.trim()
-                      : null,
-                }),
-            }
-          );
-
-
-        let result =
-          null;
-
-
-        try {
-          result =
-            await response.json();
-        } catch {
-          result =
-            null;
-        }
-
-
-        if (
-          !response.ok ||
-          !result?.success
-        ) {
+        if (!response.ok || !result.success) {
           throw new Error(
-            result?.message ||
-            "상담 신청에 실패했습니다."
+            result.message ||
+              "상담 정보를 불러오지 못했습니다."
           );
         }
 
+        const diagnosis = result.diagnosis || {};
+        const consultation = result.consultation || null;
 
-        setCompletedData(
-          result.consultation
+        setHasSalesManager(
+          diagnosis.has_sales_manager === true
+        );
+        setSalesManagerName(
+          diagnosis.sales_manager_name || ""
         );
 
+        if (consultation) {
+          setDesiredRegion(
+            consultation.desired_region || ""
+          );
 
-        setCompleted(
-          true
-        );
+          setPlannedOpeningYear(
+            consultation.planned_opening_year
+              ? String(
+                  consultation.planned_opening_year
+                )
+              : ""
+          );
 
+          setPlannedOpeningMonth(
+            consultation.planned_opening_month
+              ? String(
+                  consultation.planned_opening_month
+                )
+              : ""
+          );
 
-        sessionStorage.setItem(
-          "openingProfileConsultationCompleted",
-          "1"
-        );
+          setLocationSelectionStatus(
+            consultation.location_selection_status || ""
+          );
 
+          setSelectedCategories(
+            Array.isArray(consultation.categories)
+              ? consultation.categories
+              : []
+          );
+
+          setNeedsManagerMatching(
+            typeof consultation.needs_manager_matching ===
+              "boolean"
+              ? consultation.needs_manager_matching
+              : null
+          );
+
+          setManagerName(
+            consultation.manager_name || ""
+          );
+
+          setMemo(
+            consultation.memo || ""
+          );
+        }
       } catch (error) {
         console.error(
-          "Consultation submit error:",
+          "Consultation load error:",
           error
         );
-
 
         setErrorMessage(
           error.message ||
-          "상담 신청 중 오류가 발생했습니다."
+            "상담 정보를 불러오지 못했습니다."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (!showManagerMatching) {
+      setNeedsManagerMatching(null);
+      setManagerName("");
+    }
+  }, [showManagerMatching]);
+
+  function toggleCategory(value) {
+    setSelectedCategories((previous) =>
+      previous.includes(value)
+        ? previous.filter(
+            (item) => item !== value
+          )
+        : [
+            ...previous,
+            value,
+          ]
+    );
+  }
+
+  function handleYearChange(event) {
+    const value =
+      event.target.value
+        .replace(/\D/g, "")
+        .slice(0, 4);
+
+    setPlannedOpeningYear(value);
+  }
+
+  function handleMonthChange(event) {
+    const value =
+      event.target.value
+        .replace(/\D/g, "")
+        .slice(0, 2);
+
+    setPlannedOpeningMonth(value);
+  }
+
+  function goBackToResult() {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(
+        "openingProfileReturnToResult",
+        "true"
+      );
+    }
+
+    router.push("/");
+  }
+
+  function validate() {
+    if (!desiredRegion.trim()) {
+      return "개원 희망 지역을 입력해주세요.";
+    }
+
+    const year =
+      Number(plannedOpeningYear);
+
+    const month =
+      Number(plannedOpeningMonth);
+
+    if (
+      plannedOpeningYear.length !== 4 ||
+      !Number.isInteger(year) ||
+      year < 2000 ||
+      year > 2999
+    ) {
+      return "개원 예정 연도를 4자리 숫자로 입력해주세요.";
+    }
+
+    if (
+      !plannedOpeningMonth ||
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12
+    ) {
+      return "개원 예정 월을 1~12 사이 숫자로 입력해주세요.";
+    }
+
+    if (!locationSelectionStatus) {
+      return "입지선정 상태를 선택해주세요.";
+    }
+
+    if (selectedCategories.length === 0) {
+      return "희망 상담을 한 가지 이상 선택해주세요.";
+    }
+
+    if (showManagerMatching) {
+      if (
+        typeof needsManagerMatching !==
+        "boolean"
+      ) {
+        return "영업담당자 매칭 필요 여부를 선택해주세요.";
+      }
+
+      if (
+        needsManagerMatching === false &&
+        !managerName.trim()
+      ) {
+        return "현재 오스템 영업담당자 이름을 입력해주세요.";
+      }
+    }
+
+    return "";
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const validationMessage =
+      validate();
+
+    if (validationMessage) {
+      setErrorMessage(
+        validationMessage
+      );
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setErrorMessage("");
+
+      const response =
+        await fetch(
+          "/api/consultation",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              diagnosisResponseId:
+                responseId,
+
+              desiredRegion:
+                desiredRegion.trim(),
+
+              plannedOpeningYear:
+                Number(
+                  plannedOpeningYear
+                ),
+
+              plannedOpeningMonth:
+                Number(
+                  plannedOpeningMonth
+                ),
+
+              locationSelectionStatus,
+
+              categories:
+                selectedCategories,
+
+              needsManagerMatching:
+                showManagerMatching
+                  ? needsManagerMatching
+                  : false,
+
+              managerName:
+                showManagerMatching &&
+                needsManagerMatching ===
+                  false
+                  ? managerName.trim()
+                  : "",
+
+              memo:
+                memo.trim(),
+            }),
+          }
         );
 
-      } finally {
-        setSubmitting(
-          false
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+            "상담 신청 저장에 실패했습니다."
         );
       }
-    };
 
+      if (
+        typeof window !==
+        "undefined"
+      ) {
+        window.sessionStorage.setItem(
+          "openingProfileConsultationCompleted",
+          "true"
+        );
 
-  /* =======================================================
-     진단결과로 복귀
-  ======================================================= */
+        window.sessionStorage.setItem(
+          "openingProfileReturnToResult",
+          "true"
+        );
+      }
 
-  const returnToResult =
-    () => {
-      sessionStorage.setItem(
-        "openingProfileReturnToResult",
-        "1"
+      window.alert(
+        "상담 신청이 완료되었습니다."
       );
 
-
-      router.push(
-        "/"
+      router.push("/");
+    } catch (error) {
+      console.error(
+        "Consultation submit error:",
+        error
       );
-    };
 
+      setErrorMessage(
+        error.message ||
+          "상담 신청 처리 중 오류가 발생했습니다."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
-  /* =======================================================
-     LOADING
-  ======================================================= */
-
-  if (
-    loadingSession
-  ) {
+  if (loading) {
     return (
       <main className={styles.page}>
-
-        <div className={styles.loading}>
-
-          <div className={styles.spinner} />
-
-
-          <p>
-            상담 신청 정보를
-            준비하고 있습니다.
-          </p>
-
+        <div
+          className={
+            styles.loadingCard
+          }
+        >
+          상담 정보를 불러오고 있습니다.
         </div>
-
       </main>
     );
   }
 
-
-  /* =======================================================
-     진단정보 없음
-  ======================================================= */
-
   if (
-    !responseId
+    !responseId ||
+    (
+      errorMessage &&
+      !responseId
+    )
   ) {
     return (
       <main className={styles.page}>
-
-        <div className={styles.errorCard}>
-
-          <div className={styles.errorIcon}>
+        <div
+          className={
+            styles.invalidCard
+          }
+        >
+          <div
+            className={
+              styles.invalidIcon
+            }
+          >
             🦷
           </div>
 
-
-          <p className={styles.brand}>
+          <p
+            className={
+              styles.brand
+            }
+          >
             OSSTEM IMPLANT
           </p>
 
-
           <h1>
-            진단 결과를
-            확인할 수 없습니다.
+            진단 결과를 확인할 수 없습니다.
           </h1>
-
 
           <p>
-            개원성향진단을 완료한 후
-            상담을 신청해주세요.
+            {errorMessage}
           </p>
-
 
           <button
             type="button"
-
-            onClick={() =>
-              router.push(
-                "/"
-              )
-            }
-          >
-            개원성향진단으로 이동
-          </button>
-
-        </div>
-
-      </main>
-    );
-  }
-
-
-  /* =======================================================
-     신청 완료
-  ======================================================= */
-
-  if (
-    completed
-  ) {
-    const savedCategories =
-      Array.isArray(
-        completedData?.categories
-      ) &&
-      completedData.categories.length >
-        0
-        ? completedData.categories
-        : selectedCategories;
-
-
-    const completedHasNonLocation =
-      savedCategories.some(
-        (category) =>
-          category !==
-          "location"
-      );
-
-
-    return (
-      <main className={styles.page}>
-
-        <div className={styles.completedCard}>
-
-          <div className={styles.checkIcon}>
-            ✓
-          </div>
-
-
-          <p className={styles.brand}>
-            OSSTEM IMPLANT
-          </p>
-
-
-          <h1>
-            상담 신청이
-            완료되었습니다.
-          </h1>
-
-
-          <p className={styles.completedDescription}>
-            신청 내용을 확인 후
-            상담이 진행될 수 있도록
-            안내드리겠습니다.
-          </p>
-
-
-          <div className={styles.completedSummary}>
-
-
-            {/* 희망 상담 */}
-
-            <div className={styles.completedCategoriesRow}>
-
-              <span>
-                희망 상담
-              </span>
-
-
-              <div className={styles.completedCategoryList}>
-
-                {savedCategories.map(
-                  (category) => {
-                    const info =
-                      CATEGORY_INFO[
-                        category
-                      ];
-
-
-                    if (
-                      !info
-                    ) {
-                      return null;
-                    }
-
-
-                    return (
-                      <strong
-                        key={
-                          category
-                        }
-                      >
-                        {info.emoji}{" "}
-                        {info.title}
-                      </strong>
-                    );
-                  }
-                )}
-
-              </div>
-
-            </div>
-
-
-            {/* 기존 영업담당자 */}
-
-            {hasSalesManager &&
-              salesManagerName && (
-
-              <div>
-
-                <span>
-                  오스템 영업담당자
-                </span>
-
-
-                <strong>
-                  {salesManagerName}
-                </strong>
-
-              </div>
-
-            )}
-
-
-            {/* 영업담당자 매칭 결과 */}
-
-            {!hasSalesManager &&
-              completedHasNonLocation && (
-
-              <div>
-
-                <span>
-                  영업담당자 매칭
-                </span>
-
-
-                <strong>
-                  {completedData
-                    ?.needs_manager_matching
-                    ? "필요합니다"
-                    : "필요하지 않습니다"}
-                </strong>
-
-              </div>
-
-            )}
-
-
-            {/* 직접 입력 담당자 */}
-
-            {completedData
-              ?.manager_name && (
-
-              <div>
-
-                <span>
-                  입력 영업담당자
-                </span>
-
-
-                <strong>
-                  {
-                    completedData
-                      .manager_name
-                  }
-                </strong>
-
-              </div>
-
-            )}
-
-          </div>
-
-
-          <button
-            type="button"
-
             className={
-              styles.returnButton
+              styles.primaryButton
             }
-
-            onClick={
-              returnToResult
+            onClick={() =>
+              router.push("/")
             }
           >
-            진단 결과로 돌아가기
+            처음으로 돌아가기
           </button>
-
         </div>
-
       </main>
     );
   }
-
-
-  /* =======================================================
-     상담신청 화면
-  ======================================================= */
 
   return (
     <main className={styles.page}>
-
       <div className={styles.container}>
-
-
-        {/* HEADER */}
-
         <header className={styles.header}>
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={goBackToResult}
+          >
+            ← 진단 결과로 돌아가기
+          </button>
 
           <p className={styles.brand}>
             OSSTEM IMPLANT
           </p>
-
-
-          <p className={styles.kicker}>
-            OPENING CONSULTATION
-          </p>
-
 
           <h1>
             개원 상담 신청
           </h1>
 
-
-          <p>
-            필요한 상담을 선택해주세요.
-            여러 항목을 동시에 선택할 수 있습니다.
+          <p className={styles.intro}>
+            개원 계획과 필요한 상담 항목을
+            남겨주시면 확인 후 상담을
+            도와드립니다.
           </p>
-
         </header>
 
-
-        {/* 기존 영업담당자 */}
-
-        {hasSalesManager &&
-          salesManagerName && (
-
-          <section className={styles.salesManagerCard}>
-
-            <div>
-
-              <p>
-                CURRENT OSSTEM MANAGER
-              </p>
-
-
+        <form
+          className={styles.form}
+          onSubmit={handleSubmit}
+        >
+          <section className={styles.section}>
+            <div
+              className={
+                styles.sectionHeading
+              }
+            >
               <span>
-                현재 오스템 영업담당자
+                01
               </span>
 
+              <div>
+                <h2>
+                  개원 기본 정보
+                </h2>
 
-              <strong>
-                {salesManagerName}
-              </strong>
-
+                <p>
+                  현재 계획하고 계신 개원
+                  정보를 입력해주세요.
+                </p>
+              </div>
             </div>
 
-
-            <div className={styles.salesManagerIcon}>
-              👤
-            </div>
-
-          </section>
-
-        )}
-
-
-        {/* STEP 01 */}
-
-        <section className={styles.section}>
-
-          <div className={styles.sectionTitle}>
-
-            <span>
-              01
-            </span>
-
-
-            <div>
-
-              <small>
-                CONSULTATION
-              </small>
-
-
-              <h2>
-                원하는 상담을 선택해주세요
-              </h2>
-
-
-              <p className={styles.multiSelectNotice}>
-                복수 선택 가능합니다.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div className={styles.categoryList}>
-
-            {CATEGORY_ORDER.map(
-              (key) => {
-                const item =
-                  CATEGORY_INFO[
-                    key
-                  ];
-
-
-                const selected =
-                  selectedCategories.includes(
-                    key
-                  );
-
-
-                return (
-                  <button
-                    key={key}
-
-                    type="button"
-
-                    disabled={
-                      submitting
-                    }
-
-                    className={`${styles.categoryButton} ${
-                      selected
-                        ? styles.selected
-                        : ""
-                    }`}
-
-                    onClick={() =>
-                      toggleCategory(
-                        key
-                      )
-                    }
-                  >
-
-                    <span className={styles.categoryEmoji}>
-                      {item.emoji}
-                    </span>
-
-
-                    <div className={styles.categoryText}>
-
-                      <strong>
-                        {item.title}
-                      </strong>
-
-
-                      <p>
-                        {item.description}
-                      </p>
-
-                    </div>
-
-
-                    <span
-                      className={`${styles.checkBox} ${
-                        selected
-                          ? styles.checkBoxSelected
-                          : ""
-                      }`}
-                    >
-                      {selected
-                        ? "✓"
-                        : ""}
-                    </span>
-
-                  </button>
-                );
+            <div
+              className={
+                styles.fieldGroup
               }
-            )}
+            >
+              <label
+                className={
+                  styles.fieldLabel
+                }
+                htmlFor="desiredRegion"
+              >
+                개원 희망 지역
+                <em>
+                  필수
+                </em>
+              </label>
 
-          </div>
+              <input
+                id="desiredRegion"
+                className={
+                  styles.textInput
+                }
+                type="text"
+                maxLength={120}
+                value={
+                  desiredRegion
+                }
+                onChange={(
+                  event
+                ) =>
+                  setDesiredRegion(
+                    event.target.value
+                  )
+                }
+                placeholder="예: 서울 강남구, 부산 해운대구"
+              />
+            </div>
 
-        </section>
+            <div
+              className={
+                styles.fieldGroup
+              }
+            >
+              <label
+                className={
+                  styles.fieldLabel
+                }
+              >
+                개원 예정시기
+                <em>
+                  필수
+                </em>
+              </label>
 
+              <div
+                className={
+                  styles.dateInputs
+                }
+              >
+                <label>
+                  <input
+                    className={
+                      styles.numberInput
+                    }
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={
+                      plannedOpeningYear
+                    }
+                    onChange={
+                      handleYearChange
+                    }
+                    placeholder="2027"
+                    aria-label="개원 예정 연도"
+                  />
 
-        {/* =================================================
-            STEP 02
-            ★ 명칭을 영업담당자 매칭으로 변경
-        ================================================= */}
+                  <span>
+                    년
+                  </span>
+                </label>
 
-        <div
-          className={`${styles.reveal} ${
-            shouldShowMatchingStep
-              ? styles.revealOpen
-              : ""
-          }`}
-        >
+                <label>
+                  <input
+                    className={
+                      styles.numberInput
+                    }
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={
+                      plannedOpeningMonth
+                    }
+                    onChange={
+                      handleMonthChange
+                    }
+                    placeholder="3"
+                    aria-label="개원 예정 월"
+                  />
 
-          {shouldShowMatchingStep && (
+                  <span>
+                    월
+                  </span>
+                </label>
+              </div>
+            </div>
 
-            <section className={styles.section}>
-
-              <div className={styles.sectionTitle}>
-
-                <span>
-                  02
-                </span>
-
-
-                <div>
-
-                  <small>
-                    SALES MANAGER MATCHING
-                  </small>
-
-
-                  <h2>
-                    영업담당자 매칭이
-                    필요하신가요?
-                  </h2>
-
-                </div>
-
+            <div
+              className={
+                styles.fieldGroup
+              }
+            >
+              <div
+                className={
+                  styles.fieldLabel
+                }
+              >
+                입지선정
+                <em>
+                  필수
+                </em>
               </div>
 
+              <div
+                className={
+                  styles.statusOptions
+                }
+              >
+                {LOCATION_STATUS_OPTIONS.map(
+                  (option) => {
+                    const checked =
+                      locationSelectionStatus ===
+                      option.value;
 
-              <div className={styles.matchingList}>
+                    return (
+                      <label
+                        key={
+                          option.value
+                        }
+                        className={
+                          checked
+                            ? styles.statusOptionActive
+                            : styles.statusOption
+                        }
+                      >
+                        <input
+                          type="checkbox"
+                          checked={
+                            checked
+                          }
+                          onChange={() =>
+                            setLocationSelectionStatus(
+                              checked
+                                ? ""
+                                : option.value
+                            )
+                          }
+                        />
 
+                        <span
+                          className={
+                            styles.checkVisual
+                          }
+                        >
+                          {checked
+                            ? "✓"
+                            : ""}
+                        </span>
 
+                        <strong>
+                          {option.label}
+                        </strong>
+                      </label>
+                    );
+                  }
+                )}
+              </div>
+
+              <p
+                className={
+                  styles.helperText
+                }
+              >
+                한 가지 상태만 선택할 수
+                있습니다.
+              </p>
+            </div>
+          </section>
+
+          <section
+            className={
+              styles.section
+            }
+          >
+            <div
+              className={
+                styles.sectionHeading
+              }
+            >
+              <span>
+                02
+              </span>
+
+              <div>
+                <h2>
+                  희망 상담
+                </h2>
+
+                <p>
+                  필요한 상담을 모두
+                  선택해주세요.
+                </p>
+              </div>
+            </div>
+
+            <div
+              className={
+                styles.categoryGrid
+              }
+            >
+              {CATEGORY_OPTIONS.map(
+                (option) => {
+                  const selected =
+                    selectedCategories.includes(
+                      option.value
+                    );
+
+                  return (
+                    <button
+                      key={
+                        option.value
+                      }
+                      type="button"
+                      className={
+                        selected
+                          ? styles.categoryCardActive
+                          : styles.categoryCard
+                      }
+                      onClick={() =>
+                        toggleCategory(
+                          option.value
+                        )
+                      }
+                      aria-pressed={
+                        selected
+                      }
+                    >
+                      <span
+                        className={
+                          styles.categoryEmoji
+                        }
+                      >
+                        {option.emoji}
+                      </span>
+
+                      <span
+                        className={
+                          styles.categoryText
+                        }
+                      >
+                        <strong>
+                          {option.title}
+                        </strong>
+
+                        <small>
+                          {option.description}
+                        </small>
+                      </span>
+
+                      <span
+                        className={
+                          styles.categoryCheck
+                        }
+                      >
+                        {selected
+                          ? "✓"
+                          : ""}
+                      </span>
+                    </button>
+                  );
+                }
+              )}
+            </div>
+          </section>
+
+          {hasSalesManager && (
+            <section
+              className={
+                styles.managerNotice
+              }
+            >
+              <span>
+                👤
+              </span>
+
+              <div>
+                <strong>
+                  기존 영업담당자가
+                  확인되었습니다.
+                </strong>
+
+                <p>
+                  {salesManagerName
+                    ? `${salesManagerName} 담당자와 연결된 상태입니다.`
+                    : "기존 영업담당자와 연결된 상태입니다."}
+                </p>
+              </div>
+            </section>
+          )}
+
+          {showManagerMatching && (
+            <section
+              className={
+                styles.section
+              }
+            >
+              <div
+                className={
+                  styles.sectionHeading
+                }
+              >
+                <span>
+                  03
+                </span>
+
+                <div>
+                  <h2>
+                    영업담당자 매칭
+                  </h2>
+
+                  <p>
+                    입지 외 상담 진행을 위한
+                    담당자 매칭 여부를
+                    선택해주세요.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className={
+                  styles.matchingOptions
+                }
+              >
                 <button
                   type="button"
-
-                  disabled={
-                    submitting
-                  }
-
-                  className={`${styles.matchButton} ${
-                    needsMatching ===
+                  className={
+                    needsManagerMatching ===
                     true
-                      ? styles.selected
-                      : ""
-                  }`}
-
-                  onClick={() =>
-                    chooseMatching(
-                      true
-                    )
+                      ? styles.matchingOptionActive
+                      : styles.matchingOption
                   }
+                  onClick={() => {
+                    setNeedsManagerMatching(
+                      true
+                    );
+
+                    setManagerName(
+                      ""
+                    );
+                  }}
                 >
-
-                  <span className={styles.radio} />
-
+                  <span>
+                    ✓
+                  </span>
 
                   <div>
-
                     <strong>
                       필요합니다
                     </strong>
 
-
-                    <p>
-                      영업담당자 매칭을 요청합니다.
-                    </p>
-
+                    <small>
+                      새로운 오스템
+                      영업담당자 매칭을
+                      요청합니다.
+                    </small>
                   </div>
-
                 </button>
-
 
                 <button
                   type="button"
-
-                  disabled={
-                    submitting
-                  }
-
-                  className={`${styles.matchButton} ${
-                    needsMatching ===
+                  className={
+                    needsManagerMatching ===
                     false
-                      ? styles.selected
-                      : ""
-                  }`}
-
+                      ? styles.matchingOptionActive
+                      : styles.matchingOption
+                  }
                   onClick={() =>
-                    chooseMatching(
+                    setNeedsManagerMatching(
                       false
                     )
                   }
                 >
-
-                  <span className={styles.radio} />
-
+                  <span>
+                    ✓
+                  </span>
 
                   <div>
-
                     <strong>
                       필요하지 않습니다
                     </strong>
 
-
-                    <p>
-                      현재 상담 중인
-                      오스템 영업담당자가 있습니다.
-                    </p>
-
+                    <small>
+                      현재 상담 중인 오스템
+                      영업담당자가 있습니다.
+                    </small>
                   </div>
-
                 </button>
-
               </div>
 
+              {needsManagerMatching ===
+                false && (
+                <div
+                  className={
+                    styles.fieldGroup
+                  }
+                >
+                  <label
+                    className={
+                      styles.fieldLabel
+                    }
+                    htmlFor="managerName"
+                  >
+                    현재 오스템 영업담당자 이름
+                    <em>
+                      필수
+                    </em>
+                  </label>
 
-              {/* 현재 영업담당자 이름 */}
-
-              <div
-                className={`${styles.managerReveal} ${
-                  needsMatching ===
-                  false
-                    ? styles.managerRevealOpen
-                    : ""
-                }`}
-              >
-
-                {needsMatching ===
-                  false && (
-
-                  <div className={styles.managerBox}>
-
-                    <label htmlFor="managerName">
-                      현재 오스템 영업담당자 이름
-                    </label>
-
-
-                    <input
-                      id="managerName"
-
-                      type="text"
-
-                      maxLength={
-                        50
-                      }
-
-                      autoComplete="off"
-
-                      placeholder="영업담당자 이름을 입력해주세요"
-
-                      value={
-                        managerName
-                      }
-
-                      disabled={
-                        submitting
-                      }
-
-                      onChange={(
-                        event
-                      ) => {
-                        setManagerName(
-                          event.target.value
-                        );
-
-
-                        setErrorMessage(
-                          ""
-                        );
-                      }}
-                    />
-
-                  </div>
-
-                )}
-
-              </div>
-
+                  <input
+                    id="managerName"
+                    className={
+                      styles.textInput
+                    }
+                    type="text"
+                    maxLength={
+                      80
+                    }
+                    value={
+                      managerName
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setManagerName(
+                        event.target.value
+                      )
+                    }
+                    placeholder="영업담당자 이름을 입력해주세요."
+                  />
+                </div>
+              )}
             </section>
-
           )}
 
-        </div>
+          <section
+            className={
+              styles.section
+            }
+          >
+            <div
+              className={
+                styles.sectionHeading
+              }
+            >
+              <span>
+                {showManagerMatching
+                  ? "04"
+                  : "03"}
+              </span>
 
+              <div>
+                <h2>
+                  메모
+                </h2>
 
-        {/* 선택 요약 */}
-
-        {selectedCategories.length >
-          0 && (
-
-          <div className={styles.selectionSummary}>
-
-            <span>
-              선택한 상담
-            </span>
-
-
-            <div>
-
-              {selectedCategories.map(
-                (category) => {
-                  const info =
-                    CATEGORY_INFO[
-                      category
-                    ];
-
-
-                  return (
-                    <strong
-                      key={
-                        category
-                      }
-                    >
-                      {info.emoji}{" "}
-                      {info.title}
-                    </strong>
-                  );
-                }
-              )}
-
+                <p>
+                  상담 시 참고할 내용이 있으면
+                  자유롭게 남겨주세요.
+                </p>
+              </div>
             </div>
 
+            <textarea
+              className={
+                styles.memoInput
+              }
+              value={
+                memo
+              }
+              onChange={(
+                event
+              ) =>
+                setMemo(
+                  event.target.value.slice(
+                    0,
+                    2000
+                  )
+                )
+              }
+              placeholder="예: 2027년 상반기 개원 목표, 30평대 후보지 검토 중"
+              rows={
+                5
+              }
+            />
+
+            <div
+              className={
+                styles.memoCount
+              }
+            >
+              {memo.length} / 2000
+            </div>
+          </section>
+
+          {errorMessage && (
+            <div
+              className={
+                styles.errorBox
+              }
+            >
+              {errorMessage}
+            </div>
+          )}
+
+          <div
+            className={
+              styles.actions
+            }
+          >
+            <button
+              type="button"
+              className={
+                styles.secondaryButton
+              }
+              onClick={
+                goBackToResult
+              }
+              disabled={
+                submitting
+              }
+            >
+              진단 결과로 돌아가기
+            </button>
+
+            <button
+              type="submit"
+              className={
+                styles.primaryButton
+              }
+              disabled={
+                submitting
+              }
+            >
+              {submitting
+                ? "신청 저장 중..."
+                : `상담 신청하기 (${selectedCategories.length}개 선택)`}
+            </button>
           </div>
-
-        )}
-
-
-        {/* ERROR */}
-
-        {errorMessage && (
-
-          <div className={styles.errorMessage}>
-            {errorMessage}
-          </div>
-
-        )}
-
-
-        {/* 최종 상담신청 */}
-
-        <button
-          type="button"
-
-          className={
-            styles.finalSubmitButton
-          }
-
-          disabled={
-            submitting ||
-            selectedCategories.length ===
-              0
-          }
-
-          onClick={
-            submitConsultation
-          }
-        >
-
-          {submitting
-            ? "상담 신청 중..."
-            : selectedCategories.length >
-              0
-              ? `상담 신청하기 (${selectedCategories.length}개 선택)`
-              : "상담 신청하기"}
-
-        </button>
-
-
-        {submitting && (
-
-          <div className={styles.submittingBox}>
-
-            <div className={styles.smallSpinner} />
-
-
-            상담 신청을 저장하고 있습니다.
-
-          </div>
-
-        )}
-
-
-        <p className={styles.privacyNote}>
-          상담 신청 시 진단 과정에서 입력한
-          연락처 및 담당자 정보가 상담 진행을 위해
-          활용될 수 있습니다.
-        </p>
-
+        </form>
       </div>
-
     </main>
   );
 }
