@@ -190,6 +190,10 @@ export async function GET(
 ) {
   try {
 
+    /* =====================================================
+       관리자 인증
+    ===================================================== */
+
     const auth =
       await verifyAdmin(
         request
@@ -214,6 +218,10 @@ export async function GET(
       );
     }
 
+
+    /* =====================================================
+       진단 데이터
+    ===================================================== */
 
     const {
       data:
@@ -276,6 +284,16 @@ export async function GET(
     }
 
 
+    /* =====================================================
+       상담 데이터
+
+       category
+       = 기존 단일 상담 호환
+
+       categories
+       = 새 복수 상담
+    ===================================================== */
+
     const {
       data:
         consultations,
@@ -294,6 +312,7 @@ export async function GET(
 
           category,
           categories,
+          opening_types,
 
           needs_manager_matching,
 
@@ -303,7 +322,9 @@ export async function GET(
           planned_opening_year,
           planned_opening_month,
           location_selection_status,
+          chair_count,
           memo,
+          consultant_name,
 
           status,
 
@@ -335,6 +356,10 @@ export async function GET(
     }
 
 
+    /* =====================================================
+       상담 데이터 MAP
+    ===================================================== */
+
     const consultationMap =
       new Map();
 
@@ -344,6 +369,14 @@ export async function GET(
       []
     ).forEach(
       (consultation) => {
+
+        /*
+          새 복수선택 데이터가 있으면
+          categories 사용
+
+          기존 데이터는
+          category → 배열 형태로 자동 변환
+        */
 
         const normalizedCategories =
           Array.isArray(
@@ -374,6 +407,10 @@ export async function GET(
     );
 
 
+    /* =====================================================
+       진단 + 상담 합치기
+    ===================================================== */
+
     const items =
       (
         responses ||
@@ -390,6 +427,10 @@ export async function GET(
         })
       );
 
+
+    /* =====================================================
+       응답
+    ===================================================== */
 
     return NextResponse.json(
       {
@@ -452,6 +493,10 @@ export async function DELETE(
 
   try {
 
+    /* =====================================================
+       관리자 인증
+    ===================================================== */
+
     const auth =
       await verifyAdmin(
         request
@@ -476,6 +521,10 @@ export async function DELETE(
       );
     }
 
+
+    /* =====================================================
+       요청값 확인
+    ===================================================== */
 
     const body =
       await request.json();
@@ -575,6 +624,16 @@ export async function DELETE(
       );
     }
 
+
+    /* =====================================================
+       삭제
+
+       URL 길이 문제를 피하기 위해 100건 단위로 처리합니다.
+
+       consultation_requests의 외래키가
+       diagnosis_responses(id) ON DELETE CASCADE이므로
+       진단 D/B가 삭제되면 연결 상담 신청도 함께 삭제됩니다.
+    ===================================================== */
 
     const batchSize =
       100;
@@ -696,6 +755,10 @@ export async function DELETE(
       );
     }
 
+
+    /* =====================================================
+       응답
+    ===================================================== */
 
     return NextResponse.json(
       {
