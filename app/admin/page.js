@@ -76,6 +76,21 @@ const STATUS = {
 };
 
 
+/* =========================================================
+   상담 상태 정렬 우선순위
+
+   내림차순(desc) 기본:
+   신규 → 확인중 → 담당자 배정 → 상담 완료 → 상담 미신청
+========================================================= */
+
+const STATUS_SORT_ORDER = {
+  new: 4,
+  reviewing: 3,
+  assigned: 2,
+  completed: 1,
+};
+
+
 const LOCATION_SELECTION_STATUS = {
   completed:
     "완료",
@@ -427,6 +442,155 @@ export default function AdminPage() {
 
 
   /* =======================================================
+     테이블 헤더 정렬
+
+     - 기본 정렬: 상담 상태 내림차순
+       신규 → 확인중 → 담당자 배정 → 상담 완료 → 미신청
+     - 같은 헤더를 다시 누르면 오름차순/내림차순 전환
+     - 다른 헤더를 누르면 해당 항목의 기본 방향으로 정렬
+  ======================================================= */
+
+  const [
+    sortConfig,
+    setSortConfig,
+  ] =
+    useState({
+      key: "status",
+      direction: "desc",
+    });
+
+
+  const SORT_DEFAULT_DIRECTION = {
+    participant: "asc",
+    manager: "asc",
+    result: "desc",
+    combination: "asc",
+    consultation: "desc",
+    matching: "desc",
+    status: "desc",
+  };
+
+
+  function toggleSort(
+    key
+  ) {
+    setSortConfig(
+      (previous) => {
+        if (
+          previous.key ===
+          key
+        ) {
+          return {
+            key,
+            direction:
+              previous.direction ===
+              "desc"
+                ? "asc"
+                : "desc",
+          };
+        }
+
+
+        return {
+          key,
+          direction:
+            SORT_DEFAULT_DIRECTION[
+              key
+            ] ||
+            "asc",
+        };
+      }
+    );
+  }
+
+
+  function renderSortHeader(
+    label,
+    key
+  ) {
+    const active =
+      sortConfig.key ===
+      key;
+
+
+    const indicator =
+      active
+        ? sortConfig.direction ===
+          "desc"
+          ? "▼"
+          : "▲"
+        : "↕";
+
+
+    const directionLabel =
+      active
+        ? sortConfig.direction ===
+          "desc"
+          ? "내림차순"
+          : "오름차순"
+        : "정렬 가능";
+
+
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          toggleSort(
+            key
+          )
+        }
+        title={`${label} · ${directionLabel}`}
+        aria-label={`${label} ${directionLabel}. 클릭하여 정렬`}
+        style={{
+          display:
+            "inline-flex",
+          alignItems:
+            "center",
+          justifyContent:
+            "center",
+          gap:
+            "5px",
+          padding:
+            0,
+          border:
+            0,
+          background:
+            "transparent",
+          color:
+            "inherit",
+          font:
+            "inherit",
+          fontWeight:
+            "inherit",
+          cursor:
+            "pointer",
+          whiteSpace:
+            "nowrap",
+        }}
+      >
+        {label}
+
+        <span
+          aria-hidden="true"
+          style={{
+            color:
+              active
+                ? "#f26a21"
+                : "#b8b0a8",
+            fontSize:
+              "12px",
+            fontWeight:
+              "900",
+          }}
+        >
+          {indicator}
+        </span>
+      </button>
+    );
+  }
+
+
+  /* =======================================================
      TOKEN
   ======================================================= */
 
@@ -720,7 +884,8 @@ export default function AdminPage() {
             .toLowerCase();
 
 
-        return enriched.filter(
+        const filteredItems =
+          enriched.filter(
           (item) => {
             const categories =
               getConsultationCategories(
@@ -795,6 +960,8 @@ export default function AdminPage() {
             }
 
 
+            /* 상담 신청 */
+
             if (
               consultationFilter ===
                 "applied" &&
@@ -813,6 +980,8 @@ export default function AdminPage() {
             }
 
 
+            /* 영업담당자 매칭 필요 */
+
             if (
               consultationFilter ===
                 "matching" &&
@@ -823,6 +992,8 @@ export default function AdminPage() {
               return false;
             }
 
+
+            /* 상담종류 */
 
             if (
               [
@@ -841,6 +1012,8 @@ export default function AdminPage() {
             }
 
 
+            /* 영업담당자 없음 */
+
             if (
               managerFilter ===
               "none"
@@ -853,6 +1026,8 @@ export default function AdminPage() {
               }
             }
 
+
+            /* 특정 영업담당자 */
 
             if (
               managerFilter !==
@@ -873,12 +1048,387 @@ export default function AdminPage() {
             return true;
           }
         );
+
+
+        return filteredItems.sort(
+          (a, b) => {
+            const direction =
+              sortConfig.direction ===
+              "desc"
+                ? -1
+                : 1;
+
+
+            const compareText =
+              (aValue, bValue) =>
+                String(
+                  aValue ||
+                  ""
+                ).localeCompare(
+                  String(
+                    bValue ||
+                    ""
+                  ),
+                  "ko"
+                );
+
+
+            const compareNullableText =
+              (aValue, bValue) => {
+                const aEmpty =
+                  !String(
+                    aValue ||
+                    ""
+                  ).trim();
+
+
+                const bEmpty =
+                  !String(
+                    bValue ||
+                    ""
+                  ).trim();
+
+
+                /* 값이 없는 항목은 정렬 방향과 관계없이 아래쪽 */
+
+                if (
+                  aEmpty &&
+                  !bEmpty
+                ) {
+                  return 1;
+                }
+
+
+                if (
+                  !aEmpty &&
+                  bEmpty
+                ) {
+                  return -1;
+                }
+
+
+                if (
+                  aEmpty &&
+                  bEmpty
+                ) {
+                  return 0;
+                }
+
+
+                return (
+                  compareText(
+                    aValue,
+                    bValue
+                  ) *
+                  direction
+                );
+              };
+
+
+            let primaryCompare =
+              0;
+
+
+            if (
+              sortConfig.key ===
+              "participant"
+            ) {
+              primaryCompare =
+                compareNullableText(
+                  a.name,
+                  b.name
+                );
+
+
+              if (
+                primaryCompare ===
+                0
+              ) {
+                primaryCompare =
+                  compareNullableText(
+                    a.phone,
+                    b.phone
+                  );
+              }
+            }
+
+
+            if (
+              sortConfig.key ===
+              "manager"
+            ) {
+              const aManager =
+                a.has_sales_manager ===
+                  true
+                  ? a.sales_manager_name
+                  : "";
+
+
+              const bManager =
+                b.has_sales_manager ===
+                  true
+                  ? b.sales_manager_name
+                  : "";
+
+
+              primaryCompare =
+                compareNullableText(
+                  aManager,
+                  bManager
+                );
+            }
+
+
+            if (
+              sortConfig.key ===
+              "result"
+            ) {
+              const aScore =
+                typeof a.result_score ===
+                "number"
+                  ? a.result_score
+                  : null;
+
+
+              const bScore =
+                typeof b.result_score ===
+                "number"
+                  ? b.result_score
+                  : null;
+
+
+              if (
+                aScore ===
+                  null &&
+                bScore !==
+                  null
+              ) {
+                primaryCompare =
+                  1;
+              } else if (
+                aScore !==
+                  null &&
+                bScore ===
+                  null
+              ) {
+                primaryCompare =
+                  -1;
+              } else if (
+                aScore !==
+                  null &&
+                bScore !==
+                  null &&
+                aScore !==
+                  bScore
+              ) {
+                primaryCompare =
+                  (aScore -
+                    bScore) *
+                  direction;
+              } else {
+                primaryCompare =
+                  compareNullableText(
+                    a.result_type,
+                    b.result_type
+                  );
+              }
+            }
+
+
+            if (
+              sortConfig.key ===
+              "combination"
+            ) {
+              primaryCompare =
+                compareNullableText(
+                  a.meta
+                    .combination
+                    ?.name,
+                  b.meta
+                    .combination
+                    ?.name
+                );
+            }
+
+
+            if (
+              sortConfig.key ===
+              "consultation"
+            ) {
+              const aRank =
+                a.consultation
+                  ? 1
+                  : 0;
+
+
+              const bRank =
+                b.consultation
+                  ? 1
+                  : 0;
+
+
+              primaryCompare =
+                (aRank -
+                  bRank) *
+                direction;
+
+
+              if (
+                primaryCompare ===
+                  0 &&
+                aRank ===
+                  1
+              ) {
+                primaryCompare =
+                  compareText(
+                    consultationLabel(
+                      a.consultation
+                    ),
+                    consultationLabel(
+                      b.consultation
+                    )
+                  ) *
+                  direction;
+              }
+            }
+
+
+            if (
+              sortConfig.key ===
+              "matching"
+            ) {
+              const getMatchingRank =
+                (item) => {
+                  if (
+                    !item.consultation
+                  ) {
+                    return -1;
+                  }
+
+
+                  const categories =
+                    getConsultationCategories(
+                      item.consultation
+                    );
+
+
+                  const hasNonLocation =
+                    categories.some(
+                      (category) =>
+                        category !==
+                        "location"
+                    );
+
+
+                  if (
+                    !hasNonLocation
+                  ) {
+                    return 0;
+                  }
+
+
+                  if (
+                    item.consultation
+                      .needs_manager_matching ===
+                    true
+                  ) {
+                    return 3;
+                  }
+
+
+                  if (
+                    item.has_sales_manager ===
+                    true
+                  ) {
+                    return 2;
+                  }
+
+
+                  return 1;
+                };
+
+
+              primaryCompare =
+                (
+                  getMatchingRank(
+                    a
+                  ) -
+                  getMatchingRank(
+                    b
+                  )
+                ) *
+                direction;
+            }
+
+
+            if (
+              sortConfig.key ===
+              "status"
+            ) {
+              const aRank =
+                STATUS_SORT_ORDER[
+                  a.consultation
+                    ?.status
+                ] ?? 0;
+
+
+              const bRank =
+                STATUS_SORT_ORDER[
+                  b.consultation
+                    ?.status
+                ] ?? 0;
+
+
+              primaryCompare =
+                (aRank -
+                  bRank) *
+                direction;
+            }
+
+
+            if (
+              primaryCompare !==
+              0
+            ) {
+              return primaryCompare;
+            }
+
+
+            /* 같은 정렬값 안에서는 최근 상담/등록 순 */
+
+            const aDate =
+              new Date(
+                a.consultation
+                  ?.updated_at ||
+                a.consultation
+                  ?.created_at ||
+                a.created_at ||
+                0
+              ).getTime();
+
+
+            const bDate =
+              new Date(
+                b.consultation
+                  ?.updated_at ||
+                b.consultation
+                  ?.created_at ||
+                b.created_at ||
+                0
+              ).getTime();
+
+
+            return bDate -
+              aDate;
+          }
+        );
       },
       [
         enriched,
         search,
         consultationFilter,
         managerFilter,
+        sortConfig,
       ]
     );
 
@@ -1879,31 +2429,52 @@ export default function AdminPage() {
                 </th>
 
                 <th>
-                  참여자
+                  {renderSortHeader(
+                    "참여자",
+                    "participant"
+                  )}
                 </th>
 
                 <th>
-                  영업담당자
+                  {renderSortHeader(
+                    "영업담당자",
+                    "manager"
+                  )}
                 </th>
 
                 <th>
-                  진단결과
+                  {renderSortHeader(
+                    "진단결과",
+                    "result"
+                  )}
                 </th>
 
                 <th>
-                  복합성향
+                  {renderSortHeader(
+                    "복합성향",
+                    "combination"
+                  )}
                 </th>
 
                 <th>
-                  상담
+                  {renderSortHeader(
+                    "상담",
+                    "consultation"
+                  )}
                 </th>
 
                 <th>
-                  영업담당자 매칭
+                  {renderSortHeader(
+                    "영업담당자 매칭",
+                    "matching"
+                  )}
                 </th>
 
                 <th>
-                  상담 상태
+                  {renderSortHeader(
+                    "상담 상태",
+                    "status"
+                  )}
                 </th>
 
                 <th>
