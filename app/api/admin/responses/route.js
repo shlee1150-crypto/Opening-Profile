@@ -166,7 +166,7 @@ async function verifyAdmin(
 
 
 /* =========================================================
-   UUID 확인
+   UUID
 ========================================================= */
 
 function isUuid(
@@ -189,10 +189,6 @@ export async function GET(
   request
 ) {
   try {
-
-    /* =====================================================
-       관리자 인증
-    ===================================================== */
 
     const auth =
       await verifyAdmin(
@@ -218,10 +214,6 @@ export async function GET(
       );
     }
 
-
-    /* =====================================================
-       진단 데이터
-    ===================================================== */
 
     const {
       data:
@@ -284,16 +276,6 @@ export async function GET(
     }
 
 
-    /* =====================================================
-       상담 데이터
-
-       category
-       = 기존 단일 상담 호환
-
-       categories
-       = 새 복수 상담
-    ===================================================== */
-
     const {
       data:
         consultations,
@@ -316,6 +298,12 @@ export async function GET(
           needs_manager_matching,
 
           manager_name,
+
+          desired_region,
+          planned_opening_year,
+          planned_opening_month,
+          location_selection_status,
+          memo,
 
           status,
 
@@ -347,10 +335,6 @@ export async function GET(
     }
 
 
-    /* =====================================================
-       상담 데이터 MAP
-    ===================================================== */
-
     const consultationMap =
       new Map();
 
@@ -360,14 +344,6 @@ export async function GET(
       []
     ).forEach(
       (consultation) => {
-
-        /*
-          새 복수선택 데이터가 있으면
-          categories 사용
-
-          기존 데이터는
-          category → 배열 형태로 자동 변환
-        */
 
         const normalizedCategories =
           Array.isArray(
@@ -398,10 +374,6 @@ export async function GET(
     );
 
 
-    /* =====================================================
-       진단 + 상담 합치기
-    ===================================================== */
-
     const items =
       (
         responses ||
@@ -418,10 +390,6 @@ export async function GET(
         })
       );
 
-
-    /* =====================================================
-       응답
-    ===================================================== */
 
     return NextResponse.json(
       {
@@ -472,7 +440,7 @@ export async function GET(
 
    consultation_requests의 diagnosis_response_id FK가
    ON DELETE CASCADE로 연결되어 있으므로
-   diagnosis_responses 삭제 시 연결 상담 데이터도 같이 삭제
+   diagnosis_responses 삭제 시 연결 상담 데이터도 같이 삭제됩니다.
 ========================================================= */
 
 export async function DELETE(
@@ -483,10 +451,6 @@ export async function DELETE(
 
 
   try {
-
-    /* =====================================================
-       관리자 인증
-    ===================================================== */
 
     const auth =
       await verifyAdmin(
@@ -512,10 +476,6 @@ export async function DELETE(
       );
     }
 
-
-    /* =====================================================
-       요청값 확인
-    ===================================================== */
 
     const body =
       await request.json();
@@ -567,11 +527,6 @@ export async function DELETE(
     }
 
 
-    /*
-      관리자 화면 최대 조회 개수와 동일하게
-      5,000개까지만 허용
-    */
-
     if (
       ids.length >
       5000
@@ -591,11 +546,6 @@ export async function DELETE(
       );
     }
 
-
-    /*
-      임의 문자열이 아니라
-      diagnosis_responses의 UUID만 허용
-    */
 
     const invalidIds =
       ids.filter(
@@ -625,20 +575,6 @@ export async function DELETE(
       );
     }
 
-
-    /* =====================================================
-       삭제
-
-       한 번에 너무 많은 UUID를 넘기지 않도록
-       100건씩 나누어서 삭제
-
-       consultation_requests가
-       diagnosis_responses와
-       ON DELETE CASCADE로 연결되어 있으므로
-
-       진단 D/B 삭제 시 해당 상담 신청 데이터도
-       함께 삭제됨
-    ===================================================== */
 
     const batchSize =
       100;
@@ -760,10 +696,6 @@ export async function DELETE(
       );
     }
 
-
-    /* =====================================================
-       응답
-    ===================================================== */
 
     return NextResponse.json(
       {
