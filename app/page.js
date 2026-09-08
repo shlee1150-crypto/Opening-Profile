@@ -2905,18 +2905,33 @@ export default function Home() {
           </div>
 
 
-          <div className="form-area">
+          <form
+            className="form-area"
+            autoComplete="off"
+            onSubmit={(event) =>
+              event.preventDefault()
+            }
+          >
 
 
             <div className="form-group">
 
-              <label htmlFor="name">
+              <label htmlFor="opf-a">
                 이름
               </label>
 
               <input
-                id="name"
+                id="opf-a"
+                name="opening_profile_field_a"
                 type="text"
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-autocomplete="none"
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 placeholder="이름을 입력해주세요"
                 value={name}
                 onChange={(
@@ -2933,14 +2948,23 @@ export default function Home() {
 
             <div className="form-group">
 
-              <label htmlFor="phone">
+              <label htmlFor="opf-b">
                 휴대폰 번호
               </label>
 
               <input
-                id="phone"
-                type="tel"
+                id="opf-b"
+                name="opening_profile_field_b"
+                type="text"
                 inputMode="numeric"
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-autocomplete="none"
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 placeholder="010-0000-0000"
                 value={phone}
                 onChange={
@@ -2953,14 +2977,23 @@ export default function Home() {
 
             <div className="form-group">
 
-              <label htmlFor="license">
+              <label htmlFor="opf-c">
                 면허번호
               </label>
 
               <input
-                id="license"
+                id="opf-c"
+                name="opening_profile_field_c"
                 type="text"
                 inputMode="numeric"
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-autocomplete="none"
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 placeholder="면허번호를 입력해주세요"
                 value={
                   licenseNumber
@@ -3183,17 +3216,25 @@ export default function Home() {
                   }}
                 >
 
-                  <label htmlFor="salesManagerName">
+                  <label htmlFor="opf-d">
                     영업담당자 이름
                   </label>
 
 
                   <input
-                    id="salesManagerName"
+                    id="opf-d"
+                    name="opening_profile_field_d"
 
                     type="text"
 
-                    autoComplete="off"
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    aria-autocomplete="none"
+                    data-form-type="other"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
 
                     maxLength={
                       50
@@ -3315,7 +3356,7 @@ export default function Home() {
                 : "동의하고 진단 시작"}
             </button>
 
-          </div>
+          </form>
 
         </div>
 
