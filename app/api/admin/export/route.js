@@ -1,92 +1,57 @@
-import {
-  createClient,
-} from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-import {
-  getTypeKeyFromLabel,
-  getCombinationInfo,
-  getCombinationStrength,
-} from "../../../lib/diagnosisData";
+export const runtime = "nodejs";
 
-
-export const runtime =
-  "nodejs";
-
-
-const CATEGORY_LABEL = {
-  location:
-    "입지",
-
-  process:
-    "프로세스 상담",
-
-  major_equipment:
-    "대장비",
-
-  supplies:
-    "소장비·기구·재료",
+const CATEGORY_LABELS = {
+  location: "입지",
+  process: "프로세스 상담",
+  major_equipment: "대장비",
+  supplies: "소장비·기구·재료",
 };
 
-
-const STATUS_LABEL = {
-  new:
-    "신규",
-
-  reviewing:
-    "확인중",
-
-  assigned:
-    "담당자 배정",
-
-  completed:
-    "상담 완료",
+const CONSULTATION_STATUS_LABELS = {
+  new: "신규",
+  reviewing: "확인중",
+  assigned: "담당자 배정",
+  completed: "상담 완료",
 };
 
-
-/* =========================================================
-   SUPABASE
-========================================================= */
+const LOCATION_SELECTION_LABELS = {
+  completed: "완료",
+  in_progress: "진행중",
+  planned: "추후예정",
+};
 
 function getSupabaseAdmin() {
-  const url =
+  const supabaseUrl =
     process.env.SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-
-  const key =
+  const supabaseSecretKey =
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-
   if (
-    !url ||
-    !key
+    !supabaseUrl ||
+    !supabaseSecretKey
   ) {
     throw new Error(
-      "Supabase 환경변수가 없습니다."
+      "Supabase 환경변수가 설정되어 있지 않습니다."
     );
   }
 
-
   return createClient(
-    url,
-    key,
+    supabaseUrl,
+    supabaseSecretKey,
     {
       auth: {
-        persistSession:
-          false,
-
-        autoRefreshToken:
-          false,
+        persistSession: false,
+        autoRefreshToken: false,
       },
     }
   );
 }
-
-
-/* =========================================================
-   관리자 인증
-========================================================= */
 
 async function verifyAdmin(
   request
@@ -95,7 +60,6 @@ async function verifyAdmin(
     request.headers.get(
       "authorization"
     ) || "";
-
 
   const token =
     authorization.startsWith(
@@ -106,34 +70,12 @@ async function verifyAdmin(
         )
       : null;
 
-
-  if (
-    !token
-  ) {
-    return null;
+  if (!token) {
+    return {
+      success: false,
+      status: 401,
+    };
   }
-
-
-  const supabase =
-    getSupabaseAdmin();
-
-
-  const {
-    data,
-    error,
-  } =
-    await supabase.auth.getUser(
-      token
-    );
-
-
-  if (
-    error ||
-    !data?.user
-  ) {
-    return null;
-  }
-
 
   const adminEmail =
     String(
@@ -143,6 +85,33 @@ async function verifyAdmin(
       .trim()
       .toLowerCase();
 
+  if (!adminEmail) {
+    return {
+      success: false,
+      status: 500,
+    };
+  }
+
+  const supabase =
+    getSupabaseAdmin();
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.auth.getUser(
+      token
+    );
+
+  if (
+    error ||
+    !data?.user
+  ) {
+    return {
+      success: false,
+      status: 401,
+    };
+  }
 
   const userEmail =
     String(
@@ -152,32 +121,52 @@ async function verifyAdmin(
       .trim()
       .toLowerCase();
 
-
   if (
     userEmail !==
     adminEmail
   ) {
-    return null;
+    return {
+      success: false,
+      status: 403,
+    };
   }
 
-
-  return supabase;
+  return {
+    success: true,
+    supabase,
+  };
 }
 
-
-/* =========================================================
-   날짜
-========================================================= */
-
-function formatDate(
-  value
-) {
+function csvCell(value) {
   if (
-    !value
+    value === null ||
+    value === undefined
   ) {
-    return "";
+    return '""';
   }
 
+  let text =
+    String(value);
+
+  if (
+    /^[=+\-@]/.test(
+      text
+    )
+  ) {
+    text =
+      `'${text}`;
+  }
+
+  return `"${text.replace(
+    /"/g,
+    '""'
+  )}"`;
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "";
+  }
 
   try {
     return new Intl.DateTimeFormat(
@@ -209,94 +198,14 @@ function formatDate(
         value
       )
     );
-
   } catch {
-    return "";
+    return String(
+      value
+    );
   }
 }
 
-
-/* =========================================================
-   문항
-========================================================= */
-
-function getQuestionCount(
-  answers
-) {
-  if (
-    !answers ||
-    typeof answers !==
-      "object"
-  ) {
-    return 0;
-  }
-
-
-  return Object.keys(
-    answers
-  ).filter(
-    (key) =>
-      /^q\d+$/.test(
-        key
-      )
-  ).length;
-}
-
-
-function getAnswerText(
-  answers,
-  number
-) {
-  const entry =
-    answers?.[
-      `q${number}`
-    ];
-
-
-  if (
-    !entry
-  ) {
-    return "";
-  }
-
-
-  if (
-    typeof entry ===
-    "string"
-  ) {
-    return entry;
-  }
-
-
-  return (
-    entry.answer ||
-    entry.text ||
-    ""
-  );
-}
-
-
-/* =========================================================
-   CSV
-========================================================= */
-
-function csvCell(
-  value
-) {
-  return `"${String(
-    value ?? ""
-  ).replaceAll(
-    '"',
-    '""'
-  )}"`;
-}
-
-
-/* =========================================================
-   상담목록
-========================================================= */
-
-function getCategories(
+function normalizeCategories(
   consultation
 ) {
   if (
@@ -305,59 +214,78 @@ function getCategories(
     return [];
   }
 
-
-  const source =
+  if (
     Array.isArray(
       consultation.categories
     ) &&
     consultation.categories.length >
       0
-      ? consultation.categories
-      : consultation.category
-        ? [
-            consultation.category,
-          ]
-        : [];
+  ) {
+    return consultation.categories;
+  }
 
-
-  return [
-    ...new Set(
-      source
-    ),
-  ];
+  return consultation.category
+    ? [
+        consultation.category,
+      ]
+    : [];
 }
 
+function getAnswerText(
+  answers,
+  index
+) {
+  const entry =
+    answers?.[
+      `q${index}`
+    ];
 
-/* =========================================================
-   GET
-========================================================= */
+  if (
+    !entry
+  ) {
+    return "";
+  }
+
+  if (
+    typeof entry ===
+    "string"
+  ) {
+    return entry;
+  }
+
+  return (
+    entry.answer ||
+    entry.label ||
+    entry.value ||
+    ""
+  );
+}
 
 export async function GET(
   request
 ) {
   try {
-    const supabase =
+    const auth =
       await verifyAdmin(
         request
       );
 
-
     if (
-      !supabase
+      !auth.success
     ) {
-      return new Response(
-        "Unauthorized",
+      return NextResponse.json(
+        {
+          success: false,
+
+          message:
+            "관리자 권한이 없습니다.",
+        },
         {
           status:
-            403,
+            auth.status,
         }
       );
     }
-
-
-    /* =====================================================
-       진단
-    ===================================================== */
 
     const {
       data:
@@ -366,31 +294,25 @@ export async function GET(
       error:
         responseError,
     } =
-      await supabase
+      await auth.supabase
         .from(
           "diagnosis_responses"
         )
         .select(`
           id,
-
           name,
           phone,
           license_number,
-
-          has_sales_manager,
-          sales_manager_name,
-
+          privacy_consent,
           answers,
           type_scores,
-
           result_type,
           result_score,
-
           secondary_type,
           secondary_score,
-
           completed,
-
+          has_sales_manager,
+          sales_manager_name,
           created_at,
           completed_at
         `)
@@ -405,17 +327,16 @@ export async function GET(
           5000
         );
 
-
     if (
       responseError
     ) {
+      console.error(
+        "CSV diagnosis responses error:",
+        responseError
+      );
+
       throw responseError;
     }
-
-
-    /* =====================================================
-       상담
-    ===================================================== */
 
     const {
       data:
@@ -424,93 +345,94 @@ export async function GET(
       error:
         consultationError,
     } =
-      await supabase
+      await auth.supabase
         .from(
           "consultation_requests"
         )
         .select(`
           id,
-
           diagnosis_response_id,
-
           category,
           categories,
-
           needs_manager_matching,
-
           manager_name,
-
+          desired_region,
+          planned_opening_year,
+          planned_opening_month,
+          location_selection_status,
+          memo,
           status,
-
           created_at,
           updated_at
         `)
+        .order(
+          "created_at",
+          {
+            ascending:
+              false,
+          }
+        )
         .limit(
           5000
         );
 
-
     if (
       consultationError
     ) {
+      console.error(
+        "CSV consultations error:",
+        consultationError
+      );
+
       throw consultationError;
     }
 
-
     const consultationMap =
       new Map();
-
 
     (
       consultations ||
       []
     ).forEach(
-      (item) =>
-        consultationMap.set(
-          item.diagnosis_response_id,
-          item
-        )
+      (consultation) => {
+        if (
+          consultation?.diagnosis_response_id &&
+          !consultationMap.has(
+            consultation.diagnosis_response_id
+          )
+        ) {
+          consultationMap.set(
+            consultation.diagnosis_response_id,
+            consultation
+          );
+        }
+      }
     );
 
-
-    /* =====================================================
-       CSV HEADERS
-    ===================================================== */
-
     const headers = [
-      "이름",
-      "휴대폰번호",
-      "면허번호",
-
-      "영업담당자유무",
-      "영업담당자이름",
-
-      "진단시작일",
+      "등록일",
       "진단완료일",
-      "진단버전",
-
+      "이름",
+      "연락처",
+      "면허번호",
+      "개인정보동의",
+      "영업담당자 유무",
+      "기존 영업담당자",
       "주성향",
-      "주성향점수",
-
+      "주성향 점수",
       "보조성향",
-      "보조성향점수",
-
-      "복합성향",
-      "복합성향강도",
-
-      "안정정착형점수",
-      "집중공격형점수",
-      "데이터분석형점수",
-      "선점개척형점수",
-
-      "상담신청여부",
-      "희망상담",
-
-      "영업담당자매칭",
-      "상담에서입력한영업담당자",
-
-      "상담상태",
-      "상담신청일",
+      "보조성향 점수",
+      "상담 신청 여부",
+      "개원 희망 지역",
+      "개원 예정 연도",
+      "개원 예정 월",
+      "입지선정",
+      "희망 상담",
+      "영업담당자 매칭 필요",
+      "상담에서 입력한 영업담당자",
+      "상담 상태",
+      "상담 신청일",
+      "메모",
 
       ...Array.from(
         {
@@ -521,14 +443,9 @@ export async function GET(
           _,
           index
         ) =>
-          `Q${index + 1}`
+          `Q${index + 1} 응답`
       ),
     ];
-
-
-    /* =====================================================
-       ROWS
-    ===================================================== */
 
     const rows =
       (
@@ -536,75 +453,22 @@ export async function GET(
         []
       ).map(
         (item) => {
-
-          const primaryType =
-            item.result_type
-              ? getTypeKeyFromLabel(
-                  item.result_type
-                )
-              : null;
-
-
-          const secondaryType =
-            item.secondary_type
-              ? getTypeKeyFromLabel(
-                  item.secondary_type
-                )
-              : null;
-
-
-          const combination =
-            primaryType &&
-            secondaryType
-              ? getCombinationInfo(
-                  primaryType,
-                  secondaryType
-                )
-              : null;
-
-
-          const strength =
-            combination
-              ? getCombinationStrength(
-                  item.result_score,
-                  item.secondary_score
-                )
-              : null;
-
-
-          const scores =
-            item.type_scores &&
-            typeof item.type_scores ===
-              "object"
-              ? item.type_scores
-              : {};
-
-
           const consultation =
             consultationMap.get(
               item.id
-            );
-
+            ) ||
+            null;
 
           const categories =
-            getCategories(
+            normalizeCategories(
               consultation
             );
 
-
-          const hasNonLocation =
-            categories.some(
-              (category) =>
-                category !==
-                "location"
-            );
-
-
-          const consultationNames =
+          const consultationLabels =
             categories
               .map(
                 (category) =>
-                  CATEGORY_LABEL[
+                  CATEGORY_LABELS[
                     category
                   ] ||
                   category
@@ -613,14 +477,15 @@ export async function GET(
                 " / "
               );
 
+          const hasNonLocation =
+            categories.some(
+              (category) =>
+                category !==
+                "location"
+            );
 
-          /* ===============================================
-             영업담당자 매칭
-          =============================================== */
-
-          let matching =
+          let matchingLabel =
             "";
-
 
           if (
             consultation
@@ -628,146 +493,112 @@ export async function GET(
             if (
               !hasNonLocation
             ) {
-              matching =
+              matchingLabel =
                 "해당없음";
-
             } else if (
               item.has_sales_manager ===
               true
             ) {
-              matching =
+              matchingLabel =
                 "기존 담당자 있음";
-
             } else {
-              matching =
-                consultation
-                  .needs_manager_matching ===
-                  true
+              matchingLabel =
+                consultation.needs_manager_matching ===
+                true
                   ? "필요"
                   : "불필요";
             }
           }
 
-
-          const count =
-            getQuestionCount(
-              item.answers
-            );
-
-
-          const version =
-            count >= 12
-              ? "12문항"
-              : count > 0
-                ? `${count}문항 이전`
-                : "";
-
-
           return [
-            item.name,
-
-            item.phone,
-
-            item.license_number,
-
-
-            item.has_sales_manager ===
-            true
-              ? "있음"
-              : item.has_sales_manager ===
-                false
-                ? "없음"
-                : "",
-
-
-            item.sales_manager_name ||
-            "",
-
-
             formatDate(
               item.created_at
             ),
-
 
             formatDate(
               item.completed_at
             ),
 
+            item.name ||
+              "",
 
-            version,
+            item.phone ||
+              "",
 
+            item.license_number ||
+              "",
+
+            item.privacy_consent ===
+            true
+              ? "동의"
+              : "미동의",
+
+            item.has_sales_manager ===
+            true
+              ? "있음"
+              : "없음",
+
+            item.sales_manager_name ||
+              "",
 
             item.result_type ||
-            "",
-
+              "",
 
             item.result_score ??
-            "",
-
+              "",
 
             item.secondary_type ||
-            "",
-
+              "",
 
             item.secondary_score ??
-            "",
-
-
-            combination?.name ||
-            "",
-
-
-            strength?.label ||
-            "",
-
-
-            scores.stable ??
-            "",
-
-
-            scores.aggressive ??
-            "",
-
-
-            scores.analytical ??
-            "",
-
-
-            scores.pioneer ??
-            "",
-
+              "",
 
             consultation
               ? "신청"
               : "미신청",
 
+            consultation
+              ?.desired_region ||
+              "",
 
-            consultationNames,
+            consultation
+              ?.planned_opening_year ??
+              "",
 
+            consultation
+              ?.planned_opening_month ??
+              "",
 
-            matching,
+            consultation
+              ? LOCATION_SELECTION_LABELS[
+                  consultation.location_selection_status
+                ] ||
+                ""
+              : "",
 
+            consultationLabels,
+
+            matchingLabel,
 
             consultation
               ?.manager_name ||
               "",
 
-
             consultation
-              ? STATUS_LABEL[
+              ? CONSULTATION_STATUS_LABELS[
                   consultation.status
                 ] ||
                 consultation.status ||
                 ""
               : "",
 
+            formatDate(
+              consultation?.created_at
+            ),
 
             consultation
-              ? formatDate(
-                  consultation.created_at
-                )
-              : "",
-
+              ?.memo ||
+              "",
 
             ...Array.from(
               {
@@ -787,17 +618,17 @@ export async function GET(
         }
       );
 
-
-    /* =====================================================
-       CSV 생성
-    ===================================================== */
-
     const csv =
       [
-        headers,
-        ...rows,
-      ]
-        .map(
+        headers
+          .map(
+            csvCell
+          )
+          .join(
+            ","
+          ),
+
+        ...rows.map(
           (row) =>
             row
               .map(
@@ -806,53 +637,46 @@ export async function GET(
               .join(
                 ","
               )
-        )
-        .join(
-          "\r\n"
-        );
+        ),
+      ].join(
+        "\r\n"
+      );
 
-
-    const date =
-      new Date()
-        .toISOString()
-        .slice(
-          0,
-          10
-        );
-
+    const bomCsv =
+      `\uFEFF${csv}`;
 
     return new Response(
-      "\uFEFF" +
-      csv,
+      bomCsv,
       {
-        status:
-          200,
+        status: 200,
 
         headers: {
           "Content-Type":
             "text/csv; charset=utf-8",
 
           "Content-Disposition":
-            `attachment; filename="opening-profile-${date}.csv"`,
+            'attachment; filename="opening-profile.csv"',
 
           "Cache-Control":
             "no-store",
         },
       }
     );
-
   } catch (error) {
     console.error(
-      "Admin export error:",
+      "Admin CSV export error:",
       error
     );
 
-
-    return new Response(
-      "Export failed",
+    return NextResponse.json(
       {
-        status:
-          500,
+        success: false,
+
+        message:
+          "CSV 파일 생성에 실패했습니다.",
+      },
+      {
+        status: 500,
       }
     );
   }
