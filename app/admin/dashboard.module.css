@@ -575,6 +575,180 @@
 
 
 /* =========================================================
+   선택 / 삭제
+========================================================= */
+
+.listHeaderActions {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+}
+
+
+.recordCount {
+  color:
+    #f26a21;
+
+  font-size:
+    12px;
+
+  font-weight:
+    900;
+}
+
+
+.selectedCount {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 34px;
+
+  padding:
+    0 10px;
+
+  border:
+    1px solid #f4c6a9;
+
+  border-radius:
+    999px;
+
+  background:
+    #fff5ed;
+
+  color:
+    #f26a21;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  white-space:
+    nowrap;
+}
+
+
+.deleteButton {
+  height: 36px;
+
+  padding:
+    0 13px;
+
+  border:
+    1px solid #d94b3c;
+
+  border-radius:
+    9px;
+
+  background:
+    #ffffff;
+
+  color:
+    #c94335;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  cursor:
+    pointer;
+
+  transition:
+    background .2s ease,
+    color .2s ease,
+    border-color .2s ease,
+    opacity .2s ease;
+}
+
+
+.deleteButton:hover:not(:disabled) {
+  border-color:
+    #c94335;
+
+  background:
+    #c94335;
+
+  color:
+    #ffffff;
+}
+
+
+.deleteButton:disabled {
+  border-color:
+    #ddd6cf;
+
+  background:
+    #f4f1ed;
+
+  color:
+    #aaa29b;
+
+  cursor:
+    default;
+
+  opacity:
+    .75;
+}
+
+
+.checkboxColumn,
+.checkboxCell {
+  width: 46px;
+
+  min-width: 46px;
+
+  text-align:
+    center !important;
+}
+
+
+.rowCheckbox {
+  width: 17px;
+
+  height: 17px;
+
+  margin: 0;
+
+  accent-color:
+    #f26a21;
+
+  cursor:
+    pointer;
+}
+
+
+.rowCheckbox:disabled {
+  cursor:
+    default;
+
+  opacity:
+    .5;
+}
+
+
+.selectedRow {
+  background:
+    #fff6ef !important;
+}
+
+
+.selectedRow:hover {
+  background:
+    #fff1e6 !important;
+}
+
+
+/* =========================================================
    TABLE
 ========================================================= */
 
@@ -1514,6 +1688,43 @@
   .answers {
     grid-template-columns:
       1fr;
+  }
+
+}
+
+
+/* =========================================================
+   선택 / 삭제 반응형
+========================================================= */
+
+@media (
+  max-width: 650px
+) {
+
+  .listHeader {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+  }
+
+
+  .listHeaderActions {
+    width:
+      100%;
+
+    justify-content:
+      flex-start;
+  }
+
+
+  .deleteButton {
+    flex:
+      1;
+
+    min-width:
+      110px;
   }
 
 }
