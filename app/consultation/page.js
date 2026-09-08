@@ -64,8 +64,8 @@ const OPENING_TYPE_OPTIONS = [
     label: "재개원",
   },
   {
-    value: "confirmed",
-    label: "확정",
+    value: "expansion",
+    label: "확장개원",
   },
 ];
 
@@ -190,7 +190,12 @@ export default function ConsultationPage() {
         if (consultation) {
           setOpeningTypes(
             Array.isArray(consultation.opening_types)
-              ? consultation.opening_types
+              ? consultation.opening_types.map(
+                  (type) =>
+                    type === "confirmed"
+                      ? "expansion"
+                      : type
+                )
               : []
           );
           setDesiredRegion(
@@ -584,6 +589,10 @@ export default function ConsultationPage() {
                 }
                 placeholder="예: 서울 강남구, 부산 해운대구"
               />
+
+              <p className={styles.helperText}>
+                00동까지 자세하게 적어주시면 더 정확한 상담이 가능합니다.
+              </p>
             </div>
 
             <div className={styles.fieldGroup}>
