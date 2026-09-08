@@ -103,6 +103,24 @@ const LOCATION_SELECTION_STATUS = {
 };
 
 
+const OPENING_TYPE_LABELS = {
+  new_opening:
+    "신규개원",
+
+  relocation:
+    "이전개원",
+
+  acquisition:
+    "인수개원",
+
+  reopening:
+    "재개원",
+
+  confirmed:
+    "확정",
+};
+
+
 const supabaseUrl =
   process.env
     .NEXT_PUBLIC_SUPABASE_URL;
@@ -917,6 +935,18 @@ export default function AdminPage() {
                   item.consultation
                     ?.manager_name,
 
+                  ...(Array.isArray(
+                    item.consultation
+                      ?.opening_types
+                  )
+                    ? item.consultation.opening_types.map(
+                        (type) =>
+                          OPENING_TYPE_LABELS[
+                            type
+                          ] || type
+                      )
+                    : []),
+
                   item.consultation
                     ?.desired_region,
 
@@ -932,7 +962,13 @@ export default function AdminPage() {
                   ],
 
                   item.consultation
+                    ?.chair_count,
+
+                  item.consultation
                     ?.memo,
+
+                  item.consultation
+                    ?.consultant_name,
 
                   ...categories.map(
                     (category) =>
@@ -3142,6 +3178,34 @@ export default function AdminPage() {
                                       <div>
 
                                         <span>
+                                          개원종류
+                                        </span>
+
+                                        <strong>
+                                          {Array.isArray(
+                                            consultation.opening_types
+                                          ) &&
+                                          consultation.opening_types.length >
+                                            0
+                                            ? consultation.opening_types
+                                                .map(
+                                                  (type) =>
+                                                    OPENING_TYPE_LABELS[
+                                                      type
+                                                    ] || type
+                                                )
+                                                .join(
+                                                  " · "
+                                                )
+                                            : "-"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
                                           개원 희망 지역
                                         </span>
 
@@ -3179,6 +3243,21 @@ export default function AdminPage() {
                                           {LOCATION_SELECTION_STATUS[
                                             consultation.location_selection_status
                                           ] || "-"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          체어규모
+                                        </span>
+
+                                        <strong>
+                                          {consultation.chair_count
+                                            ? `${consultation.chair_count}대`
+                                            : "-"}
                                         </strong>
 
                                       </div>
@@ -3270,6 +3349,20 @@ export default function AdminPage() {
 
                                         <strong>
                                           {consultation.memo ||
+                                            "-"}
+                                        </strong>
+
+                                      </div>
+
+
+                                      <div>
+
+                                        <span>
+                                          상담자
+                                        </span>
+
+                                        <strong>
+                                          {consultation.consultant_name ||
                                             "-"}
                                         </strong>
 
