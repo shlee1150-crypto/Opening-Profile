@@ -24,6 +24,52 @@ import {
 
 
 /* =========================================================
+   답변 전체 기준 점수 재계산
+
+   뒤로 가서 답변을 수정했을 때
+   기존 점수가 중복으로 더해지는 것을 방지
+========================================================= */
+
+function calculateScoresFromAnswers(
+  answers
+) {
+  const nextScores = {
+    ...INITIAL_SCORES,
+  };
+
+
+  QUESTIONS.forEach(
+    (question) => {
+      const answer =
+        answers[
+          `q${question.id}`
+        ];
+
+
+      if (
+        !answer?.type ||
+        typeof nextScores[
+          answer.type
+        ] !==
+          "number"
+      ) {
+        return;
+      }
+
+
+      nextScores[
+        answer.type
+      ] +=
+        question.weight;
+    }
+  );
+
+
+  return nextScores;
+}
+
+
+/* =========================================================
    보조성향 판정
 ========================================================= */
 
@@ -117,8 +163,10 @@ function selectSecondaryType(
 
         return {
           type,
+
           count:
             selected.length,
+
           lastQuestion,
         };
       }
@@ -1207,6 +1255,7 @@ export default function Home() {
   const router =
     useRouter();
 
+
   const detailRef =
     useRef(null);
 
@@ -1242,7 +1291,7 @@ export default function Home() {
 
 
   /* =======================================================
-     신규 영업담당자
+     영업담당자
   ======================================================= */
 
   const [
@@ -1408,9 +1457,11 @@ export default function Home() {
         "openingProfileResultState"
       );
 
+
       sessionStorage.removeItem(
         "openingProfileReturnToResult"
       );
+
 
       sessionStorage.removeItem(
         "openingProfileConsultationCompleted"
@@ -1461,6 +1512,7 @@ export default function Home() {
           !parsed?.finalResult
         ) {
           clearResultSession();
+
 
           return;
         }
@@ -1531,6 +1583,59 @@ export default function Home() {
 
 
   /* =======================================================
+     이전 답변 표시
+
+     뒤로 이동했을 때 기존 선택지를 다시 표시
+  ======================================================= */
+
+  useEffect(
+    () => {
+      if (
+        stage !==
+          "survey" ||
+        transitioning
+      ) {
+        return;
+      }
+
+
+      const current =
+        QUESTIONS[
+          currentQuestion
+        ];
+
+
+      if (!current) {
+        setSelectedType(
+          null
+        );
+
+
+        return;
+      }
+
+
+      const savedAnswer =
+        answers[
+          `q${current.id}`
+        ];
+
+
+      setSelectedType(
+        savedAnswer?.type ||
+        null
+      );
+    },
+    [
+      stage,
+      currentQuestion,
+      answers,
+      transitioning,
+    ]
+  );
+
+
+  /* =======================================================
      전화번호
   ======================================================= */
 
@@ -1563,6 +1668,7 @@ export default function Home() {
           value
         );
 
+
         return;
       }
 
@@ -1579,6 +1685,7 @@ export default function Home() {
             3
           )}`
         );
+
 
         return;
       }
@@ -1614,6 +1721,7 @@ export default function Home() {
           "이름을 입력해주세요."
         );
 
+
         return;
       }
 
@@ -1629,6 +1737,7 @@ export default function Home() {
           "휴대폰 번호를 정확하게 입력해주세요."
         );
 
+
         return;
       }
 
@@ -1640,14 +1749,10 @@ export default function Home() {
           "면허번호를 입력해주세요."
         );
 
+
         return;
       }
 
-
-      /*
-        영업담당자 유무는
-        반드시 선택
-      */
 
       if (
         typeof hasSalesManager !==
@@ -1657,13 +1762,10 @@ export default function Home() {
           "영업담당자 유무를 선택해주세요."
         );
 
+
         return;
       }
 
-
-      /*
-        담당자가 있다면 이름 필수
-      */
 
       if (
         hasSalesManager ===
@@ -1677,6 +1779,7 @@ export default function Home() {
           "영업담당자 이름을 입력해주세요."
         );
 
+
         return;
       }
 
@@ -1687,6 +1790,7 @@ export default function Home() {
         setErrorMessage(
           "개인정보 수집 및 이용에 동의해주세요."
         );
+
 
         return;
       }
@@ -1781,6 +1885,105 @@ export default function Home() {
 
 
   /* =======================================================
+     이전 질문
+
+     - 답변과 점수는 그대로 유지
+     - 기존 선택 답변을 화면에 표시
+     - 새 답변 선택 시 점수를 전체 재계산
+  ======================================================= */
+
+  const goToPreviousQuestion =
+    () => {
+      if (
+        transitioning
+      ) {
+        return;
+      }
+
+
+      /*
+        동점 판별 화면에서
+        마지막 일반 질문으로 돌아가기
+      */
+
+      if (
+        stage ===
+        "tiebreaker"
+      ) {
+        const lastIndex =
+          QUESTIONS.length -
+          1;
+
+
+        const lastQuestion =
+          QUESTIONS[
+            lastIndex
+          ];
+
+
+        setTieTypes(
+          []
+        );
+
+
+        setCurrentQuestion(
+          lastIndex
+        );
+
+
+        setSelectedType(
+          answers[
+            `q${lastQuestion.id}`
+          ]?.type ||
+            null
+        );
+
+
+        setStage(
+          "survey"
+        );
+
+
+        return;
+      }
+
+
+      if (
+        stage !==
+          "survey" ||
+        currentQuestion <=
+          0
+      ) {
+        return;
+      }
+
+
+      const previousIndex =
+        currentQuestion -
+        1;
+
+
+      const previousQuestion =
+        QUESTIONS[
+          previousIndex
+        ];
+
+
+      setCurrentQuestion(
+        previousIndex
+      );
+
+
+      setSelectedType(
+        answers[
+          `q${previousQuestion.id}`
+        ]?.type ||
+          null
+      );
+    };
+
+
+  /* =======================================================
      설문 선택
   ======================================================= */
 
@@ -1827,15 +2030,18 @@ export default function Home() {
       };
 
 
-      const nextScores = {
-        ...scores,
+      /*
+        기존 방식처럼 현재 점수에 단순 가산하지 않고
+        전체 답변을 기준으로 다시 계산
 
-        [option.type]:
-          scores[
-            option.type
-          ] +
-          question.weight,
-      };
+        따라서 뒤로 가서 답을 바꿔도
+        기존 점수가 중복되지 않음
+      */
+
+      const nextScores =
+        calculateScoresFromAnswers(
+          nextAnswers
+        );
 
 
       setAnswers(
@@ -1860,11 +2066,6 @@ export default function Home() {
 
       setTimeout(
         () => {
-          setSelectedType(
-            null
-          );
-
-
           setTransitioning(
             false
           );
@@ -1880,8 +2081,14 @@ export default function Home() {
                 1
             );
 
+
             return;
           }
+
+
+          setSelectedType(
+            null
+          );
 
 
           evaluateMainResult(
@@ -2217,11 +2424,6 @@ export default function Home() {
         );
 
 
-        /*
-          ★ 영업담당자 정보도
-          상담 페이지에서 사용할 수 있도록 저장
-        */
-
         sessionStorage.setItem(
           "openingProfileResultState",
           JSON.stringify({
@@ -2383,6 +2585,7 @@ export default function Home() {
           "상담 신청 정보를 확인할 수 없습니다."
         );
 
+
         return;
       }
 
@@ -2436,6 +2639,7 @@ export default function Home() {
         setEmailError(
           "이메일 주소를 정확하게 입력해주세요."
         );
+
 
         return;
       }
@@ -2776,9 +2980,7 @@ export default function Home() {
             </div>
 
 
-            {/* =================================================
-                신규 영업담당자 유무
-            ================================================= */}
+            {/* 영업담당자 유무 */}
 
             <div
               style={{
@@ -2829,6 +3031,7 @@ export default function Home() {
                     setHasSalesManager(
                       true
                     );
+
 
                     setErrorMessage(
                       ""
@@ -2885,9 +3088,11 @@ export default function Home() {
                       false
                     );
 
+
                     setSalesManagerName(
                       ""
                     );
+
 
                     setErrorMessage(
                       ""
@@ -2937,8 +3142,6 @@ export default function Home() {
 
               </div>
 
-
-              {/* 담당자 이름 애니메이션 */}
 
               <div
                 style={{
@@ -3175,6 +3378,93 @@ export default function Home() {
           </div>
 
 
+          {/* 이전 질문 버튼 */}
+
+          <div
+            style={{
+              display:
+                "flex",
+
+              justifyContent:
+                "flex-start",
+
+              margin:
+                "14px 0 12px",
+            }}
+          >
+
+            <button
+              type="button"
+
+              disabled={
+                currentQuestion ===
+                  0 ||
+                transitioning
+              }
+
+              onClick={
+                goToPreviousQuestion
+              }
+
+              style={{
+                display:
+                  "inline-flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "center",
+
+                minHeight:
+                  "42px",
+
+                padding:
+                  "0 14px",
+
+                border:
+                  "1px solid #ddd6ce",
+
+                borderRadius:
+                  "11px",
+
+                background:
+                  "#ffffff",
+
+                color:
+                  currentQuestion ===
+                  0
+                    ? "#b9b3ad"
+                    : "#615a54",
+
+                fontSize:
+                  "13px",
+
+                fontWeight:
+                  "800",
+
+                cursor:
+                  currentQuestion ===
+                  0
+                    ? "default"
+                    : "pointer",
+
+                opacity:
+                  currentQuestion ===
+                  0
+                    ? 0.45
+                    : 1,
+
+                transition:
+                  "all .2s ease",
+              }}
+            >
+              ← 이전 질문
+            </button>
+
+          </div>
+
+
           <div
             key={question.id}
 
@@ -3243,16 +3533,20 @@ export default function Home() {
                 ) => (
                   <button
                     key={`${question.id}-${option.type}`}
+
                     type="button"
+
                     disabled={
                       transitioning
                     }
+
                     className={
                       selectedType ===
                       option.type
                         ? "selected"
                         : ""
                     }
+
                     onClick={() =>
                       selectAnswer(
                         option
@@ -3297,6 +3591,7 @@ export default function Home() {
         <div className="survey-container">
 
           <div className="survey-header">
+
             <span>
               개원성향진단
             </span>
@@ -3304,10 +3599,12 @@ export default function Home() {
             <span>
               FINAL
             </span>
+
           </div>
 
 
           <div className="progress">
+
             <div
               className="progress-bar"
               style={{
@@ -3315,6 +3612,87 @@ export default function Home() {
                   "100%",
               }}
             />
+
+          </div>
+
+
+          {/* 최종 판별에서도 Q12로 돌아가기 */}
+
+          <div
+            style={{
+              display:
+                "flex",
+
+              justifyContent:
+                "flex-start",
+
+              margin:
+                "14px 0 12px",
+            }}
+          >
+
+            <button
+              type="button"
+
+              disabled={
+                transitioning
+              }
+
+              onClick={
+                goToPreviousQuestion
+              }
+
+              style={{
+                display:
+                  "inline-flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "center",
+
+                minHeight:
+                  "42px",
+
+                padding:
+                  "0 14px",
+
+                border:
+                  "1px solid #ddd6ce",
+
+                borderRadius:
+                  "11px",
+
+                background:
+                  "#ffffff",
+
+                color:
+                  "#615a54",
+
+                fontSize:
+                  "13px",
+
+                fontWeight:
+                  "800",
+
+                cursor:
+                  transitioning
+                    ? "default"
+                    : "pointer",
+
+                opacity:
+                  transitioning
+                    ? 0.55
+                    : 1,
+
+                transition:
+                  "all .2s ease",
+              }}
+            >
+              ← 이전 질문
+            </button>
+
           </div>
 
 
@@ -3341,10 +3719,13 @@ export default function Home() {
                 ) => (
                   <button
                     key={type}
+
                     type="button"
+
                     disabled={
                       transitioning
                     }
+
                     onClick={() =>
                       selectTiebreaker(
                         type
@@ -3743,6 +4124,7 @@ export default function Home() {
 
                         <div
                           className="score-fill"
+
                           style={{
                             width:
                               `${percentage}%`,
