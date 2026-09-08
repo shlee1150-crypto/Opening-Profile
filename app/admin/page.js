@@ -400,6 +400,20 @@ export default function AdminPage() {
     useState(false);
 
 
+  const [
+    selectedIds,
+    setSelectedIds,
+  ] =
+    useState([]);
+
+
+  const [
+    deleting,
+    setDeleting,
+  ] =
+    useState(false);
+
+
   /* =======================================================
      TOKEN
   ======================================================= */
@@ -547,6 +561,25 @@ export default function AdminPage() {
       loadData();
     },
     []
+  );
+
+
+  /*
+    검색 / 필터 변경 시
+    이전에 체크해놓은 항목 자동 해제
+  */
+
+  useEffect(
+    () => {
+      setSelectedIds(
+        []
+      );
+    },
+    [
+      search,
+      consultationFilter,
+      managerFilter,
+    ]
   );
 
 
@@ -834,6 +867,321 @@ export default function AdminPage() {
         managerFilter,
       ]
     );
+
+
+  /* =======================================================
+     선택 / 삭제
+  ======================================================= */
+
+  const selectedIdSet =
+    useMemo(
+      () =>
+        new Set(
+          selectedIds
+        ),
+      [
+        selectedIds,
+      ]
+    );
+
+
+  const allFilteredSelected =
+    filtered.length >
+      0 &&
+    filtered.every(
+      (item) =>
+        selectedIdSet.has(
+          item.id
+        )
+    );
+
+
+  function toggleRowSelection(
+    id
+  ) {
+    if (
+      deleting
+    ) {
+      return;
+    }
+
+
+    setSelectedIds(
+      (previous) =>
+        previous.includes(
+          id
+        )
+          ? previous.filter(
+              (selectedId) =>
+                selectedId !==
+                id
+            )
+          : [
+              ...previous,
+              id,
+            ]
+    );
+  }
+
+
+  function toggleSelectAllVisible() {
+    if (
+      deleting ||
+      filtered.length ===
+        0
+    ) {
+      return;
+    }
+
+
+    const visibleIds =
+      filtered.map(
+        (item) =>
+          item.id
+      );
+
+
+    if (
+      allFilteredSelected
+    ) {
+      const visibleIdSet =
+        new Set(
+          visibleIds
+        );
+
+
+      setSelectedIds(
+        (previous) =>
+          previous.filter(
+            (id) =>
+              !visibleIdSet.has(
+                id
+              )
+          )
+      );
+
+
+      return;
+    }
+
+
+    setSelectedIds(
+      (previous) => [
+        ...new Set([
+          ...previous,
+          ...visibleIds,
+        ]),
+      ]
+    );
+  }
+
+
+  async function deleteSelectedRows() {
+    if (
+      deleting ||
+      selectedIds.length ===
+        0
+    ) {
+      return;
+    }
+
+
+    const count =
+      selectedIds.length;
+
+
+    const confirmed =
+      window.confirm(
+        `선택한 ${count}건을 삭제하시겠습니까?\n\n삭제하면 진단 결과와 연결된 상담 신청 데이터도 함께 삭제되며 복구할 수 없습니다.`
+      );
+
+
+    if (
+      !confirmed
+    ) {
+      return;
+    }
+
+
+    try {
+      setDeleting(
+        true
+      );
+
+
+      const accessToken =
+        await getAccessToken();
+
+
+      if (
+        !accessToken
+      ) {
+        router.replace(
+          "/admin/login"
+        );
+
+
+        return;
+      }
+
+
+      const response =
+        await fetch(
+          "/api/admin/responses",
+          {
+            method:
+              "DELETE",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+
+            body:
+              JSON.stringify({
+                ids:
+                  selectedIds,
+              }),
+          }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        response.status ===
+          401 ||
+        response.status ===
+          403
+      ) {
+        await supabase.auth
+          .signOut();
+
+
+        router.replace(
+          "/admin/login"
+        );
+
+
+        return;
+      }
+
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        const partiallyDeletedIds =
+          Array.isArray(
+            result.deletedIds
+          )
+            ? result.deletedIds
+            : [];
+
+
+        if (
+          partiallyDeletedIds.length >
+          0
+        ) {
+          const deletedSet =
+            new Set(
+              partiallyDeletedIds
+            );
+
+
+          setRows(
+            (previous) =>
+              previous.filter(
+                (row) =>
+                  !deletedSet.has(
+                    row.id
+                  )
+              )
+          );
+
+
+          setSelectedIds(
+            (previous) =>
+              previous.filter(
+                (id) =>
+                  !deletedSet.has(
+                    id
+                  )
+              )
+          );
+        }
+
+
+        throw new Error(
+          result.message ||
+          "선택한 데이터를 삭제하지 못했습니다."
+        );
+      }
+
+
+      const deletedIds =
+        Array.isArray(
+          result.deletedIds
+        )
+          ? result.deletedIds
+          : selectedIds;
+
+
+      const deletedSet =
+        new Set(
+          deletedIds
+        );
+
+
+      setRows(
+        (previous) =>
+          previous.filter(
+            (row) =>
+              !deletedSet.has(
+                row.id
+              )
+          )
+      );
+
+
+      if (
+        expanded &&
+        deletedSet.has(
+          expanded
+        )
+      ) {
+        setExpanded(
+          null
+        );
+      }
+
+
+      setSelectedIds(
+        []
+      );
+
+
+      alert(
+        `${result.deletedCount ?? deletedIds.length}건을 삭제했습니다.`
+      );
+
+    } catch (error) {
+      alert(
+        error.message ||
+        "데이터 삭제 중 오류가 발생했습니다."
+      );
+
+    } finally {
+      setDeleting(
+        false
+      );
+    }
+  }
 
 
   /* =======================================================
@@ -1438,9 +1786,44 @@ export default function AdminPage() {
           </div>
 
 
-          <strong>
-            {filtered.length}건
-          </strong>
+          <div className={styles.listHeaderActions}>
+
+            <strong className={styles.recordCount}>
+              {filtered.length}건
+            </strong>
+
+
+            {selectedIds.length >
+              0 && (
+
+              <span className={styles.selectedCount}>
+                {selectedIds.length}건 선택됨
+              </span>
+
+            )}
+
+
+            <button
+              type="button"
+
+              className={styles.deleteButton}
+
+              disabled={
+                selectedIds.length ===
+                  0 ||
+                deleting
+              }
+
+              onClick={
+                deleteSelectedRows
+              }
+            >
+              {deleting
+                ? "삭제 중..."
+                : "🗑 선택 삭제"}
+            </button>
+
+          </div>
 
         </div>
 
@@ -1455,33 +1838,67 @@ export default function AdminPage() {
 
               <tr>
 
+                <th className={styles.checkboxColumn}>
+
+                  <input
+                    type="checkbox"
+
+                    className={styles.rowCheckbox}
+
+                    aria-label="현재 목록 전체 선택"
+
+                    checked={
+                      allFilteredSelected
+                    }
+
+                    disabled={
+                      filtered.length ===
+                        0 ||
+                      deleting
+                    }
+
+                    onChange={
+                      toggleSelectAllVisible
+                    }
+                  />
+
+                </th>
+
+
                 <th>
                   참여자
                 </th>
+
 
                 <th>
                   영업담당자
                 </th>
 
+
                 <th>
                   진단결과
                 </th>
+
 
                 <th>
                   복합성향
                 </th>
 
+
                 <th>
                   상담
                 </th>
+
 
                 <th>
                   영업담당자 매칭
                 </th>
 
+
                 <th>
                   상담 상태
                 </th>
+
 
                 <th>
                   상세
@@ -1501,7 +1918,7 @@ export default function AdminPage() {
 
                   <td
                     colSpan={
-                      8
+                      9
                     }
                   >
 
@@ -1575,12 +1992,55 @@ export default function AdminPage() {
 
 
                         <tr
-                          className={
+                          className={[
                             isMatchingNeeded
                               ? styles.matchingRow
-                              : ""
-                          }
+                              : "",
+
+                            selectedIdSet.has(
+                              item.id
+                            )
+                              ? styles.selectedRow
+                              : "",
+                          ]
+                            .filter(
+                              Boolean
+                            )
+                            .join(
+                              " "
+                            )}
                         >
+
+                          {/* 선택 */}
+
+                          <td className={styles.checkboxCell}>
+
+                            <input
+                              type="checkbox"
+
+                              className={styles.rowCheckbox}
+
+                              aria-label={`${item.name || "참여자"} 선택`}
+
+                              checked={
+                                selectedIdSet.has(
+                                  item.id
+                                )
+                              }
+
+                              disabled={
+                                deleting
+                              }
+
+                              onChange={() =>
+                                toggleRowSelection(
+                                  item.id
+                                )
+                              }
+                            />
+
+                          </td>
+
 
                           {/* 참여자 */}
 
@@ -1830,7 +2290,7 @@ export default function AdminPage() {
 
                             <td
                               colSpan={
-                                8
+                                9
                               }
 
                               className={
@@ -1975,6 +2435,7 @@ export default function AdminPage() {
                                         DIAGNOSIS
                                       </span>
 
+
                                       <h3>
                                         진단 결과
                                       </h3>
@@ -2068,6 +2529,7 @@ export default function AdminPage() {
                                       <span>
                                         CONSULTATION
                                       </span>
+
 
                                       <h3>
                                         상담 신청 내역
@@ -2195,6 +2657,7 @@ export default function AdminPage() {
                                     <span>
                                       ANSWERS
                                     </span>
+
 
                                     <h3>
                                       문항별 응답
