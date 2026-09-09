@@ -26,9 +26,10 @@ const LOCATION_SELECTION_LABELS = {
 const OPENING_TYPE_LABELS = {
   new_opening: "신규개원",
   relocation: "이전개원",
-  acquisition: "인수개원",
-  reopening: "재개원",
-  confirmed: "확정",
+  acquisition: "신규개원(인수)",
+  reopening: "이전개원(인수)",
+  expansion: "확장개원",
+  confirmed: "확장개원",
 };
 
 function getSupabaseAdmin() {
