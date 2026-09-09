@@ -4327,6 +4327,9 @@ export default function Home() {
             <button
               type="button"
               className="restart-button"
+              style={{
+                marginTop: "18px",
+              }}
               onClick={
                 restartDiagnosis
               }
