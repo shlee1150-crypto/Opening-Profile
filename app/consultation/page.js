@@ -57,11 +57,11 @@ const OPENING_TYPE_OPTIONS = [
   },
   {
     value: "acquisition",
-    label: "인수개원",
+    label: "신규개원(인수)",
   },
   {
     value: "reopening",
-    label: "재개원",
+    label: "이전개원(인수)",
   },
   {
     value: "expansion",
@@ -307,7 +307,7 @@ export default function ConsultationPage() {
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(
         "openingProfileReturnToResult",
-        "true"
+        "1"
       );
     }
 
@@ -442,11 +442,11 @@ export default function ConsultationPage() {
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem(
           "openingProfileConsultationCompleted",
-          "true"
+          "1"
         );
         window.sessionStorage.setItem(
           "openingProfileReturnToResult",
-          "true"
+          "1"
         );
       }
 
@@ -502,7 +502,7 @@ export default function ConsultationPage() {
             className={styles.backButton}
             onClick={goBackToResult}
           >
-            ← 진단 결과로 돌아가기
+            ← 이전
           </button>
 
           <p className={styles.brand}>OSSTEM IMPLANT</p>
@@ -897,7 +897,7 @@ export default function ConsultationPage() {
               onClick={goBackToResult}
               disabled={submitting}
             >
-              진단 결과로 돌아가기
+              ← 이전
             </button>
 
             <button
