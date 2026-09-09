@@ -585,7 +585,7 @@
 }
 
 .emailCard {
-  margin-top: 2px;
+  margin-top: 12px;
   padding: clamp(25px, 4vw, 33px);
   border: 1px solid #e5ded7;
   border-radius: 22px;
