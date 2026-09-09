@@ -106,6 +106,11 @@ export default function ConsultationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [resultEmail, setResultEmail] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [emailSuccess, setEmailSuccess] = useState("");
+
   const [hasSalesManager, setHasSalesManager] =
     useState(false);
   const [salesManagerName, setSalesManagerName] =
@@ -148,6 +153,12 @@ export default function ConsultationPage() {
     async function load() {
       const state = readResultState();
       const id = String(getResponseId(state) || "").trim();
+
+      setResultEmail(
+        typeof state?.resultEmail === "string"
+          ? state.resultEmail
+          : ""
+      );
 
       if (!id) {
         setErrorMessage(
@@ -301,6 +312,90 @@ export default function ConsultationPage() {
       .slice(0, 3);
 
     setChairCount(value);
+  }
+
+  async function sendResultEmail() {
+    setEmailError("");
+    setEmailSuccess("");
+
+    const email = resultEmail.trim().toLowerCase();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError(
+        "이메일 주소를 정확하게 입력해주세요."
+      );
+      return;
+    }
+
+    if (!responseId) {
+      setEmailError(
+        "진단 결과 정보를 확인할 수 없습니다."
+      );
+      return;
+    }
+
+    try {
+      setEmailSending(true);
+
+      const response = await fetch(
+        "/api/result/send-email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            responseId,
+            email,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message ||
+            "이메일 발송에 실패했습니다."
+        );
+      }
+
+      setEmailSuccess(
+        "상세 진단 결과를 이메일로 보내드렸습니다."
+      );
+
+      if (typeof window !== "undefined") {
+        try {
+          const raw = window.sessionStorage.getItem(
+            "openingProfileResultState"
+          );
+
+          if (raw) {
+            const stored = JSON.parse(raw);
+
+            window.sessionStorage.setItem(
+              "openingProfileResultState",
+              JSON.stringify({
+                ...stored,
+                resultEmail: email,
+              })
+            );
+          }
+        } catch (storageError) {
+          console.error(
+            "Result email session update error:",
+            storageError
+          );
+        }
+      }
+    } catch (error) {
+      setEmailError(
+        error.message ||
+          "이메일 발송에 실패했습니다."
+      );
+    } finally {
+      setEmailSending(false);
+    }
   }
 
   function goBackToResult() {
@@ -911,6 +1006,64 @@ export default function ConsultationPage() {
             </button>
           </div>
         </form>
+
+        <section className={styles.emailCard}>
+          <div className={styles.emailHead}>
+            <span>📧</span>
+
+            <div>
+              <h3>결과 이메일로 받기</h3>
+              <p>
+                지금 확인한 기본성향 +
+                복합성향 상세 분석을
+                이메일로 받아보세요.
+              </p>
+            </div>
+          </div>
+
+          <input
+            className={styles.emailInput}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="이메일 주소를 입력해주세요"
+            value={resultEmail}
+            disabled={emailSending}
+            onChange={(event) => {
+              setResultEmail(event.target.value);
+              setEmailError("");
+              setEmailSuccess("");
+            }}
+          />
+
+          {emailError && (
+            <div className={styles.emailError}>
+              {emailError}
+            </div>
+          )}
+
+          {emailSuccess && (
+            <div className={styles.emailSuccess}>
+              ✓ {emailSuccess}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className={styles.emailButton}
+            disabled={emailSending}
+            onClick={sendResultEmail}
+          >
+            {emailSending
+              ? "이메일 발송 중..."
+              : "📧 상세 결과 이메일로 받기"}
+          </button>
+
+          <p className={styles.emailPrivacyNote}>
+            입력한 이메일 주소는 결과 발송에만
+            사용되며 진단 DB에는 별도로 저장하지 않습니다.
+          </p>
+        </section>
       </div>
     </main>
   );
