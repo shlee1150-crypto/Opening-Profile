@@ -21,7 +21,7 @@ const ALLOWED_OPENING_TYPES = [
   "relocation",
   "acquisition",
   "reopening",
-  "confirmed",
+  "expansion",
 ];
 
 function getSupabaseAdmin() {
@@ -104,6 +104,11 @@ function normalizeOpeningTypes(value) {
     ...new Set(
       source
         .map((item) => String(item || "").trim())
+        .map((item) =>
+          item === "confirmed"
+            ? "expansion"
+            : item
+        )
         .filter((item) => ALLOWED_OPENING_TYPES.includes(item))
     ),
   ];
@@ -118,7 +123,14 @@ export async function GET(request) {
         ""
     ).trim();
 
-    if (!isUuid(diagnosisResponseId)) {
+    const consultationToken = String(
+      searchParams.get("token") || ""
+    ).trim();
+
+    const hasValidResponseId = isUuid(diagnosisResponseId);
+    const hasValidToken = isUuid(consultationToken);
+
+    if (!hasValidResponseId && !hasValidToken) {
       return NextResponse.json(
         {
           success: false,
@@ -130,16 +142,20 @@ export async function GET(request) {
 
     const supabase = getSupabaseAdmin();
 
-    const {
-      data: diagnosis,
-      error: diagnosisError,
-    } = await supabase
+    let diagnosisQuery = supabase
       .from("diagnosis_responses")
       .select(
         "id, completed, has_sales_manager, sales_manager_name"
-      )
-      .eq("id", diagnosisResponseId)
-      .maybeSingle();
+      );
+
+    diagnosisQuery = hasValidToken
+      ? diagnosisQuery.eq("consultation_token", consultationToken)
+      : diagnosisQuery.eq("id", diagnosisResponseId);
+
+    const {
+      data: diagnosis,
+      error: diagnosisError,
+    } = await diagnosisQuery.maybeSingle();
 
     if (diagnosisError) {
       console.error(
@@ -174,7 +190,7 @@ export async function GET(request) {
       .select(
         "id, category, categories, opening_types, needs_manager_matching, manager_name, desired_region, planned_opening_year, planned_opening_month, location_selection_status, chair_count, memo, consultant_name, status, created_at, updated_at"
       )
-      .eq("diagnosis_response_id", diagnosisResponseId)
+      .eq("diagnosis_response_id", diagnosis.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
