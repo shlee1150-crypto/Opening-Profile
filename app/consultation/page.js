@@ -154,13 +154,21 @@ export default function ConsultationPage() {
       const state = readResultState();
       const id = String(getResponseId(state) || "").trim();
 
+      const emailLinkToken =
+        typeof window !== "undefined"
+          ? String(
+              new URLSearchParams(window.location.search).get("token") ||
+                ""
+            ).trim()
+          : "";
+
       setResultEmail(
         typeof state?.resultEmail === "string"
           ? state.resultEmail
           : ""
       );
 
-      if (!id) {
+      if (!id && !emailLinkToken) {
         setErrorMessage(
           "완료된 진단 결과를 확인할 수 없습니다."
         );
@@ -168,11 +176,13 @@ export default function ConsultationPage() {
         return;
       }
 
-      setResponseId(id);
-
       try {
+        const query = emailLinkToken
+          ? `token=${encodeURIComponent(emailLinkToken)}`
+          : `responseId=${encodeURIComponent(id)}`;
+
         const response = await fetch(
-          `/api/consultation?responseId=${encodeURIComponent(id)}`,
+          `/api/consultation?${query}`,
           {
             method: "GET",
             cache: "no-store",
@@ -190,6 +200,18 @@ export default function ConsultationPage() {
 
         const diagnosis = result.diagnosis || {};
         const consultation = result.consultation || null;
+
+        const resolvedResponseId = String(
+          diagnosis.id || id || ""
+        ).trim();
+
+        if (!resolvedResponseId) {
+          throw new Error(
+            "진단 결과 정보를 확인할 수 없습니다."
+          );
+        }
+
+        setResponseId(resolvedResponseId);
 
         setHasSalesManager(
           diagnosis.has_sales_manager === true
