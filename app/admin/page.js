@@ -462,6 +462,20 @@ export default function AdminPage() {
     useState(false);
 
 
+  const [
+    adminMemoDrafts,
+    setAdminMemoDrafts,
+  ] =
+    useState({});
+
+
+  const [
+    savingAdminMemo,
+    setSavingAdminMemo,
+  ] =
+    useState(null);
+
+
   /* =======================================================
      테이블 헤더 정렬
 
@@ -972,6 +986,8 @@ export default function AdminPage() {
 
                   item.consultation
                     ?.consultant_name,
+
+                  item.admin_memo,
 
                   ...categories.map(
                     (category) =>
@@ -1892,6 +1908,172 @@ export default function AdminPage() {
 
     } finally {
       setUpdating(
+        null
+      );
+    }
+  }
+
+
+  /* =======================================================
+     관리자 메모 저장
+  ======================================================= */
+
+  async function saveAdminMemo(
+    item
+  ) {
+    if (
+      !item?.id ||
+      savingAdminMemo ===
+        item.id
+    ) {
+      return;
+    }
+
+
+    try {
+      setSavingAdminMemo(
+        item.id
+      );
+
+
+      const accessToken =
+        await getAccessToken();
+
+
+      if (
+        !accessToken
+      ) {
+        router.replace(
+          "/admin/login"
+        );
+
+
+        return;
+      }
+
+
+      const memoValue =
+        String(
+          adminMemoDrafts[
+            item.id
+          ] ??
+          item.admin_memo ??
+          ""
+        ).slice(
+          0,
+          5000
+        );
+
+
+      const response =
+        await fetch(
+          "/api/admin/responses",
+          {
+            method:
+              "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+
+            body:
+              JSON.stringify({
+                responseId:
+                  item.id,
+
+                adminMemo:
+                  memoValue,
+              }),
+          }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        response.status ===
+          401 ||
+        response.status ===
+          403
+      ) {
+        await supabase.auth
+          .signOut();
+
+
+        router.replace(
+          "/admin/login"
+        );
+
+
+        return;
+      }
+
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+          "관리자 메모 저장에 실패했습니다."
+        );
+      }
+
+
+      const savedMemo =
+        String(
+          result.adminMemo ||
+          ""
+        );
+
+
+      setRows(
+        (previous) =>
+          previous.map(
+            (row) =>
+              row.id ===
+              item.id
+                ? {
+                    ...row,
+
+                    admin_memo:
+                      savedMemo,
+                  }
+                : row
+          )
+      );
+
+
+      setAdminMemoDrafts(
+        (previous) => ({
+          ...previous,
+
+          [item.id]:
+            savedMemo,
+        })
+      );
+
+
+      alert(
+        savedMemo
+          ? "관리자 메모를 저장했습니다."
+          : "관리자 메모를 비웠습니다."
+      );
+
+    } catch (error) {
+      alert(
+        error.message ||
+        "관리자 메모를 저장하지 못했습니다."
+      );
+
+    } finally {
+      setSavingAdminMemo(
         null
       );
     }
@@ -3376,6 +3558,111 @@ export default function AdminPage() {
                                   </section>
 
                                 )}
+
+
+                                {/* 관리자 메모 */}
+
+                                <section
+                                  className={
+                                    styles.adminMemoSection
+                                  }
+                                >
+
+                                  <div className={styles.detailTitle}>
+
+                                    <span>
+                                      ADMIN MEMO
+                                    </span>
+
+                                    <h3>
+                                      관리자 메모
+                                    </h3>
+
+                                  </div>
+
+
+                                  <p
+                                    className={
+                                      styles.adminMemoGuide
+                                    }
+                                  >
+                                    상담 신청 시 입력된 기존 메모는 그대로 보존됩니다. 이 메모는 관리자 화면에서만 확인하고 수정할 수 있습니다.
+                                  </p>
+
+
+                                  <textarea
+                                    className={
+                                      styles.adminMemoTextarea
+                                    }
+                                    maxLength={
+                                      5000
+                                    }
+                                    value={
+                                      adminMemoDrafts[
+                                        item.id
+                                      ] ??
+                                      item.admin_memo ??
+                                      ""
+                                    }
+                                    onChange={
+                                      (event) =>
+                                        setAdminMemoDrafts(
+                                          (previous) => ({
+                                            ...previous,
+
+                                            [item.id]:
+                                              event.target.value,
+                                          })
+                                        )
+                                    }
+                                    placeholder="예: 9/18 통화 완료, 10월 초 입지 미팅 예정, K5 6대 관심"
+                                    rows={
+                                      5
+                                    }
+                                  />
+
+
+                                  <div
+                                    className={
+                                      styles.adminMemoActions
+                                    }
+                                  >
+
+                                    <small>
+                                      {String(
+                                        adminMemoDrafts[
+                                          item.id
+                                        ] ??
+                                        item.admin_memo ??
+                                        ""
+                                      ).length} / 5000
+                                    </small>
+
+
+                                    <button
+                                      type="button"
+                                      className={
+                                        styles.adminMemoSaveButton
+                                      }
+                                      disabled={
+                                        savingAdminMemo ===
+                                        item.id
+                                      }
+                                      onClick={() =>
+                                        saveAdminMemo(
+                                          item
+                                        )
+                                      }
+                                    >
+                                      {savingAdminMemo ===
+                                      item.id
+                                        ? "저장 중..."
+                                        : "관리자 메모 저장"}
+                                    </button>
+
+                                  </div>
+
+                                </section>
 
 
                                 {/* 문항별 응답 */}
