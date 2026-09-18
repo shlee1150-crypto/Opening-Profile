@@ -239,6 +239,7 @@ export async function GET(
           name,
           phone,
           license_number,
+          admin_memo,
 
           has_sales_manager,
           sales_manager_name,
@@ -464,6 +465,203 @@ export async function GET(
 
         message:
           "관리자 데이터를 불러오지 못했습니다.",
+      },
+      {
+        status:
+          500,
+      }
+    );
+  }
+}
+
+
+/* =========================================================
+   PATCH
+
+   관리자 메모 저장
+   - diagnosis_responses.admin_memo에 저장
+   - 상담 신청 여부와 관계없이 모든 D/B에 메모 가능
+========================================================= */
+
+export async function PATCH(
+  request
+) {
+  try {
+    const auth =
+      await verifyAdmin(
+        request
+      );
+
+
+    if (
+      !auth.success
+    ) {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          message:
+            "관리자 권한이 없습니다.",
+        },
+        {
+          status:
+            auth.status,
+        }
+      );
+    }
+
+
+    const body =
+      await request.json();
+
+
+    const responseId =
+      String(
+        body?.responseId ||
+        body?.id ||
+        ""
+      ).trim();
+
+
+    if (
+      !isUuid(
+        responseId
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          message:
+            "저장할 진단 D/B를 확인할 수 없습니다.",
+        },
+        {
+          status:
+            400,
+        }
+      );
+    }
+
+
+    const adminMemo =
+      String(
+        body?.adminMemo ??
+        body?.admin_memo ??
+        ""
+      )
+        .trim()
+        .slice(
+          0,
+          5000
+        );
+
+
+    const {
+      data,
+      error,
+    } =
+      await auth.supabase
+        .from(
+          "diagnosis_responses"
+        )
+        .update({
+          admin_memo:
+            adminMemo ||
+            null,
+        })
+        .eq(
+          "id",
+          responseId
+        )
+        .select(
+          "id, admin_memo"
+        )
+        .maybeSingle();
+
+
+    if (
+      error
+    ) {
+      console.error(
+        "Admin memo update error:",
+        error
+      );
+
+
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          message:
+            "관리자 메모 저장에 실패했습니다.",
+        },
+        {
+          status:
+            500,
+        }
+      );
+    }
+
+
+    if (
+      !data?.id
+    ) {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          message:
+            "저장할 진단 D/B를 찾을 수 없습니다.",
+        },
+        {
+          status:
+            404,
+        }
+      );
+    }
+
+
+    return NextResponse.json(
+      {
+        success:
+          true,
+
+        responseId:
+          data.id,
+
+        adminMemo:
+          data.admin_memo ||
+          "",
+      },
+      {
+        status:
+          200,
+
+        headers: {
+          "Cache-Control":
+            "no-store",
+        },
+      }
+    );
+
+  } catch (error) {
+    console.error(
+      "Admin memo PATCH API error:",
+      error
+    );
+
+
+    return NextResponse.json(
+      {
+        success:
+          false,
+
+        message:
+          "관리자 메모 저장 중 오류가 발생했습니다.",
       },
       {
         status:
