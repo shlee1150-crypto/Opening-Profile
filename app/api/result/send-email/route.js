@@ -1,1879 +1,557 @@
-import {
-  NextResponse,
-} from "next/server";
-
-import {
-  createClient,
-} from "@supabase/supabase-js";
-
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { randomUUID } from "crypto";
 
 import {
   TYPE_INFO,
-  TOTAL_SCORE,
-  getTypeKeyFromLabel,
   getCombinationInfo,
   getCombinationStrength,
+  getTypeKeyFromLabel,
 } from "../../../lib/diagnosisData";
 
-
-export const runtime =
-  "nodejs";
-
-
-/* =========================================================
-   Supabase
-========================================================= */
+export const runtime = "nodejs";
 
 function getSupabaseAdmin() {
-
   const supabaseUrl =
     process.env.SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL;
-
 
   const supabaseSecretKey =
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-
-  if (
-    !supabaseUrl ||
-    !supabaseSecretKey
-  ) {
-
+  if (!supabaseUrl || !supabaseSecretKey) {
     throw new Error(
       "Supabase 서버 환경변수가 설정되어 있지 않습니다."
     );
   }
 
-
   return createClient(
     supabaseUrl,
     supabaseSecretKey,
     {
-
       auth: {
-
-        persistSession:
-          false,
-
-        autoRefreshToken:
-          false,
+        persistSession: false,
+        autoRefreshToken: false,
       },
     }
   );
 }
 
-
-/* =========================================================
-   유틸
-========================================================= */
-
-function isValidEmail(
-  email
-) {
-
-  return (
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(
-        email
-      )
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "")
   );
 }
 
-
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+function isEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    String(value || "").trim()
+  );
 }
 
-
-/* =========================================================
-   태그
-========================================================= */
-
-function makePills(
-  items
-) {
-
-  return items
-    .map(
-      (item) => `
-
-        <span style="
-          display:inline-block;
-          margin:0 5px 7px 0;
-          padding:7px 10px;
-          background:#f5f2ee;
-          border-radius:999px;
-          color:#655e57;
-          font-size:12px;
-          font-weight:700;
-        ">
-          ${escapeHtml(item)}
-        </span>
-
-      `
-    )
-    .join("");
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-
-/* =========================================================
-   TIP
-========================================================= */
-
-function makeTips(
-  tips
-) {
-
-  return tips
-    .map(
-      (
-        tip,
-        index
-      ) => `
-
-        <table
-          role="presentation"
-          width="100%"
-          cellspacing="0"
-          cellpadding="0"
-          border="0"
-          style="
-            margin-bottom:16px;
-          "
-        >
-
-          <tr>
-
-            <td
-              width="37"
-              valign="top"
-            >
-
-              <div style="
-                width:27px;
-                height:27px;
-                line-height:27px;
-                border-radius:50%;
-                background:#f26a21;
-                color:#ffffff;
-                text-align:center;
-                font-size:12px;
-                font-weight:900;
-              ">
-
-                ${index + 1}
-
-              </div>
-
-            </td>
-
-
-            <td>
-
-              <div style="
-                margin-bottom:4px;
-                color:#39342f;
-                font-size:14px;
-                font-weight:900;
-              ">
-
-                ${escapeHtml(
-                  tip.title
-                )}
-
-              </div>
-
-
-              <div style="
-                color:#756e67;
-                font-size:13px;
-                line-height:1.7;
-              ">
-
-                ${escapeHtml(
-                  tip.text
-                )}
-
-              </div>
-
-            </td>
-
-          </tr>
-
-        </table>
-
-      `
-    )
-    .join("");
-}
-
-
-/* =========================================================
-   BULLET
-========================================================= */
-
-function makeBulletList(
-  items
-) {
-
-  return `
-
-    <ul style="
-      margin:0;
-      padding-left:20px;
-      color:#625b54;
-      font-size:13px;
-      line-height:1.7;
-    ">
-
-      ${items
-        .map(
-          (item) => `
-
-            <li style="
-              margin-bottom:6px;
-            ">
-              ${escapeHtml(item)}
-            </li>
-
-          `
-        )
-        .join("")}
-
-    </ul>
-
-  `;
-}
-
-
-/* =========================================================
-   점수바
-========================================================= */
-
-function createScoreRow(
-  emoji,
-  label,
-  score
-) {
-
-  const numericScore =
-    Number(
-      score
-    ) || 0;
-
-
-  const percentage =
-    Math.min(
-      100,
-
-      Math.round(
-        (
-          numericScore /
-          TOTAL_SCORE
-        ) *
-        100
-      )
-    );
-
-
-  return `
-
-    <div style="
-      margin-bottom:17px;
-    ">
-
-      <div style="
-        margin-bottom:7px;
-        font-size:13px;
-        color:#625b54;
-        font-weight:700;
-      ">
-
-        <span>
-
-          ${emoji}
-
-          ${escapeHtml(
-            label
-          )}
-
-        </span>
-
-
-        <strong style="
-          float:right;
-          color:#332e29;
-        ">
-
-          ${numericScore}점
-
-        </strong>
-
-      </div>
-
-
-      <div style="
-        width:100%;
-        height:8px;
-        background:#eee9e4;
-        border-radius:999px;
-        overflow:hidden;
-      ">
-
-        <div style="
-          width:${percentage}%;
-          height:8px;
-          background:#f26a21;
-          border-radius:999px;
-        ">
-        </div>
-
-      </div>
-
-    </div>
-
-  `;
-}
-
-
-/* =========================================================
-   복합형 강점
-========================================================= */
-
-function makeCombinationStrengths(
-  strengths
-) {
-
-  return `
-
-    <ul style="
-      margin:0;
-      padding-left:19px;
-      color:#645d56;
-      font-size:13px;
-      line-height:1.75;
-    ">
-
-      ${strengths
-        .map(
-          (item) => `
-
-            <li style="
-              margin-bottom:6px;
-            ">
-              ${escapeHtml(item)}
-            </li>
-
-          `
-        )
-        .join("")}
-
-    </ul>
-
-  `;
-}
-
-
-/* =========================================================
-   POST
-========================================================= */
-
-export async function POST(
-  request
-) {
+function normalizeTypeKey(value) {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return null;
+  }
+
+  if (TYPE_INFO[raw]) {
+    return raw;
+  }
 
   try {
-
-    const body =
-      await request.json();
-
-
-    const {
-      responseId,
-      email,
-    } =
-      body;
-
-
-    if (
-      !responseId
-    ) {
-
-      return NextResponse.json(
-        {
-
-          success:
-            false,
-
-          message:
-            "진단 정보가 확인되지 않습니다.",
-        },
-
-        {
-          status:
-            400,
-        }
-      );
-    }
-
-
-    const normalizedEmail =
-      String(
-        email || ""
-      )
-        .trim()
-        .toLowerCase();
-
-
-    if (
-      !normalizedEmail ||
-      !isValidEmail(
-        normalizedEmail
-      )
-    ) {
-
-      return NextResponse.json(
-        {
-
-          success:
-            false,
-
-          message:
-            "이메일 주소를 정확하게 입력해주세요.",
-        },
-
-        {
-          status:
-            400,
-        }
-      );
-    }
-
-
-    /* =====================================================
-       Gmail
-    ===================================================== */
-
-    const gmailUser =
-      process.env.GMAIL_USER;
-
-
-    const gmailAppPassword =
-      process.env
-        .GMAIL_APP_PASSWORD;
-
-
-    if (
-      !gmailUser ||
-      !gmailAppPassword
-    ) {
-
-      console.error(
-        "Gmail 환경변수가 없습니다."
-      );
-
-
-      return NextResponse.json(
-        {
-
-          success:
-            false,
-
-          message:
-            "메일 발송 설정이 완료되지 않았습니다.",
-        },
-
-        {
-          status:
-            500,
-        }
-      );
-    }
-
-
-    /* =====================================================
-       결과 조회
-    ===================================================== */
-
-    const supabase =
-      getSupabaseAdmin();
-
-
-    const {
-      data,
-      error,
-    } =
-      await supabase
-        .from(
-          "diagnosis_responses"
-        )
-        .select(`
-          result_type,
-          result_score,
-          secondary_type,
-          secondary_score,
-          type_scores,
-          completed
-        `)
-
-        .eq(
-          "id",
-          responseId
-        )
-
-        .eq(
-          "completed",
-          true
-        )
-
-        .maybeSingle();
-
-
-    if (
-      error ||
-      !data
-    ) {
-
-      console.error(
-        "Diagnosis lookup error:",
-        error
-      );
-
-
-      return NextResponse.json(
-        {
-
-          success:
-            false,
-
-          message:
-            "진단 결과를 찾을 수 없습니다.",
-        },
-
-        {
-          status:
-            404,
-        }
-      );
-    }
-
-
-    /* =====================================================
-       기본성향
-    ===================================================== */
-
-    const primaryType =
-      getTypeKeyFromLabel(
-        data.result_type
-      );
-
-
-    const secondaryType =
-      getTypeKeyFromLabel(
-        data.secondary_type
-      );
-
-
-    if (
-      !primaryType ||
-      !secondaryType
-    ) {
-
-      return NextResponse.json(
-        {
-
-          success:
-            false,
-
-          message:
-            "진단 결과 정보가 올바르지 않습니다.",
-        },
-
-        {
-          status:
-            500,
-        }
-      );
-    }
-
-
-    const primary =
-      TYPE_INFO[
-        primaryType
-      ];
-
-
-    const secondary =
-      TYPE_INFO[
-        secondaryType
-      ];
-
-
-    const detail =
-      primary.detail;
-
-
-    /* =====================================================
-       복합성향
-    ===================================================== */
-
-    const combination =
-      getCombinationInfo(
-        primaryType,
-        secondaryType
-      );
-
-
-    if (
-      !combination
-    ) {
-
-      return NextResponse.json(
-        {
-
-          success:
-            false,
-
-          message:
-            "복합성향 정보를 확인할 수 없습니다.",
-        },
-
-        {
-          status:
-            500,
-        }
-      );
-    }
-
-
-    const combinationStrength =
-      getCombinationStrength(
-        data.result_score,
-        data.secondary_score
-      );
-
-
-    /* =====================================================
-       점수
-    ===================================================== */
-
-    const typeScores =
-      data.type_scores &&
-      typeof data.type_scores ===
-        "object"
-
-        ? data.type_scores
-
-        : {};
-
-
-    const scoreHtml =
-      Object.entries(
-        TYPE_INFO
-      )
+    return getTypeKeyFromLabel(raw) || null;
+  } catch {
+    return null;
+  }
+}
+
+function renderList(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return "";
+  }
+
+  return `
+    <ul style="margin:10px 0 0;padding-left:20px;color:#5e5751;font-size:14px;line-height:1.75;">
+      ${items
         .map(
-          ([
-            type,
-            info,
-          ]) =>
-
-            createScoreRow(
-              info.emoji,
-              info.label,
-              typeScores[type]
-            )
+          (item) =>
+            `<li style="margin:4px 0;">${escapeHtml(item)}</li>`
         )
-        .join("");
-
-
-    /* =====================================================
-       HTML
-    ===================================================== */
-
-    const html = `
-
-<!DOCTYPE html>
-
-<html lang="ko">
-
-<head>
-
-  <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-
-  <title>
-    오스템임플란트 개원성향진단
-  </title>
-
-</head>
-
-
-<body style="
-  margin:0;
-  padding:0;
-  background:#f2efea;
-  font-family:
-    Arial,
-    'Apple SD Gothic Neo',
-    'Malgun Gothic',
-    sans-serif;
-">
-
-
-<table
-  role="presentation"
-  width="100%"
-  cellspacing="0"
-  cellpadding="0"
-  border="0"
->
-
-<tr>
-
-<td
-  align="center"
-  style="
-    padding:30px 12px;
-  "
->
-
-
-<table
-  role="presentation"
-  width="100%"
-  cellspacing="0"
-  cellpadding="0"
-  border="0"
-  style="
-    max-width:640px;
-    background:#ffffff;
-    border-radius:20px;
-    overflow:hidden;
-  "
->
-
-
-<!-- 브랜드 -->
-
-<tr>
-
-<td style="
-  padding:21px 27px;
-  background:#f26a21;
-  color:#ffffff;
-  font-size:14px;
-  font-weight:900;
-">
-
-  OSSTEM IMPLANT
-
-</td>
-
-</tr>
-
-
-<!-- 기본 결과 -->
-
-<tr>
-
-<td style="
-  padding:38px 27px 32px;
-">
-
-
-  <div style="
-    margin-bottom:11px;
-    text-align:center;
-    color:#f26a21;
-    font-size:10px;
-    font-weight:900;
-    letter-spacing:2px;
-  ">
-
-    YOUR OPENING PROFILE
-
-  </div>
-
-
-  <div style="
-    margin-bottom:7px;
-    text-align:center;
-    color:#7b746d;
-    font-size:13px;
-    font-weight:700;
-  ">
-
-    원장님의 개원 성향은
-
-  </div>
-
-
-  <div style="
-    margin-bottom:17px;
-    text-align:center;
-    color:#27231f;
-    font-size:31px;
-    line-height:1.4;
-    font-weight:900;
-  ">
-
-    ${primary.emoji}
-
-    ${escapeHtml(
-      primary.label
-    )}
-
-  </div>
-
-
-  <div style="
-    max-width:470px;
-    margin:0 auto 12px;
-    text-align:center;
-    color:#38332e;
-    font-size:19px;
-    line-height:1.5;
-    font-weight:900;
-  ">
-
-    ${escapeHtml(
-      primary.title
-    )}
-
-  </div>
-
-
-  <div style="
-    max-width:470px;
-    margin:0 auto;
-    text-align:center;
-    color:#706961;
-    font-size:14px;
-    line-height:1.75;
-  ">
-
-    ${escapeHtml(
-      primary.description
-    )}
-
-  </div>
-
-
-  <div style="
-    margin-top:28px;
-    padding:19px;
-    background:#fff7f1;
-    border:1px solid #f6d9c8;
-    border-radius:14px;
-  ">
-
-    <div style="
-      margin-bottom:8px;
-      color:#f26a21;
-      font-size:13px;
-      font-weight:900;
-    ">
-
-      💡 추천 개원 방향
-
-    </div>
-
-
-    <div style="
-      color:#403a35;
-      font-size:14px;
-      line-height:1.7;
-      font-weight:700;
-    ">
-
-      ${escapeHtml(
-        primary.recommendation
-      )}
-
-    </div>
-
-  </div>
-
-
-  <div style="
-    margin-top:22px;
-    padding:20px;
-    border:1px solid #e5dfd8;
-    border-radius:14px;
-  ">
-
-    <div style="
-      margin-bottom:18px;
-      color:#332f2b;
-      font-size:15px;
-      font-weight:900;
-    ">
-
-      개원성향 분석
-
-    </div>
-
-    ${scoreHtml}
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- 복합성향 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  background:#332d28;
-">
-
-
-  <div style="
-    margin-bottom:7px;
-    color:#f8a16e;
-    font-size:10px;
-    font-weight:900;
-    letter-spacing:1.7px;
-  ">
-
-    YOUR COMBINATION
-
-  </div>
-
-
-  <div style="
-    margin-bottom:7px;
-    color:#d9d2cc;
-    font-size:13px;
-    font-weight:700;
-  ">
-
-    ${primary.emoji}
-
-    ${escapeHtml(
-      primary.label
-    )}
-
-    ×
-
-    ${secondary.emoji}
-
-    ${escapeHtml(
-      secondary.label
-    )}
-
-  </div>
-
-
-  <div style="
-    margin-bottom:8px;
-    color:#ffffff;
-    font-size:28px;
-    font-weight:900;
-  ">
-
-    ${escapeHtml(
-      combination.name
-    )}
-
-  </div>
-
-
-  <div style="
-    display:inline-block;
-    margin-bottom:14px;
-    padding:6px 10px;
-    border-radius:999px;
-    background:#4b4038;
-    color:#f8a16e;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    ${escapeHtml(
-      combinationStrength.label
-    )}
-
-  </div>
-
-
-  <div style="
-    margin-bottom:13px;
-    color:#ffffff;
-    font-size:16px;
-    line-height:1.65;
-    font-weight:900;
-  ">
-
-    “${escapeHtml(
-      combination.tagline
-    )}”
-
-  </div>
-
-
-  <div style="
-    color:#d2cbc4;
-    font-size:13px;
-    line-height:1.75;
-  ">
-
-    ${escapeHtml(
-      combination.description
-    )}
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- 복합 강점 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  border-bottom:1px solid #eee8e1;
-">
-
-
-  <div style="
-    margin-bottom:10px;
-    color:#f26a21;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    COMBINATION STRONG POINT
-
-  </div>
-
-
-  <div style="
-    margin-bottom:14px;
-    color:#332e29;
-    font-size:18px;
-    font-weight:900;
-  ">
-
-    복합성향의 강점
-
-  </div>
-
-
-  ${makeCombinationStrengths(
-    combination.strengths
-  )}
-
-</td>
-
-</tr>
-
-
-<!-- 복합 주의 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  border-bottom:1px solid #eee8e1;
-">
-
-
-  <div style="
-    margin-bottom:10px;
-    color:#d75c47;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    COMBINATION CHECK POINT
-
-  </div>
-
-
-  <div style="
-    margin-bottom:14px;
-    color:#332e29;
-    font-size:18px;
-    font-weight:900;
-  ">
-
-    복합성향에서 주의할 점
-
-  </div>
-
-
-  <div style="
-    padding:17px;
-    background:#fff5f2;
-    border-radius:13px;
-  ">
-
-    ${makeCombinationStrengths(
-      combination.cautions
-    )}
-
-  </div>
-
-
-  <div style="
-    margin-top:15px;
-    padding:17px;
-    background:#332d28;
-    border-radius:13px;
-  ">
-
-    <div style="
-      margin-bottom:6px;
-      color:#f8a16e;
-      font-size:10px;
-      font-weight:900;
-    ">
-
-      RECOMMENDED STRATEGY
-
-    </div>
-
-
-    <div style="
-      color:#ffffff;
-      font-size:16px;
-      font-weight:900;
-      line-height:1.6;
-    ">
-
-      “${escapeHtml(
-        combination.strategy
-      )}”
-
-    </div>
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- 기본성향 상세 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  border-bottom:1px solid #eee8e1;
-">
-
-
-  <div style="
-    margin-bottom:12px;
-    color:#f26a21;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    01 · PROFILE
-
-  </div>
-
-
-  <div style="
-    margin-bottom:13px;
-    color:#332e29;
-    font-size:18px;
-    font-weight:900;
-  ">
-
-    원장님의 기본 성향
-
-  </div>
-
-
-  <div style="
-    color:#5f5851;
-    font-size:14px;
-    line-height:1.8;
-  ">
-
-    ${escapeHtml(
-      detail.trait
-    )}
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- 입지 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  border-bottom:1px solid #eee8e1;
-">
-
-
-  <div style="
-    margin-bottom:12px;
-    color:#f26a21;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    02 · LOCATION
-
-  </div>
-
-
-  <div style="
-    margin-bottom:11px;
-    color:#332e29;
-    font-size:18px;
-    font-weight:900;
-  ">
-
-    추천 입지
-
-  </div>
-
-
-  <div style="
-    margin-bottom:10px;
-    color:#f26a21;
-    font-size:17px;
-    font-weight:900;
-  ">
-
-    📍 ${escapeHtml(
-      detail.locationTitle
-    )}
-
-  </div>
-
-
-  <div style="
-    margin-bottom:15px;
-    color:#5f5851;
-    font-size:14px;
-    line-height:1.75;
-  ">
-
-    ${escapeHtml(
-      detail.locationDescription
-    )}
-
-  </div>
-
-
-  <div>
-
-    ${makePills(
-      detail.locationPoints
-    )}
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- 추천 전략 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  border-bottom:1px solid #eee8e1;
-">
-
-
-  <div style="
-    margin-bottom:12px;
-    color:#f26a21;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    03 · STRATEGY
-
-  </div>
-
-
-  <div style="
-    margin-bottom:11px;
-    color:#332e29;
-    font-size:18px;
-    font-weight:900;
-  ">
-
-    추천 개원전략
-
-  </div>
-
-
-  <div style="
-    margin-bottom:10px;
-    color:#38332e;
-    font-size:17px;
-    font-weight:900;
-    line-height:1.5;
-  ">
-
-    “${escapeHtml(
-      detail.strategyTitle
-    )}”
-
-  </div>
-
-
-  <div style="
-    color:#5f5851;
-    font-size:14px;
-    line-height:1.8;
-  ">
-
-    ${escapeHtml(
-      detail.strategy
-    )}
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- 개원꿀팁 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  border-bottom:1px solid #eee8e1;
-">
-
-
-  <div style="
-    margin-bottom:12px;
-    color:#f26a21;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    04 · OPENING TIP
-
-  </div>
-
-
-  <div style="
-    margin-bottom:19px;
-    color:#332e29;
-    font-size:18px;
-    font-weight:900;
-  ">
-
-    개원 꿀팁
-
-  </div>
-
-
-  ${makeTips(
-    detail.tips
-  )}
-
-</td>
-
-</tr>
-
-
-<!-- 운영홍보 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  border-bottom:1px solid #eee8e1;
-">
-
-
-  <div style="
-    margin-bottom:12px;
-    color:#f26a21;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    05 · OPERATION & MARKETING
-
-  </div>
-
-
-  <div style="
-    margin-bottom:12px;
-    color:#332e29;
-    font-size:18px;
-    font-weight:900;
-  ">
-
-    운영·홍보 포인트
-
-  </div>
-
-
-  <div style="
-    margin-bottom:15px;
-    color:#38332e;
-    font-size:16px;
-    line-height:1.55;
-    font-weight:900;
-  ">
-
-    “${escapeHtml(
-      detail.promotionTitle
-    )}”
-
-  </div>
-
-
-  <div style="
-    margin-bottom:15px;
-    padding:16px;
-    background:#f8f6f3;
-    border-radius:12px;
-  ">
-
-    ${makeBulletList(
-      detail.promotionPoints
-    )}
-
-  </div>
-
-
-  <div style="
-    color:#5f5851;
-    font-size:14px;
-    line-height:1.8;
-  ">
-
-    ${escapeHtml(
-      detail.promotionDescription
-    )}
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- 기본 주의점 -->
-
-<tr>
-
-<td style="
-  padding:28px 27px;
-  border-bottom:1px solid #eee8e1;
-">
-
-
-  <div style="
-    margin-bottom:12px;
-    color:#dc5d45;
-    font-size:11px;
-    font-weight:900;
-  ">
-
-    CHECK POINT
-
-  </div>
-
-
-  <div style="
-    margin-bottom:12px;
-    color:#332e29;
-    font-size:18px;
-    font-weight:900;
-  ">
-
-    ⚠️ 기본 성향에서 주의할 점
-
-  </div>
-
-
-  <div style="
-    padding:16px;
-    border-left:4px solid #e6654d;
-    border-radius:10px;
-    background:#fff5f2;
-    color:#67534d;
-    font-size:14px;
-    line-height:1.8;
-  ">
-
-    ${escapeHtml(
-      detail.caution
-    )}
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- ONE LINE -->
-
-<tr>
-
-<td style="
-  padding:26px 27px;
-  background:#332d28;
-  text-align:center;
-">
-
-
-  <div style="
-    margin-bottom:8px;
-    color:#f8a16e;
-    font-size:10px;
-    font-weight:900;
-    letter-spacing:1.7px;
-  ">
-
-    ONE LINE TIP
-
-  </div>
-
-
-  <div style="
-    color:#ffffff;
-    font-size:18px;
-    line-height:1.6;
-    font-weight:900;
-  ">
-
-    “${escapeHtml(
-      detail.oneLineTip
-    )}”
-
-  </div>
-
-</td>
-
-</tr>
-
-
-<!-- FOOTER -->
-
-<tr>
-
-<td style="
-  padding:24px 27px;
-  background:#f8f5f1;
-  text-align:center;
-  color:#99918a;
-  font-size:11px;
-  line-height:1.7;
-">
-
-  오스템임플란트 개원성향진단
-
-  <br />
-
-  본 결과는 개원 의사결정 성향을
-  알아보기 위한 참고자료입니다.
-
-</td>
-
-</tr>
-
-
-</table>
-
-</td>
-
-</tr>
-
-</table>
-
-</body>
-
-</html>
-
-    `;
-
-
-    /* =====================================================
-       TEXT
-    ===================================================== */
-
-    const text = `
-
-오스템임플란트 개원성향진단
-
-
-[기본 성향]
-
-${primary.emoji} ${primary.label}
-
-${primary.title}
-
-${primary.description}
-
-
-[복합 성향]
-
-${primary.emoji} ${primary.label}
-+
-${secondary.emoji} ${secondary.label}
-
-${combination.name}
-
-${combinationStrength.label}
-
-"${combination.tagline}"
-
-${combination.description}
-
-
-[복합성향 강점]
-
-${combination.strengths
-  .map(
-    (item) =>
-      `- ${item}`
-  )
-  .join("\n")}
-
-
-[복합성향 주의사항]
-
-${combination.cautions
-  .map(
-    (item) =>
-      `- ${item}`
-  )
-  .join("\n")}
-
-
-추천전략
-
-"${combination.strategy}"
-
-
-[기본 성향 상세 분석]
-
-
-1. 원장님의 성향
-
-${detail.trait}
-
-
-2. 추천 입지
-
-${detail.locationTitle}
-
-${detail.locationDescription}
-
-${detail.locationPoints
-  .map(
-    (item) =>
-      `- ${item}`
-  )
-  .join("\n")}
-
-
-3. 추천 개원전략
-
-"${detail.strategyTitle}"
-
-${detail.strategy}
-
-
-4. 개원 꿀팁
-
-${detail.tips
-  .map(
-    (
-      tip,
-      index
-    ) =>
-      `${index + 1}) ${tip.title}\n${tip.text}`
-  )
-  .join("\n\n")}
-
-
-5. 운영·홍보 포인트
-
-"${detail.promotionTitle}"
-
-${detail.promotionPoints
-  .map(
-    (item) =>
-      `- ${item}`
-  )
-  .join("\n")}
-
-${detail.promotionDescription}
-
-
-6. 주의할 점
-
-${detail.caution}
-
-
-ONE LINE TIP
-
-"${detail.oneLineTip}"
-
-
-[개원성향 점수]
-
-안정정착형:
-${Number(
-  typeScores.stable || 0
-)}점
-
-집중공격형:
-${Number(
-  typeScores.aggressive || 0
-)}점
-
-데이터분석형:
-${Number(
-  typeScores.analytical || 0
-)}점
-
-선점개척형:
-${Number(
-  typeScores.pioneer || 0
-)}점
-
-
-오스템임플란트 개원성향진단
-
-    `.trim();
-
-
-    /* =====================================================
-       Gmail
-    ===================================================== */
-
-    const transporter =
-      nodemailer.createTransport({
-
-        host:
-          "smtp.gmail.com",
-
-        port:
-          465,
-
-        secure:
-          true,
-
-        auth: {
-
-          user:
-            gmailUser,
-
-          pass:
-            gmailAppPassword,
-        },
-      });
-
-
-    await transporter.sendMail({
-
-      from:
-        `"오스템임플란트 개원성향진단" <${gmailUser}>`,
-
-      to:
-        normalizedEmail,
-
-      subject:
-        `[오스템임플란트] 개원성향진단 - ${combination.name} (${primary.label})`,
-
-      text,
-
-      html,
-    });
-
-
-    return NextResponse.json({
-
-      success:
-        true,
-
-      message:
-        "상세 진단 결과 이메일을 발송했습니다.",
-    });
-
-
-  } catch (error) {
-
+        .join("")}
+    </ul>
+  `;
+}
+
+function renderScoreRows(typeScores) {
+  const scores =
+    typeScores && typeof typeScores === "object"
+      ? typeScores
+      : {};
+
+  return Object.entries(TYPE_INFO)
+    .map(([key, info]) => {
+      const score = Number(scores[key] || 0);
+
+      return `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #eee8e3;color:#4a433d;font-size:14px;">
+            ${escapeHtml(info.emoji)} ${escapeHtml(info.label)}
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee8e3;text-align:right;color:#f26a21;font-size:14px;font-weight:800;">
+            ${score}점
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function ensureConsultationToken(
+  supabase,
+  diagnosisId,
+  existingToken
+) {
+  if (isUuid(existingToken)) {
+    return existingToken;
+  }
+
+  const token = randomUUID();
+
+  const { error } = await supabase
+    .from("diagnosis_responses")
+    .update({
+      consultation_token: token,
+    })
+    .eq("id", diagnosisId);
+
+  if (error) {
     console.error(
-      "Send email error:",
+      "Consultation token update error:",
       error
     );
 
+    throw new Error(
+      "상담 신청 링크를 생성하지 못했습니다."
+    );
+  }
+
+  return token;
+}
+
+function buildEmailHtml({
+  diagnosis,
+  consultationUrl,
+}) {
+  const primaryType = normalizeTypeKey(
+    diagnosis.result_type
+  );
+  const secondaryType = normalizeTypeKey(
+    diagnosis.secondary_type
+  );
+
+  const primaryInfo = primaryType
+    ? TYPE_INFO[primaryType]
+    : null;
+
+  const secondaryInfo = secondaryType
+    ? TYPE_INFO[secondaryType]
+    : null;
+
+  const combination =
+    primaryType && secondaryType
+      ? getCombinationInfo(
+          primaryType,
+          secondaryType
+        )
+      : null;
+
+  const strength =
+    combination
+      ? getCombinationStrength(
+          Number(diagnosis.result_score || 0),
+          Number(diagnosis.secondary_score || 0)
+        )
+      : null;
+
+  const detail = primaryInfo?.detail || {};
+
+  const primaryLabel =
+    primaryInfo?.label ||
+    diagnosis.result_type ||
+    "-";
+
+  const secondaryLabel =
+    secondaryInfo?.label ||
+    diagnosis.secondary_type ||
+    "-";
+
+  const nameText = diagnosis.name
+    ? `${escapeHtml(diagnosis.name)} 원장님`
+    : "원장님";
+
+  return `
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>오스템임플란트 개원성향진단 결과</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f2ef;font-family:Arial,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#332f2b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f2ef;padding:24px 10px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px;background:#ffffff;border-radius:22px;overflow:hidden;box-shadow:0 12px 36px rgba(70,50,35,.08);">
+            <tr>
+              <td style="padding:34px 32px 28px;background:#fff7f1;border-bottom:1px solid #f0e5dc;">
+                <div style="color:#f26a21;font-size:12px;font-weight:800;letter-spacing:.14em;">OSSTEM IMPLANT</div>
+                <h1 style="margin:10px 0 8px;font-size:28px;line-height:1.3;color:#2f2a26;">개원성향진단 결과</h1>
+                <p style="margin:0;color:#756e68;font-size:14px;line-height:1.7;">
+                  ${nameText}의 개원 성향을 분석한 결과입니다.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:30px 32px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="width:50%;padding:16px;background:#fff8f3;border:1px solid #f1ded0;border-radius:14px;vertical-align:top;">
+                      <div style="color:#9a9189;font-size:11px;font-weight:700;">주성향</div>
+                      <div style="margin-top:7px;color:#312c28;font-size:18px;font-weight:900;">
+                        ${escapeHtml(primaryInfo?.emoji || "")} ${escapeHtml(primaryLabel)}
+                      </div>
+                      <div style="margin-top:5px;color:#f26a21;font-size:13px;font-weight:800;">
+                        ${Number(diagnosis.result_score || 0)}점
+                      </div>
+                    </td>
+                    <td style="width:12px;"></td>
+                    <td style="width:50%;padding:16px;background:#faf9f7;border:1px solid #ebe5df;border-radius:14px;vertical-align:top;">
+                      <div style="color:#9a9189;font-size:11px;font-weight:700;">보조성향</div>
+                      <div style="margin-top:7px;color:#312c28;font-size:18px;font-weight:900;">
+                        ${escapeHtml(secondaryInfo?.emoji || "")} ${escapeHtml(secondaryLabel)}
+                      </div>
+                      <div style="margin-top:5px;color:#7e756d;font-size:13px;font-weight:800;">
+                        ${Number(diagnosis.secondary_score || 0)}점
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+
+                ${
+                  combination
+                    ? `
+                <div style="margin-top:18px;padding:22px;border-radius:16px;background:#332d28;color:#ffffff;">
+                  <div style="font-size:11px;font-weight:800;color:#f4b28a;letter-spacing:.08em;">COMBINATION PROFILE</div>
+                  <h2 style="margin:8px 0 5px;font-size:22px;line-height:1.35;color:#ffffff;">${escapeHtml(combination.name)}</h2>
+                  <div style="display:inline-block;margin-top:3px;padding:5px 9px;border-radius:999px;background:#fff0e6;color:#f26a21;font-size:11px;font-weight:800;">${escapeHtml(strength?.label || "복합성향")}</div>
+                  <p style="margin:12px 0 0;color:#e5ded8;font-size:14px;line-height:1.75;">${escapeHtml(combination.tagline || combination.description || "")}</p>
+                </div>
+                    `
+                    : ""
+                }
+
+                <div style="margin-top:26px;">
+                  <h3 style="margin:0 0 10px;font-size:18px;color:#332f2b;">개원성향 분석</h3>
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                    ${renderScoreRows(diagnosis.type_scores)}
+                  </table>
+                </div>
+
+                ${
+                  detail.trait
+                    ? `
+                <div style="margin-top:28px;padding:20px;border:1px solid #e8e2dc;border-radius:15px;background:#ffffff;">
+                  <h3 style="margin:0 0 8px;font-size:17px;color:#332f2b;">성향 특징</h3>
+                  <p style="margin:0;color:#655d56;font-size:14px;line-height:1.75;">${escapeHtml(detail.trait)}</p>
+                </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  detail.locationTitle || detail.locationDescription
+                    ? `
+                <div style="margin-top:14px;padding:20px;border:1px solid #e8e2dc;border-radius:15px;background:#fffaf6;">
+                  <h3 style="margin:0 0 8px;font-size:17px;color:#332f2b;">${escapeHtml(detail.locationTitle || "추천 입지")}</h3>
+                  <p style="margin:0;color:#655d56;font-size:14px;line-height:1.75;">${escapeHtml(detail.locationDescription || "")}</p>
+                  ${renderList(detail.locationPoints)}
+                </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  detail.strategyTitle || detail.strategy
+                    ? `
+                <div style="margin-top:14px;padding:20px;border-radius:15px;background:#f8f5f1;">
+                  <h3 style="margin:0 0 8px;font-size:17px;color:#332f2b;">${escapeHtml(detail.strategyTitle || "개원 전략")}</h3>
+                  <p style="margin:0;color:#655d56;font-size:14px;line-height:1.75;">${escapeHtml(detail.strategy || "")}</p>
+                  ${renderList(detail.tips)}
+                </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  combination?.strengths?.length
+                    ? `
+                <div style="margin-top:14px;padding:20px;border:1px solid #e8e2dc;border-radius:15px;background:#ffffff;">
+                  <h3 style="margin:0;font-size:17px;color:#332f2b;">복합성향 강점</h3>
+                  ${renderList(combination.strengths)}
+                </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  combination?.cautions?.length || detail.caution
+                    ? `
+                <div style="margin-top:14px;padding:20px;border:1px solid #f2d5c4;border-radius:15px;background:#fff8f3;">
+                  <h3 style="margin:0;font-size:17px;color:#332f2b;">체크 포인트</h3>
+                  ${renderList(combination?.cautions)}
+                  ${
+                    detail.caution
+                      ? `<p style="margin:10px 0 0;color:#785d4d;font-size:14px;line-height:1.75;">${escapeHtml(detail.caution)}</p>`
+                      : ""
+                  }
+                </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  detail.oneLineTip
+                    ? `
+                <div style="margin-top:14px;padding:18px 20px;border-radius:15px;background:#332d28;color:#ffffff;">
+                  <div style="font-size:11px;color:#f4b28a;font-weight:800;">ONE LINE TIP</div>
+                  <div style="margin-top:6px;font-size:15px;line-height:1.65;font-weight:800;">${escapeHtml(detail.oneLineTip)}</div>
+                </div>
+                    `
+                    : ""
+                }
+
+                <div style="margin-top:32px;padding:26px 22px;border-radius:18px;background:#fff4eb;text-align:center;border:1px solid #f2d2bd;">
+                  <div style="color:#f26a21;font-size:12px;font-weight:900;letter-spacing:.05em;">OPENING CONSULTATION</div>
+                  <h3 style="margin:9px 0 7px;color:#312c28;font-size:20px;">개원 상담이 필요하신가요?</h3>
+                  <p style="margin:0 auto;max-width:500px;color:#756b63;font-size:13px;line-height:1.7;">
+                    입지 · 개원 프로세스 · 대장비 · 소장비·기구·재료 상담을 신청하실 수 있습니다.
+                  </p>
+
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:20px auto 0;">
+                    <tr>
+                      <td align="center" bgcolor="#f26a21" style="border-radius:12px;">
+                        <a href="${escapeHtml(consultationUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:16px 30px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:900;line-height:1;">
+                          개원 상담 신청하기
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="margin:13px 0 0;color:#9b8d82;font-size:10px;line-height:1.5;">
+                    버튼을 누르면 개원성향진단 상담 신청 화면으로 바로 이동합니다.
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:20px 32px;background:#f8f6f3;color:#9a9189;font-size:11px;line-height:1.6;text-align:center;">
+                본 메일은 개원성향진단 결과 발송 요청에 따라 전송되었습니다.<br />
+                입력한 이메일 주소는 결과 발송 용도로만 사용됩니다.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+  `;
+}
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+
+    const responseId = String(
+      body?.responseId ||
+        body?.diagnosisResponseId ||
+        ""
+    ).trim();
+
+    const email = String(body?.email || "")
+      .trim()
+      .toLowerCase();
+
+    if (!isUuid(responseId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "진단 결과 정보를 확인할 수 없습니다.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!isEmail(email)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "이메일 주소를 정확하게 입력해주세요.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const gmailUser = String(
+      process.env.GMAIL_USER || ""
+    ).trim();
+
+    const gmailAppPassword = String(
+      process.env.GMAIL_APP_PASSWORD || ""
+    ).replace(/\s/g, "");
+
+    if (!gmailUser || !gmailAppPassword) {
+      console.error(
+        "Result email error: Gmail environment variables are missing."
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: "이메일 발송 설정을 확인해주세요.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const supabase = getSupabaseAdmin();
+
+    const {
+      data: diagnosis,
+      error: diagnosisError,
+    } = await supabase
+      .from("diagnosis_responses")
+      .select(
+        "id, name, completed, type_scores, result_type, result_score, secondary_type, secondary_score, consultation_token"
+      )
+      .eq("id", responseId)
+      .maybeSingle();
+
+    if (diagnosisError) {
+      console.error(
+        "Result email diagnosis lookup error:",
+        diagnosisError
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: "진단 결과를 불러오지 못했습니다.",
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!diagnosis || diagnosis.completed !== true) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "완료된 진단 결과를 확인할 수 없습니다.",
+        },
+        { status: 404 }
+      );
+    }
+
+    const consultationToken =
+      await ensureConsultationToken(
+        supabase,
+        diagnosis.id,
+        diagnosis.consultation_token
+      );
+
+    const origin = new URL(request.url).origin;
+    const consultationUrl =
+      `${origin}/consultation?token=${encodeURIComponent(
+        consultationToken
+      )}`;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword,
+      },
+    });
+
+    const html = buildEmailHtml({
+      diagnosis,
+      consultationUrl,
+    });
+
+    await transporter.sendMail({
+      from: `오스템임플란트 개원성향진단 <${gmailUser}>`,
+      to: email,
+      subject: `[오스템임플란트] ${
+        diagnosis.name
+          ? `${diagnosis.name} 원장님 `
+          : ""
+      }개원성향진단 결과`,
+      html,
+      text: [
+        "오스템임플란트 개원성향진단 결과",
+        diagnosis.name
+          ? `${diagnosis.name} 원장님`
+          : "",
+        `주성향: ${diagnosis.result_type || "-"} (${diagnosis.result_score ?? "-"}점)`,
+        `보조성향: ${diagnosis.secondary_type || "-"} (${diagnosis.secondary_score ?? "-"}점)`,
+        "",
+        "개원 상담 신청하기",
+        consultationUrl,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    });
 
     return NextResponse.json(
       {
+        success: true,
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Result email API error:",
+      error
+    );
 
-        success:
-          false,
-
+    return NextResponse.json(
+      {
+        success: false,
         message:
+          error?.message ||
           "이메일 발송 중 오류가 발생했습니다.",
       },
-
-      {
-        status:
-          500,
-      }
+      { status: 500 }
     );
   }
 }
