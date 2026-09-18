@@ -1442,6 +1442,187 @@
 
 
 /* =========================================================
+   ADMIN MEMO
+========================================================= */
+
+.adminMemoSection {
+  border-color:
+    #e6d4c7 !important;
+
+  background:
+    #fffdfb !important;
+}
+
+
+.adminMemoGuide {
+  margin:
+    -2px 0 12px;
+
+  color:
+    #8b827a;
+
+  font-size:
+    10px;
+
+  line-height:
+    1.6;
+}
+
+
+.adminMemoTextarea {
+  width:
+    100%;
+
+  min-height:
+    120px;
+
+  padding:
+    13px 14px;
+
+  border:
+    1px solid #d9d1ca;
+
+  border-radius:
+    11px;
+
+  outline:
+    none;
+
+  background:
+    #ffffff;
+
+  color:
+    #423c36;
+
+  font:
+    inherit;
+
+  font-size:
+    11px;
+
+  line-height:
+    1.65;
+
+  resize:
+    vertical;
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease;
+}
+
+
+.adminMemoTextarea:focus {
+  border-color:
+    #f26a21;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      242,
+      106,
+      33,
+      .09
+    );
+}
+
+
+.adminMemoTextarea::placeholder {
+  color:
+    #aaa29b;
+}
+
+
+.adminMemoActions {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+
+  margin-top:
+    10px;
+}
+
+
+.adminMemoActions small {
+  color:
+    #a09992;
+
+  font-size:
+    9px;
+}
+
+
+.adminMemoSaveButton {
+  min-width:
+    136px;
+
+  height:
+    38px;
+
+  padding:
+    0 14px;
+
+  border:
+    1px solid #e26013;
+
+  border-radius:
+    9px;
+
+  background:
+    #f26a21;
+
+  color:
+    #ffffff;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  cursor:
+    pointer;
+
+  transition:
+    transform .2s ease,
+    opacity .2s ease,
+    box-shadow .2s ease;
+}
+
+
+.adminMemoSaveButton:hover:not(:disabled) {
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 7px 18px
+    rgba(
+      242,
+      106,
+      33,
+      .18
+    );
+}
+
+
+.adminMemoSaveButton:disabled {
+  cursor:
+    default;
+
+  opacity:
+    .55;
+}
+
+
+/* =========================================================
    ANSWERS
 ========================================================= */
 
