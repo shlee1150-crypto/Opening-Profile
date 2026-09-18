@@ -207,6 +207,7 @@ export async function GET(request) {
         name,
         phone,
         license_number,
+        admin_memo,
         privacy_consent,
         answers,
         type_scores,
@@ -308,6 +309,7 @@ export async function GET(request) {
       "상담 상태",
       "상담 신청일",
       "메모",
+      "관리자 메모",
       "상담자",
       ...Array.from(
         { length: 12 },
@@ -393,6 +395,7 @@ export async function GET(request) {
           : "",
         formatDate(consultation?.created_at),
         consultation?.memo || "",
+        item.admin_memo || "",
         consultation?.consultant_name || "",
         ...Array.from(
           { length: 12 },
